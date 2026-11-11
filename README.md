@@ -2,15 +2,6 @@
 
 Публичная сборочная копия проекта NotesAndroid.
 
-## Сборка APK
-
-GitHub Actions запускает сборку при каждом push в `main` или вручную через вкладку **Actions**.
-
-Workflow выполняет:
-- unit-тесты;
-- сборку debug APK;
-- Compose instrumentation tests на Android Emulator;
-- публикацию `app-debug.apk` как артефакта workflow на 14 дней.
 
 ## Получение APK
 
