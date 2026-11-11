@@ -1837,6 +1837,56 @@ private fun RecordStatusPill(status: RecordStatus, textColor: Color) {
 }
 
 @Composable
+private fun TaskStatusMarker(status: RecordStatus) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val active = MaterialTheme.colorScheme.primary
+    val background = MaterialTheme.colorScheme.background
+    Canvas(modifier = Modifier.size(22.dp)) {
+        val stroke = 2.dp.toPx()
+        val radius = (size.minDimension - stroke) / 2f
+        when (status) {
+            RecordStatus.WAITING -> drawCircle(
+                color = muted.copy(alpha = 0.78f),
+                radius = radius,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+            )
+            RecordStatus.IN_PROGRESS -> drawCircle(
+                color = active,
+                radius = radius,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke + 0.3.dp.toPx())
+            )
+            RecordStatus.COMPLETED -> {
+                drawCircle(color = muted.copy(alpha = 0.9f), radius = radius)
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(size.width * 0.25f, size.height * 0.52f)
+                    lineTo(size.width * 0.43f, size.height * 0.69f)
+                    lineTo(size.width * 0.76f, size.height * 0.34f)
+                }
+                drawPath(
+                    path = path,
+                    color = background,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 1.8.dp.toPx(),
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                        join = androidx.compose.ui.graphics.StrokeJoin.Round
+                    )
+                )
+            }
+            RecordStatus.CANCELLED -> drawCircle(
+                color = muted.copy(alpha = 0.5f),
+                radius = radius,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+            )
+            RecordStatus.MISSED -> drawCircle(
+                color = MaterialTheme.colorScheme.error,
+                radius = radius,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+            )
+        }
+    }
+}
+
+@Composable
 private fun NoteRow(
     note: Note, dark: Boolean, noteColors: List<Color>, customSelectionColor: Color? = null, pinned: Boolean, selected: Boolean,
     statusNow: Long, onClick: () -> Unit, onLongPress: () -> Unit,
@@ -2156,59 +2206,135 @@ private fun NoteEditor(
         modifier = Modifier.fillMaxSize().imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
-                actions = {
-                    if (note.type != RecordType.NOTE) {
-                        IconButton(onClick = { onChange(note.copy(titleEnabled = !note.titleEnabled)) }) {
-                            Icon(
-                                Icons.Outlined.Title,
-                                contentDescription = "Название",
-                                tint = if (note.titleEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                            )
-                        }
-                        IconButton(onClick = { onChange(note.copy(descriptionEnabled = !note.descriptionEnabled)) }) {
-                            Icon(
-                                Icons.Outlined.Description,
-                                contentDescription = "Описание",
-                                tint = if (note.descriptionEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                            )
+            if (note.type == RecordType.TASK && !isTaskListItem) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(topBarColor)
+                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.xs)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Дата", color = noteTextColor(topBarColor).copy(alpha = 0.62f), fontSize = 16.sp)
+                        Spacer(Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { dateModeMenuExpanded = true }) {
+                                val dateText = note.dateAt?.let { formatRecordDate(it) }
+                                Text(
+                                    when {
+                                        dateText == null -> "Добавить"
+                                        note.dateMode == RecordDateMode.DEADLINE -> "Срок: $dateText"
+                                        else -> dateText
+                                    },
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 16.sp
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = dateModeMenuExpanded,
+                                onDismissRequest = { dateModeMenuExpanded = false }
+                            ) {
+                                DropdownMenuItem(text = { Text("Обычная дата") }, onClick = {
+                                    pendingDateMode = RecordDateMode.DATE
+                                    dateModeMenuExpanded = false
+                                    datePickerVisible = true
+                                })
+                                DropdownMenuItem(text = { Text("Срок выполнения") }, onClick = {
+                                    pendingDateMode = RecordDateMode.DEADLINE
+                                    dateModeMenuExpanded = false
+                                    datePickerVisible = true
+                                })
+                                if (note.dateAt != null) {
+                                    DropdownMenuItem(text = { Text("Убрать дату") }, onClick = {
+                                        dateModeMenuExpanded = false
+                                        onChange(note.copy(dateMode = null, dateAt = null))
+                                    })
+                                }
+                            }
                         }
                     }
-                    IconButton(
-                        onClick = {
-                            if (historyIndex > 0) {
-                                editingBlockId = null
-                                historyIndex--
-                                publish(history[historyIndex])
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Статус", color = noteTextColor(topBarColor).copy(alpha = 0.62f), fontSize = 16.sp)
+                        Spacer(Modifier.weight(1f))
+                        Box {
+                            TextButton(onClick = { statusMenuExpanded = true }) {
+                                Text(recordStatusText(note.recordStatus()), color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
                             }
-                        },
-                        enabled = historyIndex > 0
-                    ) { AppIcon(NoteIcon.Undo, "Отменить") }
-                    IconButton(
-                        onClick = {
-                            if (historyIndex < history.lastIndex) {
-                                editingBlockId = null
-                                historyIndex++
-                                publish(history[historyIndex])
+                            DropdownMenu(
+                                expanded = statusMenuExpanded,
+                                onDismissRequest = { statusMenuExpanded = false }
+                            ) {
+                                RecordStatus.values().forEach { status ->
+                                    DropdownMenuItem(
+                                        text = { Text(recordStatusText(status)) },
+                                        onClick = {
+                                            statusMenuExpanded = false
+                                            val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
+                                            onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
+                                        }
+                                    )
+                                }
                             }
-                        },
-                        enabled = historyIndex < history.lastIndex
-                    ) { AppIcon(NoteIcon.Redo, "Повторить") }
-                    IconButton(onClick = {
-                        onDelete(false)
-                    }) { AppIcon(NoteIcon.Trash, "Удалить") }
-                    IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = topBarColor,
-                    scrolledContainerColor = topBarColor,
-                    navigationIconContentColor = noteTextColor(topBarColor),
-                    titleContentColor = noteTextColor(topBarColor),
-                    actionIconContentColor = noteTextColor(topBarColor)
+                        }
+                    }
+                }
+            } else {
+                TopAppBar(
+                    title = {},
+                    navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+                    actions = {
+                        if (note.type != RecordType.NOTE) {
+                            IconButton(onClick = { onChange(note.copy(titleEnabled = !note.titleEnabled)) }) {
+                                Icon(
+                                    Icons.Outlined.Title,
+                                    contentDescription = "Название",
+                                    tint = if (note.titleEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                )
+                            }
+                            IconButton(onClick = { onChange(note.copy(descriptionEnabled = !note.descriptionEnabled)) }) {
+                                Icon(
+                                    Icons.Outlined.Description,
+                                    contentDescription = "Описание",
+                                    tint = if (note.descriptionEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                if (historyIndex > 0) {
+                                    editingBlockId = null
+                                    historyIndex--
+                                    publish(history[historyIndex])
+                                }
+                            },
+                            enabled = historyIndex > 0
+                        ) { AppIcon(NoteIcon.Undo, "Отменить") }
+                        IconButton(
+                            onClick = {
+                                if (historyIndex < history.lastIndex) {
+                                    editingBlockId = null
+                                    historyIndex++
+                                    publish(history[historyIndex])
+                                }
+                            },
+                            enabled = historyIndex < history.lastIndex
+                        ) { AppIcon(NoteIcon.Redo, "Повторить") }
+                        IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
+                        IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = topBarColor,
+                        scrolledContainerColor = topBarColor,
+                        navigationIconContentColor = noteTextColor(topBarColor),
+                        titleContentColor = noteTextColor(topBarColor),
+                        actionIconContentColor = noteTextColor(topBarColor)
+                    )
                 )
-            )
+            }
         },
         floatingActionButton = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
@@ -2255,72 +2381,73 @@ private fun NoteEditor(
                                 minLines = 2
                             )
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                            Spacer(Modifier.weight(1f))
-                            Box {
-                                TextButton(onClick = { dateModeMenuExpanded = true }) {
-                                    val dateText = note.dateAt?.let { formatRecordDate(it) }
-                                    Text(
-                                        when {
-                                            dateText == null -> "Добавить"
-                                            note.dateMode == RecordDateMode.DEADLINE -> "Срок: $dateText"
-                                            else -> dateText
-                                        }
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = dateModeMenuExpanded,
-                                    onDismissRequest = { dateModeMenuExpanded = false }
-                                ) {
-                                    DropdownMenuItem(text = { Text("Обычная дата") }, onClick = {
-                                        pendingDateMode = RecordDateMode.DATE
-                                        dateModeMenuExpanded = false
-                                        datePickerVisible = true
-                                    })
-                                    DropdownMenuItem(text = { Text("Срок выполнения") }, onClick = {
-                                        pendingDateMode = RecordDateMode.DEADLINE
-                                        dateModeMenuExpanded = false
-                                        datePickerVisible = true
-                                    })
-                                    if (note.dateAt != null) {
-                                        DropdownMenuItem(text = { Text("Убрать дату") }, onClick = {
+                        if (isTaskListItem) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                Spacer(Modifier.weight(1f))
+                                Box {
+                                    TextButton(onClick = { dateModeMenuExpanded = true }) {
+                                        val dateText = note.dateAt?.let { formatRecordDate(it) }
+                                        Text(
+                                            when {
+                                                dateText == null -> "Добавить"
+                                                note.dateMode == RecordDateMode.DEADLINE -> "Срок: $dateText"
+                                                else -> dateText
+                                            }
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = dateModeMenuExpanded,
+                                        onDismissRequest = { dateModeMenuExpanded = false }
+                                    ) {
+                                        DropdownMenuItem(text = { Text("Обычная дата") }, onClick = {
+                                            pendingDateMode = RecordDateMode.DATE
                                             dateModeMenuExpanded = false
-                                            onChange(note.copy(dateMode = null, dateAt = null))
+                                            datePickerVisible = true
                                         })
+                                        DropdownMenuItem(text = { Text("Срок выполнения") }, onClick = {
+                                            pendingDateMode = RecordDateMode.DEADLINE
+                                            dateModeMenuExpanded = false
+                                            datePickerVisible = true
+                                        })
+                                        if (note.dateAt != null) {
+                                            DropdownMenuItem(text = { Text("Убрать дату") }, onClick = {
+                                                dateModeMenuExpanded = false
+                                                onChange(note.copy(dateMode = null, dateAt = null))
+                                            })
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-                item(key = "record_status") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                        Spacer(Modifier.weight(1f))
-                        Box {
-                            TextButton(
-                                onClick = { if (note.type == RecordType.TASK) statusMenuExpanded = true },
-                                enabled = note.type == RecordType.TASK
-                            ) {
-                                Text(recordStatusText(note.recordStatus()))
-                            }
-                            DropdownMenu(
-                                expanded = statusMenuExpanded && note.type == RecordType.TASK,
-                                onDismissRequest = { statusMenuExpanded = false }
-                            ) {
-                                RecordStatus.values().forEach { status ->
-                                    DropdownMenuItem(
-                                        text = { Text(recordStatusText(status)) },
-                                        onClick = {
-                                            statusMenuExpanded = false
-                                            val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                            onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
-                                        }
-                                    )
+                if (isTaskListItem) {
+                    item(key = "record_status") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Spacer(Modifier.weight(1f))
+                            Box {
+                                TextButton(onClick = { statusMenuExpanded = true }) {
+                                    Text(recordStatusText(note.recordStatus()))
+                                }
+                                DropdownMenu(
+                                    expanded = statusMenuExpanded,
+                                    onDismissRequest = { statusMenuExpanded = false }
+                                ) {
+                                    RecordStatus.values().forEach { status ->
+                                        DropdownMenuItem(
+                                            text = { Text(recordStatusText(status)) },
+                                            onClick = {
+                                                statusMenuExpanded = false
+                                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
+                                                onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -2383,24 +2510,34 @@ private fun NoteEditor(
                         )
                     }
                 }
-                items(note.children, key = { "nested_${it.id}" }) { child ->
+                itemsIndexed(note.children, key = { _, child -> "nested_${child.id}" }) { index, child ->
+                    val childStatus = child.recordStatus()
                     val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { selectedChildId = child.id }
-                            .padding(vertical = AppSpacing.sm),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RecordStatusPill(child.recordStatus(), MaterialTheme.colorScheme.onSurface)
-                        Spacer(Modifier.width(AppSpacing.sm))
-                        Text(
-                            childText,
-                            modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp,
-                            textDecoration = if (child.recordStatus() == RecordStatus.COMPLETED)
-                                TextDecoration.LineThrough else TextDecoration.None
-                        )
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { selectedChildId = child.id }
+                                .padding(vertical = AppSpacing.md),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TaskStatusMarker(childStatus)
+                            Spacer(Modifier.width(14.dp))
+                            Text(
+                                childText,
+                                modifier = Modifier.weight(1f),
+                                color = if (childStatus == RecordStatus.COMPLETED)
+                                    MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                textDecoration = if (childStatus == RecordStatus.COMPLETED)
+                                    TextDecoration.LineThrough else TextDecoration.None
+                            )
+                        }
+                        if (index != note.children.lastIndex) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                                thickness = 0.6.dp
+                            )
+                        }
                     }
                 }
             }
