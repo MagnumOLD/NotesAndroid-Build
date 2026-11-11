@@ -49,6 +49,8 @@ jobs:
           rsync -a --delete \
             --exclude='.git/' \
             --exclude='.github/' \
+            --exclude='README.md' \
+            --exclude='.private-source/' \
             .private-source/ ./
 
       - name: Commit mirror update
