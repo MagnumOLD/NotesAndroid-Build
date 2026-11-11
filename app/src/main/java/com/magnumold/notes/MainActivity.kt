@@ -2552,12 +2552,21 @@ private fun NoteEditor(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    Icons.Outlined.DragHandle,
-                                    contentDescription = "Переместить задачу",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-                                    modifier = Modifier.size(22.dp)
-                                )
+                                Canvas(modifier = Modifier.size(width = 18.dp, height = 14.dp)) {
+                                    val handleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                                    val stroke = 1.4.dp.toPx()
+                                    val lineWidth = size.width * 0.82f
+                                    val startX = (size.width - lineWidth) / 2f
+                                    listOf(0.34f, 0.66f).forEach { y ->
+                                        drawLine(
+                                            color = handleColor,
+                                            start = Offset(startX, size.height * y),
+                                            end = Offset(startX + lineWidth, size.height * y),
+                                            strokeWidth = stroke,
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
+                                    }
+                                }
                             }
                             Spacer(Modifier.width(4.dp))
                             TaskStatusMarker(childStatus)
