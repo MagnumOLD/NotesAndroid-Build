@@ -2111,7 +2111,6 @@ private fun NoteEditor(
     val latestTaskNote = rememberUpdatedState(note)
     val latestTaskChildren = rememberUpdatedState(note.children)
     val latestTaskOnChange = rememberUpdatedState(onChange)
-    val reorderThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
 
     BackHandler { onBack() }
 
@@ -2516,38 +2515,97 @@ private fun NoteEditor(
                         ) {
                             Box(
                                 modifier = Modifier.size(width = 36.dp, height = 40.dp)
-                                    .pointerInput(child.id) {
-                                        var accumulatedDrag = 0f
+                                    .pointerInput(child.id, listState) {
+                                        var pointerYInViewport = 0f
+                                        var grabOffsetInRow = 0f
+                                        val handleHeightPx = 40.dp.toPx()
+                                        val edgeSizePx = 72.dp.toPx()
+                                        val maxEdgeScrollPx = 10.dp.toPx()
                                         detectDragGestures(
-                                            onDragStart = { accumulatedDrag = 0f },
-                                            onDragEnd = { accumulatedDrag = 0f },
-                                            onDragCancel = { accumulatedDrag = 0f },
+                                            onDragStart = { localOffset ->
+                                                val item = listState.layoutInfo.visibleItemsInfo
+                                                    .firstOrNull { it.key == "nested_${child.id}" }
+                                                if (item != null) {
+                                                    grabOffsetInRow =
+                                                        (item.size - handleHeightPx).coerceAtLeast(0f) / 2f +
+                                                            localOffset.y
+                                                    pointerYInViewport = item.offset + grabOffsetInRow
+                                                }
+                                            },
+                                            onDragEnd = { },
+                                            onDragCancel = { },
                                             onDrag = { change, dragAmount ->
                                                 change.consume()
-                                                accumulatedDrag += dragAmount.y
-                                                if (abs(accumulatedDrag) >= reorderThresholdPx) {
-                                                    val reordered = latestTaskChildren.value.toMutableList()
-                                                    var currentIndex = reordered.indexOfFirst { it.id == child.id }
-                                                    var changed = false
-                                                    while (currentIndex >= 0 && abs(accumulatedDrag) >= reorderThresholdPx) {
-                                                        val direction = if (accumulatedDrag > 0f) 1 else -1
-                                                        val targetIndex = currentIndex + direction
-                                                        if (targetIndex !in reordered.indices) {
-                                                            accumulatedDrag = 0f
-                                                            break
+                                                pointerYInViewport += dragAmount.y
+
+                                                val layout = listState.layoutInfo
+                                                val visible = layout.visibleItemsInfo
+                                                val currentChildren = latestTaskChildren.value
+                                                val currentIndex = currentChildren.indexOfFirst { it.id == child.id }
+                                                val movingInfo = visible.firstOrNull {
+                                                    it.key == "nested_${child.id}"
+                                                }
+
+                                                if (currentIndex >= 0 && movingInfo != null) {
+                                                    val previousInfo = currentChildren.getOrNull(currentIndex - 1)
+                                                        ?.let { previous ->
+                                                            visible.firstOrNull { it.key == "nested_${previous.id}" }
                                                         }
+                                                    val nextInfo = currentChildren.getOrNull(currentIndex + 1)
+                                                        ?.let { next ->
+                                                            visible.firstOrNull { it.key == "nested_${next.id}" }
+                                                        }
+                                                    val direction = AdjacentReorderController.crossedNeighbour(
+                                                        pointerY = pointerYInViewport,
+                                                        grabOffset = grabOffsetInRow,
+                                                        movingHeight = movingInfo.size.toFloat(),
+                                                        previous = previousInfo?.let {
+                                                            ReorderItemBounds(
+                                                                it.offset.toFloat(),
+                                                                (it.offset + it.size).toFloat()
+                                                            )
+                                                        },
+                                                        next = nextInfo?.let {
+                                                            ReorderItemBounds(
+                                                                it.offset.toFloat(),
+                                                                (it.offset + it.size).toFloat()
+                                                            )
+                                                        }
+                                                    )
+
+                                                    val targetIndex = when (direction) {
+                                                        ReorderDirection.TowardStart -> currentIndex - 1
+                                                        ReorderDirection.TowardEnd -> currentIndex + 1
+                                                        null -> -1
+                                                    }
+                                                    if (targetIndex in currentChildren.indices) {
+                                                        val reordered = currentChildren.toMutableList()
                                                         val moving = reordered.removeAt(currentIndex)
                                                         reordered.add(targetIndex, moving)
-                                                        currentIndex = targetIndex
-                                                        accumulatedDrag -= direction * reorderThresholdPx
-                                                        changed = true
-                                                    }
-                                                    if (changed) {
                                                         latestTaskOnChange.value(
                                                             latestTaskNote.value.copy(children = reordered)
                                                         )
                                                     }
                                                 }
+
+                                                // While the finger is held near an edge, scroll the
+                                                // same LazyColumn that owns the variable-height rows.
+                                                val viewportStart = layout.viewportStartOffset.toFloat()
+                                                val viewportEnd = layout.viewportEndOffset.toFloat()
+                                                val edgeScroll = when {
+                                                    pointerYInViewport < viewportStart + edgeSizePx ->
+                                                        -maxEdgeScrollPx * (
+                                                            (viewportStart + edgeSizePx - pointerYInViewport) /
+                                                                edgeSizePx
+                                                            ).coerceIn(0f, 1f)
+                                                    pointerYInViewport > viewportEnd - edgeSizePx ->
+                                                        maxEdgeScrollPx * (
+                                                            (pointerYInViewport - (viewportEnd - edgeSizePx)) /
+                                                                edgeSizePx
+                                                            ).coerceIn(0f, 1f)
+                                                    else -> 0f
+                                                }
+                                                if (edgeScroll != 0f) listState.scrollBy(edgeScroll)
                                             }
                                         )
                                     },
