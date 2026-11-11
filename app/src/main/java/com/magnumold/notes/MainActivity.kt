@@ -2268,24 +2268,15 @@ private fun NoteEditor(
                             }
                         }
                         Box {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                        RoundedCornerShape(6.dp)
-                                    )
-                                    .clickable { statusMenuExpanded = true }
-                                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    recordStatusText(note.recordStatus()),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1
-                                )
-                            }
+                            Text(
+                                if (note.recordStatus() == RecordStatus.WAITING) "Ожидает"
+                                else recordStatusText(note.recordStatus()),
+                                modifier = Modifier.clickable { statusMenuExpanded = true }
+                                    .padding(vertical = 3.dp),
+                                color = noteTextColor(topBarColor).copy(alpha = 0.82f),
+                                fontSize = 12.sp,
+                                maxLines = 1
+                            )
                             DropdownMenu(
                                 expanded = statusMenuExpanded,
                                 onDismissRequest = { statusMenuExpanded = false }
@@ -2382,7 +2373,8 @@ private fun NoteEditor(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
         ) {
-            if (note.type != RecordType.NOTE) {
+            if (note.type != RecordType.NOTE &&
+                (note.titleEnabled || note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
                     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                         if (note.titleEnabled) {
@@ -2476,7 +2468,8 @@ private fun NoteEditor(
                     }
                 }
             }
-            item(key = "record_body") {
+            if (note.type != RecordType.TASK || isTaskListItem) {
+                item(key = "record_body") {
                 val bodyFocusRequester = remember(note.id) { FocusRequester() }
                 LaunchedEffect(note.id, autoFocus) {
                     if (autoFocus) {
@@ -2520,6 +2513,7 @@ private fun NoteEditor(
                         }
                     }
                 )
+                }
             }
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 if (note.children.isEmpty()) {
