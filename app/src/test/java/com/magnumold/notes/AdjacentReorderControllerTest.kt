@@ -66,7 +66,7 @@ class AdjacentReorderControllerTest {
         assertNull(beforeCrossing)
 
         val afterCrossing = AdjacentReorderController.crossedNeighbour(
-            pointerY = 230f,
+            pointerY = 280f,
             grabOffset = 20f,
             movingHeight = 60f,
             previous = null,
