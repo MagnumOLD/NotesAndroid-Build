@@ -1,0 +1,63 @@
+name: Sync private proto to build mirror
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: notesandroid-source-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync MagnumOLD/NotesAndroid proto
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check source access token
+        env:
+          SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
+        run: |
+          if [ -z "$SOURCE_REPO_TOKEN" ]; then
+            echo "::error::Missing SOURCE_REPO_TOKEN secret. Add a fine-grained token with Contents: Read access to MagnumOLD/NotesAndroid."
+            exit 1
+          fi
+
+      - name: Checkout build mirror
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout private proto source
+        uses: actions/checkout@v4
+        with:
+          repository: MagnumOLD/NotesAndroid
+          ref: proto
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+          path: .private-source
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Sync source files
+        run: |
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            .private-source/ ./
+
+      - name: Commit mirror update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Mirror already matches private proto."
+            exit 0
+          fi
+          git commit -m "Sync private proto source"
+          git push origin HEAD:main
