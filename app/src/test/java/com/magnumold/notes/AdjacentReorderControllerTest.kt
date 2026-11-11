@@ -55,6 +55,27 @@ class AdjacentReorderControllerTest {
     }
 
     @Test
+    fun usesMeasuredNeighbourCentreInsteadOfFixedDistanceThreshold() {
+        val beforeCrossing = AdjacentReorderController.crossedNeighbour(
+            pointerY = 190f,
+            grabOffset = 20f,
+            movingHeight = 60f,
+            previous = null,
+            next = ReorderItemBounds(180f, 380f)
+        )
+        assertNull(beforeCrossing)
+
+        val afterCrossing = AdjacentReorderController.crossedNeighbour(
+            pointerY = 230f,
+            grabOffset = 20f,
+            movingHeight = 60f,
+            previous = null,
+            next = ReorderItemBounds(180f, 380f)
+        )
+        assertEquals(ReorderDirection.TowardEnd, afterCrossing)
+    }
+
+    @Test
     fun rejectsInvalidGeometry() {
         assertNull(AdjacentReorderController.crossedNeighbour(
             pointerY = Float.NaN, grabOffset = 0f, movingHeight = 80f,
