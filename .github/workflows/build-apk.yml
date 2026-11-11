@@ -43,7 +43,18 @@ jobs:
           test -x "$ANDROID_HOME/build-tools/35.0.0/aapt"
 
       - name: Run unit tests and build APK
-        run: gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug 2>&1 | tee gradle-build.log
+
+      - name: Upload Gradle diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gradle-build-diagnostics
+          path: gradle-build.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -92,4 +103,15 @@ jobs:
           emulator-boot-timeout: 600
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: gradle --no-daemon --stacktrace connectedDebugAndroidTest
+          script: |
+            set -o pipefail
+            gradle --no-daemon --stacktrace connectedDebugAndroidTest 2>&1 | tee gradle-integration.log
+
+      - name: Upload integration diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gradle-integration-diagnostics
+          path: gradle-integration.log
+          if-no-files-found: warn
+          retention-days: 7
