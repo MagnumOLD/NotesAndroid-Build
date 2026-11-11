@@ -164,16 +164,8 @@ private fun Note.hasContent(): Boolean =
         children.any { it.hasContent() }
 
 private fun Note.recordStatus(now: Long = System.currentTimeMillis()): RecordStatus =
-    if (type == RecordType.UNIVERSAL) {
-        RecordStatusRules.deriveUniversalStatus(children.map { it.toRecordNode(now) })
-    } else if (deadlineResumeOverride) {
-        status
-    } else {
-        RecordStatusRules.applyDeadline(status, dateMode, dateAt, now)
-    }
-
-private fun Note.toRecordNode(now: Long): RecordNode =
-    RecordNode(id, type, recordStatus(now), dateMode, dateAt, children.map { it.toRecordNode(now) })
+    if (deadlineResumeOverride) status
+    else RecordStatusRules.applyDeadline(status, dateMode, dateAt, now)
 
 private fun formatRecordDate(timestamp: Long): String =
     java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).apply {
@@ -392,7 +384,10 @@ private fun parseNoteObject(obj: JSONObject, index: Int): Note {
     if (oldTitle.isNotEmpty() && blocks.firstOrNull()?.text?.trim() != oldTitle) {
         blocks = listOf(NoteBlock(oldTitle)) + blocks
     }
-    val type = runCatching { RecordType.valueOf(obj.optString("type", "NOTE")) }.getOrDefault(RecordType.NOTE)
+    val storedType = obj.optString("type", "NOTE")
+    // Legacy UNIVERSAL records are migrated to the new TASK container model.
+    val type = if (storedType == "UNIVERSAL") RecordType.TASK
+        else runCatching { RecordType.valueOf(storedType) }.getOrDefault(RecordType.NOTE)
     val status = runCatching { RecordStatus.valueOf(obj.optString("status", "WAITING")) }.getOrDefault(RecordStatus.WAITING)
     val dateMode = runCatching { RecordDateMode.valueOf(obj.optString("dateMode")) }.getOrNull()
     val children = parseNotesArray(obj.optJSONArray("children") ?: JSONArray())
@@ -770,18 +765,8 @@ class MainActivity : ComponentActivity() {
                             if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = changed.copy(updated = System.currentTimeMillis()) })
                         },
                         onDelete = { promoteChildren ->
-                            if (promoteChildren && selected.type == RecordType.UNIVERSAL) {
-                                val index = activeNotes.indexOfFirst { it.id == selected.id }
-                                val updated = activeNotes.toMutableList()
-                                if (index >= 0) {
-                                    updated.removeAt(index)
-                                    updated.addAll(index, selected.children)
-                                }
-                                updateActiveNotes(updated)
-                            } else {
-                                trash.add(0, VaultNote(selected, activeCollectionId, activeNotes.indexOfFirst { it.id == selected.id }.coerceAtLeast(0), System.currentTimeMillis()))
-                                updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
-                            }
+                            trash.add(0, VaultNote(selected, activeCollectionId, activeNotes.indexOfFirst { it.id == selected.id }.coerceAtLeast(0), System.currentTimeMillis()))
+                            updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
                             selectedId = null
                             autoFocusNewNote = false
                         },
@@ -1456,10 +1441,6 @@ private fun NotesHome(
                             createMenuExpanded = false
                             onCreate(RecordType.TASK)
                         })
-                        DropdownMenuItem(text = { Text("Универсальный элемент") }, onClick = {
-                            createMenuExpanded = false
-                            onCreate(RecordType.UNIVERSAL)
-                        })
                     }
                 }
             }
@@ -2066,6 +2047,7 @@ private fun AppIcon(
 @Composable
 private fun NoteEditor(
     note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, autoFocus: Boolean,
+    isTaskListItem: Boolean = false,
     onBack: () -> Unit, onChange: (Note) -> Unit, onDelete: (Boolean) -> Unit, onShare: () -> Unit
 ) {
     val initialText = remember(note.id) { note.blocks.toPlainText() }
@@ -2078,7 +2060,6 @@ private fun NoteEditor(
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var addMenuExpanded by remember(note.id) { mutableStateOf(false) }
-    var deleteDialogVisible by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
@@ -2120,7 +2101,7 @@ private fun NoteEditor(
     if (selectedChild != null) {
         NoteEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
-            addButtonColor = addButtonColor, autoFocus = false,
+            addButtonColor = addButtonColor, autoFocus = false, isTaskListItem = true,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
@@ -2216,11 +2197,7 @@ private fun NoteEditor(
                         enabled = historyIndex < history.lastIndex
                     ) { AppIcon(NoteIcon.Redo, "Повторить") }
                     IconButton(onClick = {
-                        if (note.type == RecordType.UNIVERSAL && note.children.isNotEmpty()) {
-                            deleteDialogVisible = true
-                        } else {
-                            onDelete(false)
-                        }
+                        onDelete(false)
                     }) { AppIcon(NoteIcon.Trash, "Удалить") }
                     IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                 },
@@ -2234,7 +2211,7 @@ private fun NoteEditor(
             )
         },
         floatingActionButton = {
-            if (note.type == RecordType.UNIVERSAL) {
+            if (note.type == RecordType.TASK && !isTaskListItem) {
                 Box(modifier = Modifier.offset(y = (-30).dp)) {
                     FloatingActionButton(
                         onClick = { addMenuExpanded = true },
@@ -2245,8 +2222,7 @@ private fun NoteEditor(
                         AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить запись", modifier = Modifier.size(28.dp))
                     }
                     DropdownMenu(expanded = addMenuExpanded, onDismissRequest = { addMenuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Задача") }, onClick = { createChild(RecordType.TASK) })
-                        DropdownMenuItem(text = { Text("Универсальный элемент") }, onClick = { createChild(RecordType.UNIVERSAL) })
+                        DropdownMenuItem(text = { Text("Добавить задачу") }, onClick = { createChild(RecordType.TASK) })
                     }
                 }
             }
@@ -2396,11 +2372,11 @@ private fun NoteEditor(
                     }
                 )
             }
-            if (note.type == RecordType.UNIVERSAL) {
+            if (note.type == RecordType.TASK && !isTaskListItem) {
                 if (note.children.isEmpty()) {
-                    item(key = "empty_nested_records") {
+                    item(key = "empty_nested_tasks") {
                         Text(
-                            "Пока нет вложенных записей",
+                            "Пока нет задач",
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
@@ -2408,10 +2384,7 @@ private fun NoteEditor(
                     }
                 }
                 items(note.children, key = { "nested_${it.id}" }) { child ->
-                    val childText = if (child.titleEnabled && child.titleText.isNotBlank()) child.titleText
-                    else child.blocks.asSequence().mapNotNull { block ->
-                        block.text.lineSequence().map(String::trim).firstOrNull { line -> line.isNotEmpty() }
-                    }.firstOrNull() ?: "Пустая запись"
+                    val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { selectedChildId = child.id }
                             .padding(vertical = AppSpacing.sm),
@@ -2424,36 +2397,14 @@ private fun NoteEditor(
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 16.sp,
-                            maxLines = 2
+                            lineHeight = 24.sp,
+                            textDecoration = if (child.recordStatus() == RecordStatus.COMPLETED)
+                                TextDecoration.LineThrough else TextDecoration.None
                         )
-                        Icon(Icons.Outlined.ChevronRight, contentDescription = "Открыть", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 }
             }
         }
-    }
-    if (deleteDialogVisible) {
-        AlertDialog(
-            onDismissRequest = { deleteDialogVisible = false },
-            title = { Text("Удалить универсальный элемент?") },
-            text = { Text("Можно удалить всё вложенное содержимое или перенести вложенные записи на уровень выше.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    deleteDialogVisible = false
-                    onDelete(false)
-                }) { Text("Удалить вместе с содержимым") }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(onClick = { deleteDialogVisible = false }) { Text("Отмена") }
-                    TextButton(onClick = {
-                        deleteDialogVisible = false
-                        onDelete(true)
-                    }) { Text("Поднять записи выше") }
-                }
-            }
-        )
     }
     if (datePickerVisible) {
         DatePickerDialog(
