@@ -2509,6 +2509,7 @@ private fun NoteEditor(
                     val childStatus = child.recordStatus()
                     val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
                     Column {
+                        val dragHandleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalAlignment = Alignment.CenterVertically
@@ -2553,13 +2554,12 @@ private fun NoteEditor(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Canvas(modifier = Modifier.size(width = 18.dp, height = 14.dp)) {
-                                    val handleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                                     val stroke = 1.4.dp.toPx()
                                     val lineWidth = size.width * 0.82f
                                     val startX = (size.width - lineWidth) / 2f
                                     listOf(0.34f, 0.66f).forEach { y ->
                                         drawLine(
-                                            color = handleColor,
+                                            color = dragHandleColor,
                                             start = Offset(startX, size.height * y),
                                             end = Offset(startX + lineWidth, size.height * y),
                                             strokeWidth = stroke,
