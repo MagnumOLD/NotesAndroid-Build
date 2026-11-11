@@ -1841,6 +1841,7 @@ private fun TaskStatusMarker(status: RecordStatus) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val active = MaterialTheme.colorScheme.primary
     val background = MaterialTheme.colorScheme.background
+    val error = MaterialTheme.colorScheme.error
     Canvas(modifier = Modifier.size(22.dp)) {
         val stroke = 2.dp.toPx()
         val radius = (size.minDimension - stroke) / 2f
@@ -1878,7 +1879,7 @@ private fun TaskStatusMarker(status: RecordStatus) {
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
             )
             RecordStatus.MISSED -> drawCircle(
-                color = MaterialTheme.colorScheme.error,
+                color = error,
                 radius = radius,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
             )
