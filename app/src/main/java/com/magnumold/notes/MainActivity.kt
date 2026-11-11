@@ -2238,7 +2238,7 @@ private fun NoteEditor(
                     ) {
                         Box {
                             Text(
-                                note.dateAt?.let { formatRecordDate(it) } ?: "Добавить дату",
+                                note.dateAt?.let { formatRecordDate(it) } ?: "—",
                                 modifier = Modifier.clickable { dateModeMenuExpanded = true }
                                     .padding(horizontal = 4.dp, vertical = 2.dp),
                                 color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
