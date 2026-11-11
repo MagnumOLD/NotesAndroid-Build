@@ -1313,10 +1313,6 @@ private fun NotesHome(
     var dragReleaseRequested by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
-    val latestTaskNote = rememberUpdatedState(note)
-    val latestTaskChildren = rememberUpdatedState(note.children)
-    val latestTaskOnChange = rememberUpdatedState(onChange)
-    val reorderThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
     val density = LocalDensity.current
     val orderedNotes = notes.sortedByDescending { it.pinned }
     val filtered = orderedNotes.filter { it.matchesSearch(search) }
@@ -2112,6 +2108,10 @@ private fun NoteEditor(
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
+    val latestTaskNote = rememberUpdatedState(note)
+    val latestTaskChildren = rememberUpdatedState(note.children)
+    val latestTaskOnChange = rememberUpdatedState(onChange)
+    val reorderThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
 
     BackHandler { onBack() }
 
