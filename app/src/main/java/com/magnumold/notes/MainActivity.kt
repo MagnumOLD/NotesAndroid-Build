@@ -2208,30 +2208,43 @@ private fun NoteEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                Column(
+                val taskTitle = if (note.titleEnabled && note.titleText.isNotBlank()) {
+                    note.titleText.trim()
+                } else {
+                    note.blocks.asSequence()
+                        .flatMap { it.text.lineSequence() }
+                        .map(String::trim)
+                        .firstOrNull { it.isNotEmpty() } ?: "Пустая задача"
+                }
+                Row(
                     modifier = Modifier.fillMaxWidth()
                         .background(topBarColor)
-                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.xs)
+                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm)
+                        .heightIn(min = 56.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        taskTitle,
+                        modifier = Modifier.weight(1f),
+                        color = noteTextColor(topBarColor),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                    Spacer(Modifier.width(AppSpacing.sm))
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
-                        Text("Дата", color = noteTextColor(topBarColor).copy(alpha = 0.62f), fontSize = 16.sp)
-                        Spacer(Modifier.weight(1f))
                         Box {
-                            TextButton(onClick = { dateModeMenuExpanded = true }) {
-                                val dateText = note.dateAt?.let { formatRecordDate(it) }
-                                Text(
-                                    when {
-                                        dateText == null -> "Добавить"
-                                        note.dateMode == RecordDateMode.DEADLINE -> "Срок: $dateText"
-                                        else -> dateText
-                                    },
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 16.sp
-                                )
-                            }
+                            Text(
+                                note.dateAt?.let { formatRecordDate(it) } ?: "Добавить дату",
+                                modifier = Modifier.clickable { dateModeMenuExpanded = true }
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
+                                    else noteTextColor(topBarColor).copy(alpha = 0.82f),
+                                fontSize = 12.sp
+                            )
                             DropdownMenu(
                                 expanded = dateModeMenuExpanded,
                                 onDismissRequest = { dateModeMenuExpanded = false }
@@ -2254,16 +2267,24 @@ private fun NoteEditor(
                                 }
                             }
                         }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Статус", color = noteTextColor(topBarColor).copy(alpha = 0.62f), fontSize = 16.sp)
-                        Spacer(Modifier.weight(1f))
                         Box {
-                            TextButton(onClick = { statusMenuExpanded = true }) {
-                                Text(recordStatusText(note.recordStatus()), color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                        RoundedCornerShape(6.dp)
+                                    )
+                                    .clickable { statusMenuExpanded = true }
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    recordStatusText(note.recordStatus()),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1
+                                )
                             }
                             DropdownMenu(
                                 expanded = statusMenuExpanded,
