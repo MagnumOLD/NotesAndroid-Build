@@ -37,6 +37,11 @@ import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DragHandle
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Undo
@@ -1308,6 +1313,10 @@ private fun NotesHome(
     var dragReleaseRequested by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
+    val latestTaskNote = rememberUpdatedState(note)
+    val latestTaskChildren = rememberUpdatedState(note.children)
+    val latestTaskOnChange = rememberUpdatedState(onChange)
+    val reorderThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
     val density = LocalDensity.current
     val orderedNotes = notes.sortedByDescending { it.pinned }
     val filtered = orderedNotes.filter { it.matchesSearch(search) }
@@ -1838,53 +1847,33 @@ private fun RecordStatusPill(status: RecordStatus, textColor: Color) {
 
 @Composable
 private fun TaskStatusMarker(status: RecordStatus) {
-    val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    val active = MaterialTheme.colorScheme.primary
-    val background = MaterialTheme.colorScheme.background
-    val error = MaterialTheme.colorScheme.error
-    Canvas(modifier = Modifier.size(22.dp)) {
-        val stroke = 2.dp.toPx()
-        val radius = (size.minDimension - stroke) / 2f
-        when (status) {
-            RecordStatus.WAITING -> drawCircle(
-                color = muted.copy(alpha = 0.78f),
-                radius = radius,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-            )
-            RecordStatus.IN_PROGRESS -> drawCircle(
-                color = active,
-                radius = radius,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke + 0.3.dp.toPx())
-            )
-            RecordStatus.COMPLETED -> {
-                drawCircle(color = muted.copy(alpha = 0.9f), radius = radius)
-                val path = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(size.width * 0.25f, size.height * 0.52f)
-                    lineTo(size.width * 0.43f, size.height * 0.69f)
-                    lineTo(size.width * 0.76f, size.height * 0.34f)
-                }
-                drawPath(
-                    path = path,
-                    color = background,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 1.8.dp.toPx(),
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                        join = androidx.compose.ui.graphics.StrokeJoin.Round
-                    )
-                )
-            }
-            RecordStatus.CANCELLED -> drawCircle(
-                color = muted.copy(alpha = 0.5f),
-                radius = radius,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-            )
-            RecordStatus.MISSED -> drawCircle(
-                color = error,
-                radius = radius,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-            )
-        }
+    val tint = when (status) {
+        RecordStatus.WAITING -> MaterialTheme.colorScheme.onSurfaceVariant
+        RecordStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+        RecordStatus.COMPLETED -> Color(0xFF30A46C)
+        RecordStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+        RecordStatus.MISSED -> MaterialTheme.colorScheme.error
     }
+    val icon = when (status) {
+        RecordStatus.WAITING -> Icons.Outlined.Schedule
+        RecordStatus.IN_PROGRESS -> Icons.Outlined.PlayCircleOutline
+        RecordStatus.COMPLETED -> Icons.Outlined.CheckCircle
+        RecordStatus.CANCELLED -> Icons.Outlined.Block
+        RecordStatus.MISSED -> Icons.Outlined.WarningAmber
+    }
+    val description = when (status) {
+        RecordStatus.WAITING -> "Ожидает"
+        RecordStatus.IN_PROGRESS -> "В процессе"
+        RecordStatus.COMPLETED -> "Выполнено"
+        RecordStatus.CANCELLED -> "Отменено"
+        RecordStatus.MISSED -> "Просрочено"
+    }
+    Icon(
+        imageVector = icon,
+        contentDescription = description,
+        tint = tint,
+        modifier = Modifier.size(22.dp)
+    )
 }
 
 @Composable
@@ -2208,39 +2197,29 @@ private fun NoteEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                val taskTitle = if (note.titleEnabled && note.titleText.isNotBlank()) {
-                    note.titleText.trim()
-                } else {
-                    note.blocks.asSequence()
-                        .flatMap { it.text.lineSequence() }
-                        .map(String::trim)
-                        .firstOrNull { it.isNotEmpty() } ?: "Пустая задача"
-                }
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth()
                         .background(topBarColor)
-                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm)
-                        .heightIn(min = 56.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        taskTitle,
-                        modifier = Modifier.weight(1f),
+                        "Задачи",
                         color = noteTextColor(topBarColor),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1
                     )
-                    Spacer(Modifier.width(AppSpacing.sm))
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box {
                             Text(
                                 note.dateAt?.let { formatRecordDate(it) } ?: "—",
                                 modifier = Modifier.clickable { dateModeMenuExpanded = true }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    .padding(vertical = 2.dp),
                                 color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
                                     else noteTextColor(topBarColor).copy(alpha = 0.82f),
                                 fontSize = 12.sp
@@ -2272,7 +2251,7 @@ private fun NoteEditor(
                                 if (note.recordStatus() == RecordStatus.WAITING) "Ожидает"
                                 else recordStatusText(note.recordStatus()),
                                 modifier = Modifier.clickable { statusMenuExpanded = true }
-                                    .padding(vertical = 3.dp),
+                                    .padding(vertical = 2.dp),
                                 color = noteTextColor(topBarColor).copy(alpha = 0.82f),
                                 fontSize = 12.sp,
                                 maxLines = 1
@@ -2531,15 +2510,61 @@ private fun NoteEditor(
                     val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
                     Column {
                         Row(
-                            modifier = Modifier.fillMaxWidth().clickable { selectedChildId = child.id }
-                                .padding(vertical = AppSpacing.md),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Box(
+                                modifier = Modifier.size(width = 36.dp, height = 40.dp)
+                                    .pointerInput(child.id) {
+                                        var accumulatedDrag = 0f
+                                        detectDragGestures(
+                                            onDragStart = { accumulatedDrag = 0f },
+                                            onDragEnd = { accumulatedDrag = 0f },
+                                            onDragCancel = { accumulatedDrag = 0f },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                accumulatedDrag += dragAmount.y
+                                                if (abs(accumulatedDrag) >= reorderThresholdPx) {
+                                                    val reordered = latestTaskChildren.value.toMutableList()
+                                                    var currentIndex = reordered.indexOfFirst { it.id == child.id }
+                                                    var changed = false
+                                                    while (currentIndex >= 0 && abs(accumulatedDrag) >= reorderThresholdPx) {
+                                                        val direction = if (accumulatedDrag > 0f) 1 else -1
+                                                        val targetIndex = currentIndex + direction
+                                                        if (targetIndex !in reordered.indices) {
+                                                            accumulatedDrag = 0f
+                                                            break
+                                                        }
+                                                        val moving = reordered.removeAt(currentIndex)
+                                                        reordered.add(targetIndex, moving)
+                                                        currentIndex = targetIndex
+                                                        accumulatedDrag -= direction * reorderThresholdPx
+                                                        changed = true
+                                                    }
+                                                    if (changed) {
+                                                        latestTaskOnChange.value(
+                                                            latestTaskNote.value.copy(children = reordered)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Outlined.DragHandle,
+                                    contentDescription = "Переместить задачу",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(4.dp))
                             TaskStatusMarker(childStatus)
-                            Spacer(Modifier.width(14.dp))
+                            Spacer(Modifier.width(12.dp))
                             Text(
                                 childText,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).clickable { selectedChildId = child.id },
                                 color = if (childStatus == RecordStatus.COMPLETED)
                                     MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                                 fontSize = 16.sp,
