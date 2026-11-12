@@ -1746,10 +1746,9 @@ private fun NotesHome(
                                 // replacement that happens as soon as dragging starts.
                                 if (search.isBlank()) {
                                     Box(
-                                        Modifier.align(Alignment.CenterEnd)
-                                            .padding(end = CardDimensions.handleRightInset)
-                                            // A slightly larger touch target makes the two
-                                            // narrow visual bars reliably draggable.
+                                        Modifier.align(Alignment.TopEnd)
+                                            .padding(top = 11.dp, end = CardDimensions.handleRightInset)
+                                            // Keep the touch target centered on the handle in the first row.
                                             .size(40.dp)
                                             .zIndex(2f)
 
