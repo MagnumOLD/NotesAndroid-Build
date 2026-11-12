@@ -20,7 +20,8 @@ private const val REORDER_EDGE_SPEED_DP_PER_SECOND = 720f
  *
  * Both lists supply stable keys and measured LazyList geometry. The coordinator
  * owns neighbour detection, one-swap-at-a-time sequencing, layout acknowledgement,
- * animation settling, and frame-rate-independent edge scrolling. Domain-specific
+ * and frame-rate-independent edge scrolling. Placement animations remain free to
+ * retarget while the pointer continues moving. Domain-specific
  * ordering rules remain in canSwap and the caller's finish callback.
  */
 @Composable
@@ -133,8 +134,7 @@ internal fun AdjacentReorderEffect(
                     listState.requestScrollToItem(firstVisibleIndex, firstVisibleOffset)
                 }
 
-                // Wait until both stable keys reach their requested indices, then
-                // let the placement animation finish for its full configured time.
+                // Wait only for LazyColumn to apply the requested stable-key indices.
                 val placementFinished = withTimeoutOrNull(REORDER_LAYOUT_TIMEOUT_MILLIS) {
                     var layoutApplied = false
                     while (latestIsDragging.value && !latestReleaseRequested.value && !layoutApplied) {
