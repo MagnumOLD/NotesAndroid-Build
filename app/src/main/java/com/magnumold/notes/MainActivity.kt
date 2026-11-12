@@ -3477,7 +3477,6 @@ private fun PurchaseEditor(
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
                                 Spacer(Modifier.width(12.dp))
-                                Spacer(Modifier.width(12.dp))
                                 Checkbox(
                                     checked = childStatus == RecordStatus.COMPLETED,
                                     onCheckedChange = { checked ->
