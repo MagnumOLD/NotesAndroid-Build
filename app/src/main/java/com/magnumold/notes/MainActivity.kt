@@ -219,42 +219,10 @@ private fun withUpdatedPurchaseChildren(parent: Note, children: List<Note>): Not
 }
 
 private fun statusPillBackground(cardBackground: Color, textColor: Color): Color {
-    fun luminance(color: Color): Float {
-        fun linear(channel: Float): Float =
-            if (channel <= 0.04045f) channel / 12.92f
-            else Math.pow(((channel + 0.055f) / 1.055f).toDouble(), 2.4).toFloat()
-
-        return 0.2126f * linear(color.red) +
-            0.7152f * linear(color.green) +
-            0.0722f * linear(color.blue)
-    }
-
-    fun contrast(first: Color, second: Color): Float {
-        val firstLuminance = luminance(first)
-        val secondLuminance = luminance(second)
-        val lighter = maxOf(firstLuminance, secondLuminance)
-        val darker = minOf(firstLuminance, secondLuminance)
-        return (lighter + 0.05f) / (darker + 0.05f)
-    }
-
+    // Keep the pill deliberately understated on black, white, and user-colored cards.
     val base = cardBackground.copy(alpha = 1f)
     val foreground = textColor.copy(alpha = 1f)
-    val targetContrast = 1.35f
-    if (contrast(base, foreground) <= targetContrast) {
-        return lerp(base, foreground, 0.15f)
-    }
-
-    var low = 0f
-    var high = 1f
-    repeat(20) {
-        val middle = (low + high) / 2f
-        if (contrast(base, lerp(base, foreground, middle)) >= targetContrast) {
-            high = middle
-        } else {
-            low = middle
-        }
-    }
-    return lerp(base, foreground, high)
+    return lerp(base, foreground, 0.09f)
 }
 
 private fun formatRecordDate(timestamp: Long): String =
