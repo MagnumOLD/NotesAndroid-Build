@@ -792,7 +792,7 @@ class MainActivity : ComponentActivity() {
                         onToggleSearch = { searchVisible = !searchVisible; if (!searchVisible) search = "" },
                         dark = dark,
                         onOpenSettings = { settingsVisible = true },
-                        onOpen = { selectedId = it },
+                        onOpen = { autoFocusNewNote = false; selectedId = it },
                         onArchiveSelected = { ids ->
                             val moving = activeNotes.filter { it.id in ids }
                             moving.forEach { note -> archived.add(0, VaultNote(note, activeCollectionId, activeNotes.indexOfFirst { it.id == note.id }, System.currentTimeMillis())) }
@@ -2245,6 +2245,7 @@ private fun NoteEditor(
         datePickerState.selectedDateMillis = note.dateAt
     }
     var selectedChildId by remember(note.id) { mutableStateOf<Long?>(null) }
+    var autoFocusChildId by remember(note.id) { mutableStateOf<Long?>(null) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -2276,6 +2277,7 @@ private fun NoteEditor(
         val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
         onChange(withUpdatedTaskChildren(note, listOf(child) + note.children))
         selectedChildId = id
+        autoFocusChildId = id
     }
 
     LaunchedEffect(note.id, note.blocks) {
@@ -2296,12 +2298,14 @@ private fun NoteEditor(
     if (selectedChild != null) {
         NoteEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
-            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = true, isTaskListItem = true,
+            addButtonColor = addButtonColor, selectionColor = selectionColor,
+            autoFocus = selectedChild.id == autoFocusChildId, isTaskListItem = true,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
                 }
                 selectedChildId = null
+                autoFocusChildId = null
             },
             onChange = { changed ->
                 onChange(withUpdatedTaskChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
@@ -2315,6 +2319,7 @@ private fun NoteEditor(
                 }
                 onChange(withUpdatedTaskChildren(note, updated))
                 selectedChildId = null
+                autoFocusChildId = null
             },
             onShare = onShare
         )
@@ -2866,6 +2871,7 @@ private fun NoteEditor(
                                                 if (selectedChildIds.isNotEmpty()) {
                                                     selectedChildIds = if (childSelected) selectedChildIds - child.id else selectedChildIds + child.id
                                                 } else {
+                                                    autoFocusChildId = null
                                                     selectedChildId = child.id
                                                 }
                                             },
@@ -2948,6 +2954,7 @@ private fun PurchaseEditor(
         datePickerState.selectedDateMillis = note.dateAt
     }
     var selectedChildId by remember(note.id) { mutableStateOf<Long?>(null) }
+    var autoFocusChildId by remember(note.id) { mutableStateOf<Long?>(null) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -2979,6 +2986,7 @@ private fun PurchaseEditor(
         val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
         onChange(withUpdatedPurchaseChildren(note, listOf(child) + note.children))
         selectedChildId = id
+        autoFocusChildId = id
     }
 
     LaunchedEffect(note.id, note.blocks) {
@@ -2999,12 +3007,14 @@ private fun PurchaseEditor(
     if (selectedChild != null) {
         PurchaseEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
-            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = true, isPurchaseListItem = true,
+            addButtonColor = addButtonColor, selectionColor = selectionColor,
+            autoFocus = selectedChild.id == autoFocusChildId, isPurchaseListItem = true,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
                 }
                 selectedChildId = null
+                autoFocusChildId = null
             },
             onChange = { changed ->
                 onChange(withUpdatedPurchaseChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
@@ -3018,6 +3028,7 @@ private fun PurchaseEditor(
                 }
                 onChange(withUpdatedPurchaseChildren(note, updated))
                 selectedChildId = null
+                autoFocusChildId = null
             },
             onShare = onShare
         )
@@ -3511,6 +3522,7 @@ private fun PurchaseEditor(
                                                 if (selectedChildIds.isNotEmpty()) {
                                                     selectedChildIds = if (childSelected) selectedChildIds - child.id else selectedChildIds + child.id
                                                 } else {
+                                                    autoFocusChildId = null
                                                     selectedChildId = child.id
                                                 }
                                             },
