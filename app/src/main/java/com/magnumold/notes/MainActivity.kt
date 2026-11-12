@@ -145,7 +145,9 @@ private object CardDimensions {
     val dividerThickness = 1.dp
     val rowHeight = contentHeight + dividerThickness
 
-    val handleRightInset = 28.dp
+    // Center the 40dp drag hit target on the 36dp visible handle container,
+    // whose right edge follows the shared 20dp content guide.
+    val handleHitTargetRightInset = AppSpacing.screenHorizontal - 2.dp
 }
 
 internal data class NoteBlock(val text: String = "", val checked: Boolean = false, val isChecklist: Boolean = false, val id: String = java.util.UUID.randomUUID().toString())
@@ -1671,7 +1673,7 @@ private fun NotesHome(
 
                                 // Hit-test the handle in viewport coordinates. This listener
                                 // remains attached while the keyed row changes its list position.
-                                val handleRight = size.width - CardDimensions.handleRightInset.toPx()
+                                val handleRight = size.width - CardDimensions.handleHitTargetRightInset.toPx()
                                 val handleLeft = handleRight - 40.dp.toPx()
                                 if (down.position.x < handleLeft ||
                                     down.position.x > handleRight
@@ -1681,7 +1683,7 @@ private fun NotesHome(
                                     down.position.y >= it.offset &&
                                         down.position.y < it.offset + it.size
                                 } ?: return@awaitEachGesture
-                                val handleTop = item.offset + 11.dp.toPx()
+                                val handleTop = item.offset + AppSpacing.md.toPx()
                                 val handleBottom = handleTop + 40.dp.toPx()
                                 if (down.position.y < handleTop || down.position.y > handleBottom) {
                                     return@awaitEachGesture
@@ -1811,7 +1813,7 @@ private fun NotesHome(
                                 if (search.isBlank()) {
                                     Box(
                                         Modifier.align(Alignment.TopEnd)
-                                            .padding(top = 11.dp, end = CardDimensions.handleRightInset)
+                                             .padding(top = AppSpacing.md, end = CardDimensions.handleHitTargetRightInset)
                                             // Keep the touch target centered on the handle in the first row.
                                             .size(40.dp)
                                             .zIndex(2f)
@@ -1890,8 +1892,8 @@ private fun DraggedNotesGroup(
         Row(
             modifier = Modifier.fillMaxWidth().padding(
                 start = AppSpacing.screenHorizontal,
-                end = CardDimensions.handleRightInset,
-                top = 16.dp
+                end = AppSpacing.screenHorizontal,
+                top = AppSpacing.md
             ),
             verticalAlignment = Alignment.Top
         ) {
@@ -1904,8 +1906,8 @@ private fun DraggedNotesGroup(
             )
             Spacer(Modifier.width(10.dp))
             Box(
-                modifier = Modifier.size(30.dp),
-                contentAlignment = Alignment.TopCenter
+                modifier = Modifier.size(width = 36.dp, height = 40.dp),
+                contentAlignment = Alignment.Center
             ) {
                 DragHandleIcon(color = groupTextColor, compressed = true)
             }
@@ -2137,7 +2139,7 @@ private fun NoteRow(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(end = CardDimensions.handleRightInset - AppSpacing.screenHorizontal),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
@@ -2162,8 +2164,8 @@ private fun NoteRow(
                     }
                     Spacer(Modifier.width(10.dp))
                     Box(
-                        modifier = Modifier.size(30.dp),
-                        contentAlignment = Alignment.TopCenter
+                        modifier = Modifier.size(width = 36.dp, height = 40.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         DragHandleIcon(color = rowTextColor)
                     }
