@@ -2947,7 +2947,7 @@ private fun PurchaseEditor(
 
     val selectedChild = note.children.firstOrNull { it.id == selectedChildId }
     if (selectedChild != null) {
-        NoteEditor(
+        PurchaseEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
             addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = false, isPurchaseListItem = true,
             onBack = {
