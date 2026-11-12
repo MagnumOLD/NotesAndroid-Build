@@ -2235,7 +2235,6 @@ private fun NoteEditor(
         mutableStateOf(listOf(listOf(NoteBlock(initialText, id = editorBlockId))))
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
-    var addMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
@@ -2269,7 +2268,6 @@ private fun NoteEditor(
         val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
         onChange(withUpdatedTaskChildren(note, listOf(child) + note.children))
         selectedChildId = id
-        addMenuExpanded = false
     }
 
     LaunchedEffect(note.id, note.blocks) {
@@ -2290,7 +2288,7 @@ private fun NoteEditor(
     if (selectedChild != null) {
         NoteEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
-            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = false, isTaskListItem = true,
+            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = true, isTaskListItem = true,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
@@ -2524,15 +2522,12 @@ private fun NoteEditor(
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 Box(modifier = Modifier.offset(y = (-30).dp)) {
                     FloatingActionButton(
-                        onClick = { addMenuExpanded = true },
+                        onClick = { createChild(RecordType.TASK) },
                         containerColor = addButtonColor,
                         contentColor = noteTextColor(addButtonColor),
                         shape = RoundedCornerShape(50)
                     ) {
-                        AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить запись", modifier = Modifier.size(28.dp))
-                    }
-                    DropdownMenu(expanded = addMenuExpanded, onDismissRequest = { addMenuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Добавить задачу") }, onClick = { createChild(RecordType.TASK) })
+                        AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить задачу", modifier = Modifier.size(28.dp))
                     }
                 }
             }
@@ -2935,7 +2930,6 @@ private fun PurchaseEditor(
         mutableStateOf(listOf(listOf(NoteBlock(initialText, id = editorBlockId))))
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
-    var addMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var purchaseDetailsExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
@@ -2969,7 +2963,6 @@ private fun PurchaseEditor(
         val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
         onChange(withUpdatedPurchaseChildren(note, listOf(child) + note.children))
         selectedChildId = id
-        addMenuExpanded = false
     }
 
     LaunchedEffect(note.id, note.blocks) {
@@ -2990,7 +2983,7 @@ private fun PurchaseEditor(
     if (selectedChild != null) {
         PurchaseEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
-            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = false, isPurchaseListItem = true,
+            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = true, isPurchaseListItem = true,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
@@ -3224,15 +3217,12 @@ private fun PurchaseEditor(
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
                 Box(modifier = Modifier.offset(y = (-30).dp)) {
                     FloatingActionButton(
-                        onClick = { addMenuExpanded = true },
+                        onClick = { createChild(RecordType.PURCHASE) },
                         containerColor = addButtonColor,
                         contentColor = noteTextColor(addButtonColor),
                         shape = RoundedCornerShape(50)
                     ) {
                         AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить товар", modifier = Modifier.size(28.dp))
-                    }
-                    DropdownMenu(expanded = addMenuExpanded, onDismissRequest = { addMenuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Добавить товар") }, onClick = { createChild(RecordType.PURCHASE) })
                     }
                 }
             }
