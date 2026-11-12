@@ -154,13 +154,17 @@ internal data class Note(
 
 private data class ChildDragRow(val notes: List<Note>, val key: String)
 
-private fun createChildDragRows(children: List<Note>, selectedIds: Set<Long>): List<ChildDragRow> {
+private fun createChildDragRows(
+    children: List<Note>,
+    selectedIds: Set<Long>,
+    anchorId: Long
+): List<ChildDragRow> {
     val selected = children.filter { it.id in selectedIds }
     if (selected.size <= 1) return children.map { ChildDragRow(listOf(it), "nested_${it.id}") }
-    val firstSelectedIndex = children.indexOfFirst { it.id in selectedIds }
+    val groupAnchorIndex = children.indexOfFirst { it.id == anchorId }
     return buildList {
         children.forEachIndexed { index, child ->
-            if (index == firstSelectedIndex) add(ChildDragRow(selected, "nested_group"))
+            if (index == groupAnchorIndex) add(ChildDragRow(selected, "nested_group"))
             if (child.id !in selectedIds) add(ChildDragRow(listOf(child), "nested_${child.id}"))
         }
     }
@@ -2518,22 +2522,17 @@ private fun NoteEditor(
                         } else {
                             setOf(grabbedChild.id)
                         }
-                        val rows = createChildDragRows(currentChildren, movingIds)
-                        val keys = rows.map { it.key }
-                        if (keys.size < 2 || currentChildren.none { it.id == grabbedChild.id }) {
+                        if (currentChildren.size < 2 || currentChildren.none { it.id == grabbedChild.id }) {
                             return@awaitEachGesture
                         }
-                        val firstMovingChild = rows.firstOrNull { row -> row.notes.any { it.id in movingIds } }
-                            ?.notes?.firstOrNull()
-                        val groupAnchorOffset = firstMovingChild?.let { anchor ->
-                            listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "nested_${anchor.id}" }?.offset
-                        } ?: item.offset
+                        val rows = createChildDragRows(currentChildren, movingIds, grabbedChild.id)
+                        val keys = rows.map { it.key }
                         childDragBaseRows = rows.associateBy { it.key }
                         val movingKey = rows.firstOrNull { row -> row.notes.any { it.id == grabbedChild.id } }?.key
                             ?: return@awaitEachGesture
                         childReorderSession = AdjacentReorderEngine.begin(keys, movingKey)
                         childDragPointerY = dragStartY
-                        childDragGrabOffsetPx = dragStartY - groupAnchorOffset
+                        childDragGrabOffsetPx = dragStartY - item.offset
                         childDragReleaseRequested = false
 
                         var released = false
