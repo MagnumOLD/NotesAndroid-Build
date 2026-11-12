@@ -147,23 +147,11 @@ internal fun AdjacentReorderEffect(
                                 neighbourActual?.index == expectedNeighbourIndex + indexOffset
                     }
 
-                    if (!layoutApplied) {
-                        false
-                    } else {
-                        var firstFrameNanos: Long? = null
-                        var elapsedNanos = 0L
-                        val durationNanos = NOTE_REORDER_ANIMATION_DURATION_MILLIS * 1_000_000L
-                        while (
-                            elapsedNanos < durationNanos &&
-                            latestIsDragging.value &&
-                            !latestReleaseRequested.value
-                        ) {
-                            val frameNanos = withFrameNanos { it }
-                            if (firstFrameNanos == null) firstFrameNanos = frameNanos
-                            elapsedNanos = frameNanos - firstFrameNanos!!
-                        }
-                        elapsedNanos >= durationNanos
-                    }
+                    // A swap is complete as soon as LazyColumn has applied the new
+                    // stable-key indices. Do not wait for the visual placement animation:
+                    // it can be retargeted smoothly by Compose while the finger keeps moving.
+                    // Waiting for the full animation here throttles input to one swap per 220ms.
+                    layoutApplied
                 } ?: false
 
                 if (latestReleaseRequested.value) {
