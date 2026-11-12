@@ -3127,7 +3127,7 @@ private fun PurchaseEditor(
                     actions = {
                         if (isPurchaseListItem) {
                             IconButton(onClick = { purchaseDetailsExpanded = !purchaseDetailsExpanded }) {
-                                Icon(Icons.Outlined.MoreVert, contentDescription = if (purchaseDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус")
+                                Icon(Icons.Outlined.MoreVert, contentDescription = if (purchaseDetailsExpanded) "Скрыть дату" else "Показать дату")
                             }
                         }
                         if (!isPurchaseListItem && note.type != RecordType.NOTE) {
@@ -3360,37 +3360,6 @@ private fun PurchaseEditor(
                                                 onChange(note.copy(dateMode = null, dateAt = null))
                                             })
                                         }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (isPurchaseListItem && purchaseDetailsExpanded && note.type != RecordType.PURCHASE) {
-                    item(key = "record_status") {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                            Spacer(Modifier.weight(1f))
-                            Box {
-                                TextButton(onClick = { statusMenuExpanded = true }) {
-                                    Text(recordStatusText(note.recordStatus()))
-                                }
-                                DropdownMenu(
-                                    expanded = statusMenuExpanded,
-                                    onDismissRequest = { statusMenuExpanded = false }
-                                ) {
-                                    RecordStatus.values().forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(recordStatusText(status)) },
-                                            onClick = {
-                                                statusMenuExpanded = false
-                                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
-                                            }
-                                        )
                                     }
                                 }
                             }
