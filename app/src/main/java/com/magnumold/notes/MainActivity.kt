@@ -1909,7 +1909,7 @@ private fun DragHandleIcon(
                 }
             }
     ) {
-        val stroke = 1.dp.toPx()
+        val stroke = 0.8.dp.toPx()
         val lineWidth = 16.dp.toPx()
         // Keep the handle in the same color family as the row text.
         // It is slightly quieter at rest and becomes clearer while pressed.
