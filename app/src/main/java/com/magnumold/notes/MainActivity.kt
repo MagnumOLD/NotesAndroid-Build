@@ -147,7 +147,8 @@ internal data class Note(
     val dateMode: RecordDateMode? = null, val dateAt: Long? = null,
     val titleEnabled: Boolean = false, val titleText: String = "",
     val descriptionEnabled: Boolean = false, val descriptionText: String = "",
-    val deadlineResumeOverride: Boolean = false, val children: List<Note> = emptyList()
+    val deadlineResumeOverride: Boolean = false, val children: List<Note> = emptyList(),
+    val statusBeforeAutoCompletion: RecordStatus? = null
 )
 private data class NoteCollection(val id: Long, val name: String, val notes: List<Note> = emptyList())
 private data class VaultNote(val note: Note, val collectionId: Long?, val position: Int, val movedAt: Long)
@@ -171,6 +172,17 @@ private fun Note.hasContent(): Boolean =
 private fun Note.recordStatus(now: Long = System.currentTimeMillis()): RecordStatus =
     if (deadlineResumeOverride) status
     else RecordStatusRules.applyDeadline(status, dateMode, dateAt, now)
+
+private fun withUpdatedTaskChildren(parent: Note, children: List<Note>): Note {
+    val allCompleted = children.isNotEmpty() && children.all { it.recordStatus() == RecordStatus.COMPLETED }
+    return when {
+        allCompleted -> parent.copy(children = children, status = RecordStatus.COMPLETED,
+            statusBeforeAutoCompletion = parent.statusBeforeAutoCompletion ?: parent.status)
+        parent.statusBeforeAutoCompletion != null -> parent.copy(children = children,
+            status = parent.statusBeforeAutoCompletion, statusBeforeAutoCompletion = null)
+        else -> parent.copy(children = children)
+    }
+}
 
 private fun formatRecordDate(timestamp: Long): String =
     java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).apply {
@@ -363,6 +375,7 @@ private fun noteToJson(note: Note): JSONObject {
         .put("titleEnabled", note.titleEnabled).put("titleText", note.titleText)
         .put("descriptionEnabled", note.descriptionEnabled).put("descriptionText", note.descriptionText)
         .put("deadlineResumeOverride", note.deadlineResumeOverride)
+        .put("statusBeforeAutoCompletion", note.statusBeforeAutoCompletion?.name ?: JSONObject.NULL)
         .put("blocks", blocks).put("children", notesToJson(note.children))
 }
 private fun notesToJson(items: List<Note>): JSONArray {
@@ -407,7 +420,9 @@ private fun parseNoteObject(obj: JSONObject, index: Int): Note {
         titleEnabled = obj.optBoolean("titleEnabled", false), titleText = obj.optString("titleText"),
         descriptionEnabled = obj.optBoolean("descriptionEnabled", false),
         descriptionText = obj.optString("descriptionText"),
-        deadlineResumeOverride = obj.optBoolean("deadlineResumeOverride", false), children = children
+        deadlineResumeOverride = obj.optBoolean("deadlineResumeOverride", false), children = children,
+        statusBeforeAutoCompletion = obj.optString("statusBeforeAutoCompletion").takeIf { it.isNotBlank() && it != "null" }
+            ?.let { runCatching { RecordStatus.valueOf(it) }.getOrNull() }
     )
 }
 private fun parseNotesArray(array: JSONArray): List<Note> =
@@ -2117,7 +2132,7 @@ private fun NoteEditor(
     fun createChild(type: RecordType) {
         val id = System.currentTimeMillis()
         val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
-        onChange(note.copy(children = listOf(child) + note.children))
+        onChange(withUpdatedTaskChildren(note, listOf(child) + note.children))
         selectedChildId = id
         addMenuExpanded = false
     }
@@ -2148,7 +2163,7 @@ private fun NoteEditor(
                 selectedChildId = null
             },
             onChange = { changed ->
-                onChange(note.copy(children = note.children.map { if (it.id == changed.id) changed else it }))
+                onChange(withUpdatedTaskChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
             },
             onDelete = { promoteChildren ->
                 val index = note.children.indexOfFirst { it.id == selectedChild.id }
@@ -2157,7 +2172,7 @@ private fun NoteEditor(
                     updated.removeAt(index)
                     if (promoteChildren) updated.addAll(index, selectedChild.children)
                 }
-                onChange(note.copy(children = updated))
+                onChange(withUpdatedTaskChildren(note, updated))
                 selectedChildId = null
             },
             onShare = onShare
@@ -2262,29 +2277,37 @@ private fun NoteEditor(
                                 }
                             }
                         }
-                        Box {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                if (note.recordStatus() == RecordStatus.WAITING) "Ожидает"
-                                else recordStatusText(note.recordStatus()),
-                                modifier = Modifier.clickable { statusMenuExpanded = true }
-                                    .padding(vertical = 2.dp),
-                                color = noteTextColor(topBarColor).copy(alpha = 0.82f),
+                                note.dateAt?.let { formatRecordDate(it) } ?: "—",
+                                color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
+                                    else noteTextColor(topBarColor).copy(alpha = 0.82f),
                                 fontSize = 12.sp,
                                 maxLines = 1
                             )
-                            DropdownMenu(
-                                expanded = statusMenuExpanded,
-                                onDismissRequest = { statusMenuExpanded = false }
-                            ) {
-                                RecordStatus.values().forEach { status ->
-                                    DropdownMenuItem(
-                                        text = { Text(recordStatusText(status)) },
-                                        onClick = {
-                                            statusMenuExpanded = false
-                                            val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                            onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
-                                        }
-                                    )
+                            Box {
+                                Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
+                                    contentAlignment = Alignment.Center) {
+                                    TaskStatusMarker(note.recordStatus())
+                                }
+                                DropdownMenu(
+                                    expanded = statusMenuExpanded,
+                                    onDismissRequest = { statusMenuExpanded = false }
+                                ) {
+                                    RecordStatus.values().forEach { status ->
+                                        DropdownMenuItem(
+                                            text = { Text(recordStatusText(status)) },
+                                            onClick = {
+                                                statusMenuExpanded = false
+                                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
+                                                val updated = if (note.statusBeforeAutoCompletion != null) {
+                                                    note.copy(status = RecordStatus.COMPLETED, statusBeforeAutoCompletion = status,
+                                                        deadlineResumeOverride = resumingMissed)
+                                                } else note.copy(status = status, deadlineResumeOverride = resumingMissed)
+                                                onChange(updated)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -2541,8 +2564,33 @@ private fun NoteEditor(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TaskStatusMarker(childStatus)
-                            Spacer(Modifier.width(12.dp))
+                            var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
+                            Box {
+                                Box(Modifier.size(40.dp).clickable { childStatusMenuExpanded = true },
+                                    contentAlignment = Alignment.Center) {
+                                    TaskStatusMarker(childStatus)
+                                }
+                                DropdownMenu(
+                                    expanded = childStatusMenuExpanded,
+                                    onDismissRequest = { childStatusMenuExpanded = false }
+                                ) {
+                                    RecordStatus.values().forEach { status ->
+                                        DropdownMenuItem(
+                                            text = { Text(recordStatusText(status)) },
+                                            onClick = {
+                                                childStatusMenuExpanded = false
+                                                val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
+                                                val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
+                                                latestTaskOnChange.value(
+                                                    withUpdatedTaskChildren(latestTaskNote.value,
+                                                        latestTaskChildren.value.map { if (it.id == child.id) changed else it })
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.width(4.dp))
                             Text(
                                 childText,
                                 modifier = Modifier.weight(1f).clickable { selectedChildId = child.id },
@@ -2624,7 +2672,7 @@ private fun NoteEditor(
                                                         val moving = reordered.removeAt(currentIndex)
                                                         reordered.add(targetIndex, moving)
                                                         latestTaskOnChange.value(
-                                                            latestTaskNote.value.copy(children = reordered)
+                                                            withUpdatedTaskChildren(latestTaskNote.value, reordered)
                                                         )
                                                     }
                                                 }
