@@ -62,6 +62,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -1779,12 +1780,6 @@ private fun DraggedNotesGroup(
     } else {
         lerp(groupColor, Color(0xFF808080), if (dark) 0.07f else 0.14f)
     }
-    // The handle draws together when the dragged placeholder appears.
-    val handleSpacing = remember { Animatable(8f) }
-    LaunchedEffect(Unit) {
-        handleSpacing.animateTo(4f, animationSpec = tween(durationMillis = 180))
-    }
-
     Box(
         modifier = modifier
             .height(CardDimensions.rowHeight)
@@ -1811,26 +1806,61 @@ private fun DraggedNotesGroup(
             modifier = Modifier.align(Alignment.CenterEnd).padding(end = CardDimensions.handleRightInset).size(30.dp),
             contentAlignment = Alignment.Center
         ) {
-            Canvas(
-                modifier = Modifier.size(26.dp),
-                onDraw = {
-                    val stroke = 1.dp.toPx()
-                    val startX = 5.dp.toPx()
-                    val endX = 21.dp.toPx()
-                    val centerY = size.height / 2f
-                    val halfSpacing = handleSpacing.value.dp.toPx() / 2f
-                    val firstY = centerY - halfSpacing
-                    val secondY = centerY + halfSpacing
-                    val handleColor = groupTextColor.copy(alpha = 0.65f)
-                    drawLine(handleColor, Offset(startX, firstY), Offset(endX, firstY), strokeWidth = stroke)
-                    drawLine(handleColor, Offset(startX, secondY), Offset(endX, secondY), strokeWidth = stroke)
-                }
-            )        }
+            DragHandleIcon(color = groupTextColor.copy(alpha = 0.65f), compressed = true)        }
         // Keep the same bottom separator that every regular note row has.
         HorizontalDivider(
             modifier = Modifier.align(Alignment.BottomCenter),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
             thickness = CardDimensions.dividerThickness
+        )
+    }
+}
+
+@Composable
+private fun DragHandleIcon(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+    compressed: Boolean = false
+) {
+    var pressed by remember { mutableStateOf(false) }
+    val spacing by animateFloatAsState(
+        targetValue = if (pressed || compressed) 4f else 8f,
+        animationSpec = tween(durationMillis = 150),
+        label = "dragHandleSpacing"
+    )
+    Canvas(
+        modifier = modifier
+            .size(26.dp)
+            .pointerInput(compressed) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    pressed = true
+                    try {
+                        waitForUpOrCancellation()
+                    } finally {
+                        pressed = false
+                    }
+                }
+            }
+    ) {
+        val stroke = 1.dp.toPx()
+        val lineWidth = 16.dp.toPx()
+        val startX = (size.width - lineWidth) / 2f
+        val centerY = size.height / 2f
+        val halfSpacing = spacing.dp.toPx() / 2f
+        drawLine(
+            color = color,
+            start = Offset(startX, centerY - halfSpacing),
+            end = Offset(startX + lineWidth, centerY - halfSpacing),
+            strokeWidth = stroke,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
+        drawLine(
+            color = color,
+            start = Offset(startX, centerY + halfSpacing),
+            end = Offset(startX + lineWidth, centerY + halfSpacing),
+            strokeWidth = stroke,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round
         )
     }
 }
@@ -2032,19 +2062,7 @@ private fun NoteRow(
                     modifier = Modifier.size(30.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(
-                        modifier = Modifier.size(26.dp),
-                        onDraw = {
-                            val stroke = 1.dp.toPx()
-                            val startX = 5.dp.toPx()
-                            val endX = 21.dp.toPx()
-                            val firstY = 9.dp.toPx()
-                            val secondY = 17.dp.toPx()
-                            val handleColor = rowTextColor.copy(alpha = 0.65f)
-                            drawLine(handleColor, Offset(startX, firstY), Offset(endX, firstY), strokeWidth = stroke)
-                            drawLine(handleColor, Offset(startX, secondY), Offset(endX, secondY), strokeWidth = stroke)
-                        }
-                    )
+                    DragHandleIcon(color = rowTextColor.copy(alpha = 0.65f))
                 }
             }
         }
@@ -2669,20 +2687,7 @@ private fun NoteEditor(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Canvas(modifier = Modifier.size(width = 18.dp, height = 14.dp)) {
-                                    val stroke = 1.4.dp.toPx()
-                                    val lineWidth = size.width * 0.82f
-                                    val startX = (size.width - lineWidth) / 2f
-                                    listOf(0.34f, 0.66f).forEach { y ->
-                                        drawLine(
-                                            color = dragHandleColor,
-                                            start = Offset(startX, size.height * y),
-                                            end = Offset(startX + lineWidth, size.height * y),
-                                            strokeWidth = stroke,
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    }
-                                }
+                                DragHandleIcon(color = dragHandleColor)
                             }
 
                         }
