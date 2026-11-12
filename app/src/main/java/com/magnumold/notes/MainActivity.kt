@@ -224,14 +224,25 @@ private fun formatRecordDate(timestamp: Long): String =
     }.format(java.util.Date(timestamp))
 
 private fun formatNoteCreationDate(timestamp: Long): String {
-    val date = java.util.Date(timestamp)
     val locale = java.util.Locale("ru")
-    val calendar = java.util.Calendar.getInstance().apply { time = date }
-    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-    val pattern = if (calendar.get(java.util.Calendar.YEAR) == currentYear) {
-        "EEE · dd.MM"
+    val date = java.util.Date(timestamp)
+    val target = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
+    val today = java.util.Calendar.getInstance()
+    val sameDay = target.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) &&
+        target.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)
+    if (sameDay) return "Сегодня"
+
+    val yesterday = (today.clone() as java.util.Calendar).apply {
+        add(java.util.Calendar.DAY_OF_YEAR, -1)
+    }
+    val isYesterday = target.get(java.util.Calendar.YEAR) == yesterday.get(java.util.Calendar.YEAR) &&
+        target.get(java.util.Calendar.DAY_OF_YEAR) == yesterday.get(java.util.Calendar.DAY_OF_YEAR)
+    if (isYesterday) return "Вчера"
+
+    val pattern = if (target.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)) {
+        "EEE. dd.MM"
     } else {
-        "EEE · dd.MM.yyyy"
+        "EEE. dd.MM.yyyy"
     }
     return java.text.SimpleDateFormat(pattern, locale).format(date)
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
