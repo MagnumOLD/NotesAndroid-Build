@@ -2351,10 +2351,12 @@ private fun NoteEditor(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
         ) {
-            // Keep the first task row from becoming LazyColumn's viewport anchor
-            // while adjacent tasks exchange positions.
-            item(key = "task_reorder_viewport_anchor") {
-                Spacer(Modifier.height(1.dp))
+            if (note.type == RecordType.TASK && !isTaskListItem) {
+                // Keep the first task row from becoming LazyColumn's viewport anchor
+                // while adjacent tasks exchange positions.
+                item(key = "task_reorder_viewport_anchor") {
+                    Spacer(Modifier.height(1.dp))
+                }
             }
             if (note.type != RecordType.NOTE &&
                 (note.titleEnabled || note.descriptionEnabled || isTaskListItem)) {
