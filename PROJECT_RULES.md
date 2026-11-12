@@ -26,6 +26,16 @@
 - Format the creation date on the right dynamically: `Сегодня` for the current local calendar day, `Вчера` for the previous local calendar day, `Чт. 11.11` for other dates in the current year, and `Чт. 11.11.2025` for dates in another year. Calculate the label from the creation timestamp and device-local calendar whenever the card is rendered; never persist relative labels as text. Keep record type/status on the left.
 - Keep the drag handle in the same top-right position for every card, including cards with multiline text and the temporary grouped-drag placeholder. Preserve the existing stable-key drag hit target and adjacent-swap behavior. Its two lines remain 16 dp long with the existing spacing and animation, but their stroke thickness is 0.8 dp (20% thinner than the previous 1 dp). The handle uses the exact foreground color of its row text (including completed child text and group labels), with 50% alpha at rest and 96% while pressed. Do not replace it with fixed gray colors; this keeps the handle in the same color family as the card text across base, selected, and colored cards.
 
+## Layout and spacing system
+
+- Use the shared `AppSpacing` tokens for page guides and recurring layout gaps; do not introduce arbitrary per-screen horizontal margins.
+- The primary content guide is 20.dp from each screen edge. Main-list card text, creation-date metadata, editor content, archive/trash content, and settings-list visible content align to this guide.
+- Material3 `ListItem` has its own 16.dp content inset. Settings rows add a 4.dp outer inset so their visible text/icons align to the 20.dp page guide; keep section dividers full-width.
+- Main-list drag handles are a deliberate exception: preserve their current touch/visual position independently from the content guide. The first card row reserves the additional 8.dp needed for the handle, while the metadata row reaches the 20.dp right guide.
+- Navigation controls keep their standard touch targets and toolbar insets. Do not force a back-button title to the content guide; its position after the navigation control is intentional.
+- Keep component geometry (button sizes, touch targets, card dimensions, icon sizes) separate from spacing tokens. Do not normalize vertical spacing or component sizes merely to make numeric values identical.
+- Before adding a new spacing value, check whether an existing semantic token already expresses that role. Use literal dp only for component geometry or a documented one-off.
+
 ## Change discipline
 
 - Do not start implementation until the user explicitly says «Приступай».
