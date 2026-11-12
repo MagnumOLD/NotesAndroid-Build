@@ -76,6 +76,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.ImeAction
@@ -1415,6 +1416,7 @@ private fun NotesHome(
     var dragPointerY by remember { mutableFloatStateOf(0f) }
     var dragGrabOffsetPx by remember { mutableFloatStateOf(0f) }
     var dragReleaseRequested by remember { mutableStateOf(false) }
+    val measuredNoteCardHeights = remember { mutableStateMapOf<Long, Int>() }
 
     val listState = rememberLazyListState()
     val density = LocalDensity.current
@@ -1778,7 +1780,8 @@ private fun NotesHome(
                             val rowPlacementModifier = Modifier.animateItemPlacement(
                                 animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS)
                             )
-                            val anchorNote = dragRow.notes.first()
+                            val anchorNoteId = dragRow.key.toLongOrNull()
+                            val anchorNote = dragRow.notes.firstOrNull { it.id == anchorNoteId } ?: dragRow.notes.first()
                             Box(
                                 Modifier.fillMaxWidth().then(rowPlacementModifier)
                             ) {
@@ -1788,6 +1791,10 @@ private fun NotesHome(
                                         dark = dark,
                                         noteColors = noteColors,
                                         customSelectionColor = selectedNoteBackground,
+                                        anchorNoteId = anchorNote.id,
+                                        rowHeight = with(density) {
+                                            (measuredNoteCardHeights[anchorNote.id] ?: CardDimensions.rowHeight.roundToPx()).toDp()
+                                        },
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 } else {
@@ -1803,7 +1810,12 @@ private fun NotesHome(
                                         },
                                         onLongPress = { selectedNoteIds = selectedNoteIds + note.id },
                                         colorSwipeEnabled = !selectionMode && !isDragging,
-                                        onChangeColor = { next -> onChangeNoteColor(note.id, next) }
+                                        onChangeColor = { next -> onChangeNoteColor(note.id, next) },
+                                        onMeasuredHeight = { heightPx ->
+                                            if (measuredNoteCardHeights[note.id] != heightPx) {
+                                                measuredNoteCardHeights[note.id] = heightPx
+                                            }
+                                        }
                                     )
                                 }
 
@@ -1863,54 +1875,99 @@ private fun NotesHome(
     }
 }
 
+
+@Composable
+private fun MainCardHeader(
+    text: String,
+    textColor: Color,
+    pinned: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text,
+            modifier = Modifier.weight(1f),
+            fontSize = 16.sp,
+            lineHeight = 22.sp,
+            fontWeight = FontWeight.Medium,
+            color = textColor
+        )
+        if (pinned) {
+            Spacer(Modifier.width(8.dp))
+            AppIcon(
+                NoteIcon.Pin,
+                contentDescription = "Закреплено",
+                tint = textColor.copy(alpha = 0.8f),
+                modifier = Modifier.padding(top = 5.dp).size(16.dp)
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Box(
+            modifier = Modifier.size(width = 36.dp, height = 40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            DragHandleIcon(color = textColor)
+        }
+    }
+}
+
+@Composable
+private fun mainCardTextColor(color: Color, isBaseColor: Boolean): Color =
+    if (isBaseColor) MaterialTheme.colorScheme.onSurface
+    else noteTextColor(color, MaterialTheme.colorScheme.background)
+
+private fun mainCardBackground(
+    color: Color,
+    selected: Boolean,
+    isBaseColor: Boolean,
+    dark: Boolean,
+    selectionColor: Color?
+): Color = when {
+    !selected -> color
+    isBaseColor -> selectionColor ?: if (dark) Color(0xFF1C2B40) else Color(0xFFEAF2FF)
+    else -> lerp(color, Color(0xFF808080), if (dark) 0.07f else 0.14f)
+}
+
 @Composable
 private fun DraggedNotesGroup(
     notes: List<Note>,
     dark: Boolean,
     noteColors: List<Color>,
     customSelectionColor: Color? = null,
+    anchorNoteId: Long,
+    rowHeight: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
-    val anchorNote = notes.first()
+    val anchorNote = notes.firstOrNull { it.id == anchorNoteId } ?: notes.first()
     val groupColor = if (anchorNote.colorIndex == 0) {
         MaterialTheme.colorScheme.background
     } else {
         noteColors[anchorNote.colorIndex - 1]
     }
-    val groupTextColor = if (anchorNote.colorIndex == 0) MaterialTheme.colorScheme.onSurface else noteTextColor(groupColor, MaterialTheme.colorScheme.background)
+    val groupTextColor = mainCardTextColor(groupColor, anchorNote.colorIndex == 0)
     // Regular notes use the Apple-inspired selection color; colored notes keep the previous muted overlay.
-    val selectedBackground = if (anchorNote.colorIndex == 0) {
-        customSelectionColor ?: if (dark) Color(0xFF1C2B40) else Color(0xFFEAF2FF)
-    } else {
-        lerp(groupColor, Color(0xFF808080), if (dark) 0.07f else 0.14f)
-    }
+    val selectedBackground = mainCardBackground(
+        color = groupColor,
+        selected = true,
+        isBaseColor = anchorNote.colorIndex == 0,
+        dark = dark,
+        selectionColor = customSelectionColor
+    )
     Box(
         modifier = modifier
-            .height(CardDimensions.rowHeight)
+            .height(rowHeight)
             .background(selectedBackground)
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth().padding(
                 start = AppSpacing.screenHorizontal,
                 end = AppSpacing.screenHorizontal,
                 top = AppSpacing.md
-            ),
-            verticalAlignment = Alignment.Top
-        ) {
-            Text(
-                "Группа",
-                modifier = Modifier.weight(1f),
-                color = groupTextColor,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
             )
-            Spacer(Modifier.width(10.dp))
-            Box(
-                modifier = Modifier.size(width = 36.dp, height = 40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                DragHandleIcon(color = groupTextColor, compressed = true)
-            }
+        ) {
+            MainCardHeader("Группа", groupTextColor)
         }
         HorizontalDivider(
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -2029,7 +2086,8 @@ private fun TaskStatusMarker(status: RecordStatus) {
 private fun NoteRow(
     note: Note, dark: Boolean, noteColors: List<Color>, customSelectionColor: Color? = null, pinned: Boolean, selected: Boolean,
     statusNow: Long, onClick: () -> Unit, onLongPress: () -> Unit,
-    colorSwipeEnabled: Boolean, onChangeColor: (Int) -> Unit
+    colorSwipeEnabled: Boolean, onChangeColor: (Int) -> Unit,
+    onMeasuredHeight: (Int) -> Unit = {}
 ) {
     val firstLine = if ((note.type == RecordType.TASK || note.type == RecordType.PURCHASE || note.titleEnabled) && note.titleText.isNotBlank()) note.titleText.trim()
     else note.blocks.asSequence().mapNotNull {
@@ -2045,7 +2103,7 @@ private fun NoteRow(
     var swipeToColor by remember(note.id) { mutableStateOf(rowColor) }
     var swipeFromIndex by remember(note.id) { mutableIntStateOf(note.colorIndex) }
     var swipeToIndex by remember(note.id) { mutableIntStateOf(note.colorIndex) }
-    val rowTextColor = if (note.colorIndex == 0) MaterialTheme.colorScheme.onSurface else noteTextColor(rowColor, MaterialTheme.colorScheme.background)
+    val rowTextColor = mainCardTextColor(rowColor, note.colorIndex == 0)
     val colorFraction = maxOf(swipeProgress, fillAnimation.value)
     // When entering or leaving the uncolored base state, animate only the
     // colored overlay alpha. Interpolating RGBA against an opaque base color
@@ -2058,14 +2116,20 @@ private fun NoteRow(
         else -> lerp(swipeFromColor, swipeToColor, colorFraction)
     }
     // Regular notes use a dedicated selection color; colored notes retain the previous muted overlay.
-    val selectedBackground = if (!selected) displayedColor else if (note.colorIndex == 0) {
-        customSelectionColor ?: if (dark) Color(0xFF1C2B40) else Color(0xFFEAF2FF)
-    } else {
-        lerp(displayedColor, Color(0xFF808080), if (dark) 0.07f else 0.14f)
-    }
+    val selectedBackground = mainCardBackground(
+        color = displayedColor,
+        selected = selected,
+        isBaseColor = note.colorIndex == 0,
+        dark = dark,
+        selectionColor = customSelectionColor
+    )
     val metadata = if (note.type == RecordType.NOTE) "Заметка" else recordStatusCompactText(note.recordStatus(statusNow))
 
-    Column(Modifier.fillMaxWidth().background(selectedBackground)) {
+    Column(
+        Modifier.fillMaxWidth()
+            .background(selectedBackground)
+            .onSizeChanged { onMeasuredHeight(it.height) }
+    ) {
         Box(
             Modifier.fillMaxWidth().heightIn(min = CardDimensions.contentHeight)
                 .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
@@ -2138,38 +2202,7 @@ private fun NoteRow(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        firstLine,
-                        modifier = Modifier.weight(1f)
-                            .pointerInput(note.id, selected) {
-                                detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
-                            },
-                        fontSize = 16.sp,
-                        lineHeight = 22.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = rowTextColor
-                    )
-                    if (pinned) {
-                        Spacer(Modifier.width(8.dp))
-                        AppIcon(
-                            NoteIcon.Pin,
-                            contentDescription = "Закреплено",
-                            tint = rowTextColor.copy(alpha = 0.8f),
-                            modifier = Modifier.padding(top = 5.dp).size(16.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Box(
-                        modifier = Modifier.size(width = 36.dp, height = 40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DragHandleIcon(color = rowTextColor)
-                    }
-                }
+                MainCardHeader(firstLine, rowTextColor, pinned)
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .pointerInput(note.id, selected) {
