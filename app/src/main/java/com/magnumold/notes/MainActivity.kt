@@ -229,9 +229,9 @@ private fun formatNoteCreationDate(timestamp: Long): String {
     val calendar = java.util.Calendar.getInstance().apply { time = date }
     val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
     val pattern = if (calendar.get(java.util.Calendar.YEAR) == currentYear) {
-        "EEE, d MMM"
+        "EEE · dd.MM"
     } else {
-        "EEE, d MMM yyyy"
+        "EEE · dd.MM.yyyy"
     }
     return java.text.SimpleDateFormat(pattern, locale).format(date)
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
@@ -1855,7 +1855,7 @@ private fun DraggedNotesGroup(
                 modifier = Modifier.size(30.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                DragHandleIcon(color = subtleDragHandleColor(), compressed = true)
+                DragHandleIcon(color = subtleDragHandleColor(selectedBackground), compressed = true)
             }
         }
         HorizontalDivider(
@@ -1867,10 +1867,11 @@ private fun DraggedNotesGroup(
 }
 
 @Composable
-private fun subtleDragHandleColor(): Color {
-    val background = MaterialTheme.colorScheme.background
-    val luminance = 0.299f * background.red + 0.587f * background.green + 0.114f * background.blue
-    return if (luminance < 0.5f) Color(0xFF555555) else Color(0xFFAAAAAA)
+private fun subtleDragHandleColor(cardBackground: Color = MaterialTheme.colorScheme.background): Color {
+    val surface = MaterialTheme.colorScheme.background
+    // Match the subdued handle tint to the actual card color, including its opacity.
+    val textColor = noteTextColor(cardBackground, surface)
+    return if (textColor == Color.White) Color(0xFF555555) else Color(0xFFAAAAAA)
 }
 
 @Composable
@@ -2117,7 +2118,7 @@ private fun NoteRow(
                         modifier = Modifier.size(30.dp),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        DragHandleIcon(color = subtleDragHandleColor())
+                        DragHandleIcon(color = subtleDragHandleColor(selectedBackground))
                     }
                 }
                 Row(
