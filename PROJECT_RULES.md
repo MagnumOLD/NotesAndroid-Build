@@ -17,6 +17,9 @@
 - A Purchase opens its own editor, separate from the Task editor. Its nested entries are goods: show a checkbox on the right immediately before the drag handle; checked goods use the completed state and struck-through text. Purchase parent retains its own manual status; nested goods do not expose task-style status menus.
 - The task title is derived from its first line; do not add a separate title field unless explicitly requested.
 - Keep the interface minimalist and consistent with the existing app.
+- Main-list cards for all three record types share one structure: multiline content/title at the upper left, drag handle at the upper right aligned with the first text line, and a metadata row below with creation date on the left and note type or task/purchase status on the right.
+- Main-list card height is content-driven with a compact minimum height; do not truncate a long first line to one visual line.
+- Keep the drag handle in the same top-right position for every card, including cards with multiline text and the temporary grouped-drag placeholder. Preserve the existing stable-key drag hit target and adjacent-swap behavior.
 
 ## Change discipline
 
