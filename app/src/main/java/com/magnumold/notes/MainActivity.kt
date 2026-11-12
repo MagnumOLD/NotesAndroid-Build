@@ -2279,7 +2279,7 @@ private fun NoteEditor(
                 }
             } else {
                 TopAppBar(
-                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка") },
+                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
                     navigationIcon = {},
                     actions = {
                         if (isTaskListItem) {
