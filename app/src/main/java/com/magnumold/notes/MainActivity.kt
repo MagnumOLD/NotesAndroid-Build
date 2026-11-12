@@ -2116,6 +2116,7 @@ private fun NoteEditor(
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var addMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
+    var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
     var pendingDateMode by remember(note.id) { mutableStateOf(note.dateMode ?: RecordDateMode.DATE) }
@@ -2278,10 +2279,15 @@ private fun NoteEditor(
                 }
             } else {
                 TopAppBar(
-                    title = { Text("Заметка") },
+                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка") },
                     navigationIcon = {},
                     actions = {
-                        if (note.type != RecordType.NOTE) {
+                        if (isTaskListItem) {
+                            IconButton(onClick = { taskDetailsExpanded = !taskDetailsExpanded }) {
+                                Icon(Icons.Outlined.Tune, contentDescription = if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус")
+                            }
+                        }
+                        if (!isTaskListItem && note.type != RecordType.NOTE) {
                             IconButton(onClick = { onChange(note.copy(titleEnabled = !note.titleEnabled)) }) {
                                 Icon(
                                     Icons.Outlined.Title,
@@ -2318,7 +2324,7 @@ private fun NoteEditor(
                             enabled = historyIndex < history.lastIndex
                         ) { AppIcon(NoteIcon.Redo, "Повторить") }
                         IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
-                        IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
+                        if (!isTaskListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = topBarColor,
@@ -2383,7 +2389,7 @@ private fun NoteEditor(
                                 minLines = 2
                             )
                         }
-                        if (isTaskListItem) {
+                        if (isTaskListItem && taskDetailsExpanded) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                 Spacer(Modifier.weight(1f))
@@ -2424,7 +2430,7 @@ private fun NoteEditor(
                         }
                     }
                 }
-                if (isTaskListItem) {
+                if (isTaskListItem && taskDetailsExpanded) {
                     item(key = "record_status") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
