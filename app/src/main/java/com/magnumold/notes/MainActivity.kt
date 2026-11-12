@@ -2103,7 +2103,10 @@ private fun NoteRow(
                     }
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .pointerInput(note.id, selected) {
+                            detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
