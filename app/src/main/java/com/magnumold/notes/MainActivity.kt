@@ -146,8 +146,13 @@ private object CardDimensions {
     val dividerThickness = 1.dp
     val rowHeight = contentHeight + dividerThickness
 
-    // Center the 40dp drag hit target on the 36dp visible handle container,
-    // whose right edge follows the shared 20dp content guide.
+    // Align the visible handle with the first 22dp title line.
+    // Keep a 40dp touch target centered on that visual position.
+    val headerFirstLineHeight = 22.dp
+    val handleTouchTargetSize = 40.dp
+    val handleHitTargetTopOffset =
+        AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2
+    // The visible handle's right edge follows the shared 20dp content guide.
     val handleHitTargetRightInset = AppSpacing.screenHorizontal - 2.dp
 }
 
@@ -1685,8 +1690,8 @@ private fun NotesHome(
                                     down.position.y >= it.offset &&
                                         down.position.y < it.offset + it.size
                                 } ?: return@awaitEachGesture
-                                val handleTop = item.offset + AppSpacing.md.toPx()
-                                val handleBottom = handleTop + 40.dp.toPx()
+                                val handleTop = item.offset + CardDimensions.handleHitTargetTopOffset.toPx()
+                                val handleBottom = handleTop + CardDimensions.handleTouchTargetSize.toPx()
                                 if (down.position.y < handleTop || down.position.y > handleBottom) {
                                     return@awaitEachGesture
                                 }
@@ -1825,9 +1830,9 @@ private fun NotesHome(
                                 if (search.isBlank()) {
                                     Box(
                                         Modifier.align(Alignment.TopEnd)
-                                            .padding(top = AppSpacing.md, end = CardDimensions.handleHitTargetRightInset)
-                                            // Keep the touch target centered on the handle in the first row.
-                                            .size(40.dp)
+                                            .padding(top = CardDimensions.handleHitTargetTopOffset, end = CardDimensions.handleHitTargetRightInset)
+                                            // Keep the touch target centered on the first title line.
+                                            .size(CardDimensions.handleTouchTargetSize)
                                             .zIndex(2f)
 
                                     )
@@ -1920,7 +1925,7 @@ private fun MainCardHeader(
         }
         Spacer(Modifier.width(10.dp))
         Box(
-            modifier = Modifier.size(width = 36.dp, height = 40.dp),
+            modifier = Modifier.size(width = 36.dp, height = CardDimensions.headerFirstLineHeight),
             contentAlignment = Alignment.Center
         ) {
             DragHandleIcon(color = textColor)
