@@ -2180,9 +2180,12 @@ private fun NoteEditor(
     var childDragGrabOffsetPx by remember(note.id) { mutableFloatStateOf(0f) }
     var childDragReleaseRequested by remember(note.id) { mutableStateOf(false) }
 
-    BackHandler { onBack() }
+    BackHandler {
+        if (selectedChildIds.isNotEmpty()) selectedChildIds = emptySet() else onBack()
+    }
 
     fun createChild(type: RecordType) {
+        selectedChildIds = emptySet()
         val id = System.currentTimeMillis()
         val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
         onChange(withUpdatedTaskChildren(note, listOf(child) + note.children))
