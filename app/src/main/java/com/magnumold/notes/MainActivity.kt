@@ -1866,7 +1866,7 @@ private fun DraggedNotesGroup(
                 modifier = Modifier.size(30.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
-                DragHandleIcon(color = subtleDragHandleColor(selectedBackground), compressed = true)
+                DragHandleIcon(color = subtleDragHandleColor(groupTextColor), compressed = true)
             }
         }
         HorizontalDivider(
@@ -1878,11 +1878,10 @@ private fun DraggedNotesGroup(
 }
 
 @Composable
-private fun subtleDragHandleColor(cardBackground: Color = MaterialTheme.colorScheme.background): Color {
-    val surface = MaterialTheme.colorScheme.background
-    // Match the subdued handle tint to the actual card color, including its opacity.
-    val textColor = noteTextColor(cardBackground, surface)
-    return if (textColor == Color.White) Color(0xFF555555) else Color(0xFFAAAAAA)
+private fun subtleDragHandleColor(textColor: Color): Color {
+    // Follow the exact foreground color used by the row text and metadata.
+    val luminance = 0.299f * textColor.red + 0.587f * textColor.green + 0.114f * textColor.blue
+    return if (luminance < 0.48f) Color(0xFFAAAAAA) else Color(0xFF555555)
 }
 
 @Composable
@@ -2129,7 +2128,7 @@ private fun NoteRow(
                         modifier = Modifier.size(30.dp),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        DragHandleIcon(color = subtleDragHandleColor(selectedBackground))
+                        DragHandleIcon(color = subtleDragHandleColor(rowTextColor))
                     }
                 }
                 Row(
@@ -2816,14 +2815,15 @@ private fun NoteEditor(
                             ) {
                                 Text("Группа", modifier = Modifier.weight(1f),
                                     color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                DragHandleIcon(color = subtleDragHandleColor(), compressed = true)
+                                DragHandleIcon(color = subtleDragHandleColor(MaterialTheme.colorScheme.onSurface), compressed = true)
                             }
                         } else {
                             val child = row.notes.first()
                             val childStatus = child.recordStatus()
                             val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
                             val childSelected = child.id in selectedChildIds
-                            val dragHandleColor = subtleDragHandleColor()
+                            val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                            val dragHandleColor = subtleDragHandleColor(childTextColor)
                             Row(
                                 modifier = Modifier.fillMaxWidth()
                                     .background(Color.Transparent)
@@ -2871,8 +2871,7 @@ private fun NoteEditor(
                                             onLongPress = { selectedChildIds = selectedChildIds + child.id }
                                         )
                                     },
-                                    color = if (childStatus == RecordStatus.COMPLETED)
-                                        MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                    color = childTextColor,
                                     fontSize = 16.sp,
                                     lineHeight = 24.sp,
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
@@ -3485,14 +3484,14 @@ private fun PurchaseEditor(
                             ) {
                                 Text("Группа", modifier = Modifier.weight(1f),
                                     color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                DragHandleIcon(color = subtleDragHandleColor(), compressed = true)
+                                DragHandleIcon(color = subtleDragHandleColor(MaterialTheme.colorScheme.onSurface), compressed = true)
                             }
                         } else {
                             val child = row.notes.first()
                             val childStatus = child.recordStatus()
                             val childText = child.blocks.toPlainText().ifBlank { "Пустой товар" }
                             val childSelected = child.id in selectedChildIds
-                            val dragHandleColor = subtleDragHandleColor()
+                            val dragHandleColor = subtleDragHandleColor(MaterialTheme.colorScheme.onSurface)
                             Row(
                                 modifier = Modifier.fillMaxWidth()
                                     .background(Color.Transparent)
