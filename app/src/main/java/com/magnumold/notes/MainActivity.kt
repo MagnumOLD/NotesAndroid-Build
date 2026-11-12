@@ -1384,14 +1384,19 @@ private fun NotesHome(
 
     AdjacentReorderEffect(
         isDragging = isDragging,
-        dragRows = dragRows,
-        draggingIds = draggingIds,
+        orderedKeys = dragRows.map { it.key },
         reorderSession = reorderSession,
         pointerY = dragPointerY,
         grabOffsetPx = dragGrabOffsetPx,
         releaseRequested = dragReleaseRequested,
         listState = listState,
         density = density,
+        canSwap = { movingKey, neighbourKey ->
+            val movingPinStates = dragBaseRows[movingKey]?.notes?.map { it.pinned }?.distinct().orEmpty()
+            val neighbourPinStates = dragBaseRows[neighbourKey]?.notes?.map { it.pinned }?.distinct().orEmpty()
+            movingPinStates.size == 1 && neighbourPinStates.size == 1 &&
+                movingPinStates.single() == neighbourPinStates.single()
+        },
         onSessionChange = { reorderSession = it },
         onFinishDrag = { finishDrag() }
     )
@@ -2154,6 +2159,11 @@ private fun NoteEditor(
     val latestTaskNote = rememberUpdatedState(note)
     val latestTaskChildren = rememberUpdatedState(note.children)
     val latestTaskOnChange = rememberUpdatedState(onChange)
+    var childReorderSession by remember(note.id) { mutableStateOf<ReorderSession?>(null) }
+    var childDragBaseRows by remember(note.id) { mutableStateOf<Map<String, Note>>(emptyMap()) }
+    var childDragPointerY by remember(note.id) { mutableFloatStateOf(0f) }
+    var childDragGrabOffsetPx by remember(note.id) { mutableFloatStateOf(0f) }
+    var childDragReleaseRequested by remember(note.id) { mutableStateOf(false) }
 
     BackHandler { onBack() }
 
@@ -2208,6 +2218,46 @@ private fun NoteEditor(
         return
     }
  
+    fun resetChildDrag() {
+        childReorderSession = null
+        childDragBaseRows = emptyMap()
+        childDragPointerY = 0f
+        childDragGrabOffsetPx = 0f
+        childDragReleaseRequested = false
+    }
+
+    fun finishChildDrag() {
+        val session = childReorderSession
+        if (session != null) {
+            val currentChildren = latestTaskChildren.value
+            val currentByKey = currentChildren.associateBy { "nested_${it.id}" }
+            val reordered = session.keys.mapNotNull { currentByKey[it] }
+            if (reordered.size == currentChildren.size) {
+                latestTaskOnChange.value.invoke(
+                    withUpdatedTaskChildren(latestTaskNote.value, reordered)
+                )
+            }
+        }
+        resetChildDrag()
+    }
+
+    val displayedChildren = childReorderSession?.keys
+        ?.mapNotNull { childDragBaseRows[it] }
+        ?: note.children
+
+    AdjacentReorderEffect(
+        isDragging = childReorderSession != null,
+        orderedKeys = childReorderSession?.keys.orEmpty(),
+        reorderSession = childReorderSession,
+        pointerY = childDragPointerY,
+        grabOffsetPx = childDragGrabOffsetPx,
+        releaseRequested = childDragReleaseRequested,
+        listState = listState,
+        density = LocalDensity.current,
+        onSessionChange = { childReorderSession = it },
+        onFinishDrag = { finishChildDrag() }
+    )
+
     fun publish(blocks: List<NoteBlock>) {
         onChange(note.copy(blocks = blocks))
     }
@@ -2379,7 +2429,91 @@ private fun NoteEditor(
     ) { padding ->
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = AppSpacing.screenHorizontal),
+            modifier = Modifier.fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = AppSpacing.screenHorizontal)
+                .pointerInput(note.id) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(
+                            requireUnconsumed = false,
+                            pass = PointerEventPass.Initial
+                        )
+                        val handleWidth = 40.dp.toPx()
+                        if (down.position.x < size.width - handleWidth ||
+                            childReorderSession != null
+                        ) return@awaitEachGesture
+
+                        val item = listState.layoutInfo.visibleItemsInfo.firstOrNull {
+                            down.position.y >= it.offset &&
+                                down.position.y < it.offset + it.size
+                        } ?: return@awaitEachGesture
+                        val key = item.key as? String ?: return@awaitEachGesture
+                        if (!key.startsWith("nested_")) return@awaitEachGesture
+                        val grabbedChild = latestTaskChildren.value.firstOrNull {
+                            "nested_${it.id}" == key
+                        } ?: return@awaitEachGesture
+
+                        var totalX = 0f
+                        var totalY = 0f
+                        var dragStartY = Float.NaN
+                        while (dragStartY.isNaN()) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id }
+                                ?: break
+                            if (!change.pressed) break
+
+                            val delta = change.position - change.previousPosition
+                            totalX += delta.x
+                            totalY += delta.y
+                            val absX = kotlin.math.abs(totalX)
+                            val absY = kotlin.math.abs(totalY)
+                            val touchSlop = viewConfiguration.touchSlop
+                            if (absY > touchSlop && absY > absX) {
+                                change.consume()
+                                dragStartY = change.position.y
+                            } else if (absX > touchSlop && absX >= absY) {
+                                return@awaitEachGesture
+                            }
+                        }
+                        if (dragStartY.isNaN() || childReorderSession != null) {
+                            return@awaitEachGesture
+                        }
+
+                        val currentChildren = latestTaskChildren.value
+                        val keys = currentChildren.map { "nested_${it.id}" }
+                        if (keys.size < 2 || currentChildren.none { it.id == grabbedChild.id }) {
+                            return@awaitEachGesture
+                        }
+                        childDragBaseRows = currentChildren.associateBy { "nested_${it.id}" }
+                        childReorderSession = AdjacentReorderEngine.begin(keys, key)
+                        childDragPointerY = dragStartY
+                        childDragGrabOffsetPx = dragStartY - item.offset
+                        childDragReleaseRequested = false
+
+                        var released = false
+                        try {
+                            var tracking = true
+                            while (tracking) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                val change = event.changes.firstOrNull { it.id == down.id }
+                                    ?: break
+                                if (!change.pressed) {
+                                    released = true
+                                    childDragReleaseRequested = true
+                                    tracking = false
+                                } else {
+                                    childDragPointerY = change.position.y
+                                    change.consume()
+                                }
+                            }
+                        } finally {
+                            // A cancelled gesture discards the transient order.
+                            if (!released && childReorderSession != null) {
+                                resetChildDrag()
+                            }
+                        }
+                    }
+                },
             verticalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
         ) {
@@ -2543,7 +2677,7 @@ private fun NoteEditor(
                         )
                     }
                 }
-                itemsIndexed(note.children, key = { _, child -> "nested_${child.id}" }) { index, child ->
+                itemsIndexed(displayedChildren, key = { _, child -> "nested_${child.id}" }) { index, child ->
                     val childStatus = child.recordStatus()
                     val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
                     Column(
@@ -2595,108 +2729,14 @@ private fun NoteEditor(
                             )
                             Spacer(Modifier.width(12.dp))
                             Box(
-                                modifier = Modifier.size(width = 36.dp, height = 40.dp)
-                                    .pointerInput(child.id, listState) {
-                                        var pointerYInViewport = 0f
-                                        var grabOffsetInRow = 0f
-                                        val handleHeightPx = 40.dp.toPx()
-                                        val edgeSizePx = 72.dp.toPx()
-                                        val maxEdgeScrollPx = 10.dp.toPx()
-                                        detectDragGestures(
-                                            onDragStart = { localOffset ->
-                                                val item = listState.layoutInfo.visibleItemsInfo
-                                                    .firstOrNull { it.key == "nested_${child.id}" }
-                                                if (item != null) {
-                                                    grabOffsetInRow =
-                                                        (item.size - handleHeightPx).coerceAtLeast(0f) / 2f +
-                                                            localOffset.y
-                                                    pointerYInViewport = item.offset + grabOffsetInRow
-                                                }
-                                            },
-                                            onDragEnd = { },
-                                            onDragCancel = { },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                pointerYInViewport += dragAmount.y
-
-                                                val layout = listState.layoutInfo
-                                                val visible = layout.visibleItemsInfo
-                                                val currentChildren = latestTaskChildren.value
-                                                val currentIndex = currentChildren.indexOfFirst { it.id == child.id }
-                                                val movingInfo = visible.firstOrNull {
-                                                    it.key == "nested_${child.id}"
-                                                }
-
-                                                if (currentIndex >= 0 && movingInfo != null) {
-                                                    val previousInfo = currentChildren.getOrNull(currentIndex - 1)
-                                                        ?.let { previous ->
-                                                            visible.firstOrNull { it.key == "nested_${previous.id}" }
-                                                        }
-                                                    val nextInfo = currentChildren.getOrNull(currentIndex + 1)
-                                                        ?.let { next ->
-                                                            visible.firstOrNull { it.key == "nested_${next.id}" }
-                                                        }
-                                                    val direction = AdjacentReorderController.crossedNeighbour(
-                                                        pointerY = pointerYInViewport,
-                                                        grabOffset = grabOffsetInRow,
-                                                        movingHeight = movingInfo.size.toFloat(),
-                                                        previous = previousInfo?.let {
-                                                            ReorderItemBounds(
-                                                                it.offset.toFloat(),
-                                                                (it.offset + it.size).toFloat()
-                                                            )
-                                                        },
-                                                        next = nextInfo?.let {
-                                                            ReorderItemBounds(
-                                                                it.offset.toFloat(),
-                                                                (it.offset + it.size).toFloat()
-                                                            )
-                                                        }
-                                                    )
-
-                                                    val targetIndex = when (direction) {
-                                                        ReorderDirection.TowardStart -> currentIndex - 1
-                                                        ReorderDirection.TowardEnd -> currentIndex + 1
-                                                        null -> -1
-                                                    }
-                                                    if (targetIndex in currentChildren.indices) {
-                                                        val reordered = currentChildren.toMutableList()
-                                                        val moving = reordered.removeAt(currentIndex)
-                                                        reordered.add(targetIndex, moving)
-                                                        latestTaskOnChange.value(
-                                                            withUpdatedTaskChildren(latestTaskNote.value, reordered)
-                                                        )
-                                                    }
-                                                }
-
-                                                // While the finger is held near an edge, scroll the
-                                                // same LazyColumn that owns the variable-height rows.
-                                                val viewportStart = layout.viewportStartOffset.toFloat()
-                                                val viewportEnd = layout.viewportEndOffset.toFloat()
-                                                val edgeScroll = when {
-                                                    pointerYInViewport < viewportStart + edgeSizePx ->
-                                                        -maxEdgeScrollPx * (
-                                                            (viewportStart + edgeSizePx - pointerYInViewport) /
-                                                                edgeSizePx
-                                                            ).coerceIn(0f, 1f)
-                                                    pointerYInViewport > viewportEnd - edgeSizePx ->
-                                                        maxEdgeScrollPx * (
-                                                            (pointerYInViewport - (viewportEnd - edgeSizePx)) /
-                                                                edgeSizePx
-                                                            ).coerceIn(0f, 1f)
-                                                    else -> 0f
-                                                }
-                                                if (edgeScroll != 0f) listState.dispatchRawDelta(edgeScroll)
-                                            }
-                                        )
-                                    },
+                                modifier = Modifier.size(width = 36.dp, height = 40.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 DragHandleIcon(color = dragHandleColor)
                             }
 
                         }
-                        if (index != note.children.lastIndex) {
+                        if (index != displayedChildren.lastIndex) {
                             HorizontalDivider(
                                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
                                 thickness = 0.6.dp
