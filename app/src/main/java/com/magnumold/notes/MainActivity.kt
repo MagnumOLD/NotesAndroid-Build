@@ -151,7 +151,7 @@ private object CardDimensions {
     val headerFirstLineHeight = 22.dp
     val handleTouchTargetSize = 40.dp
     val handleHitTargetTopOffset =
-        AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2
+        AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f
     // The visible handle's right edge follows the shared 20dp content guide.
     val handleHitTargetRightInset = AppSpacing.screenHorizontal - 2.dp
 }
