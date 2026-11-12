@@ -2412,6 +2412,7 @@ private fun NoteEditor(
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
+    var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
     var pendingDateMode by remember(note.id) { mutableStateOf(note.dateMode ?: RecordDateMode.DATE) }
