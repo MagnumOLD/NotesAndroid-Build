@@ -223,8 +223,19 @@ private fun formatRecordDate(timestamp: Long): String =
         timeZone = java.util.TimeZone.getTimeZone("UTC")
     }.format(java.util.Date(timestamp))
 
-private fun formatNoteCreationDate(timestamp: Long): String =
-    java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
+private fun formatNoteCreationDate(timestamp: Long): String {
+    val date = java.util.Date(timestamp)
+    val locale = java.util.Locale("ru")
+    val calendar = java.util.Calendar.getInstance().apply { time = date }
+    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+    val pattern = if (calendar.get(java.util.Calendar.YEAR) == currentYear) {
+        "EEE, d MMM"
+    } else {
+        "EEE, d MMM yyyy"
+    }
+    return java.text.SimpleDateFormat(pattern, locale).format(date)
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+}
 
 private val defaultNoteColors = listOf(
     Color(0xFF40C8E0), Color(0xFFFF9F0A), Color(0xFFFFD60A),
