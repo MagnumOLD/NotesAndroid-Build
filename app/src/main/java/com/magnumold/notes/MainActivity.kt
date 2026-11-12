@@ -152,6 +152,7 @@ internal data class Note(
     val statusBeforeAutoCompletion: RecordStatus? = null
 )
 
+/** Selected subtasks collapse into one temporary row; the model is updated only on release. */
 private data class ChildDragRow(val notes: List<Note>, val key: String)
 
 private fun createChildDragRows(
