@@ -2351,6 +2351,11 @@ private fun NoteEditor(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
         ) {
+            // Keep the first task row from becoming LazyColumn's viewport anchor
+            // while adjacent tasks exchange positions.
+            item(key = "task_reorder_viewport_anchor") {
+                Spacer(Modifier.height(1.dp))
+            }
             if (note.type != RecordType.NOTE &&
                 (note.titleEnabled || note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
@@ -2507,7 +2512,11 @@ private fun NoteEditor(
                 itemsIndexed(note.children, key = { _, child -> "nested_${child.id}" }) { index, child ->
                     val childStatus = child.recordStatus()
                     val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
-                    Column {
+                    Column(
+                        modifier = Modifier.animateItemPlacement(
+                            animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS)
+                        )
+                    ) {
                         val dragHandleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
