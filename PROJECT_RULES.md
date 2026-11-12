@@ -60,5 +60,6 @@ If a check cannot be run or its result cannot be verified, say so plainly.
 
 - Opening an existing task subitem or purchase item must never show the keyboard automatically.
 - Only the exact child record created by the current add action may receive autofocus; tapping an existing child clears that creation-only autofocus state.
-- New top-level tasks and purchases autofocus their title field only after that field has completed layout. Do not rely on an early focus request before the title field is attached.
+- New top-level tasks and purchases use the same dedicated top-bar title editor, with local TextFieldValue state so cursor/selection survive model updates; synchronize external title changes without resetting an unchanged selection. Autofocus only after the field has completed layout, show the keyboard once, and use the Done IME action to dismiss it. Existing records must not autofocus.
+- A parent Task or Purchase has exactly one title editor: the top-bar field. Do not expose a second `titleText` editor in the body or a toggle that reveals a duplicate field. Keep optional title/description behavior for child records unchanged.
 - Existing notes, tasks, purchases, and child records must not inherit autofocus from a previous creation action.
