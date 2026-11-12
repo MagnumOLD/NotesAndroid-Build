@@ -1744,7 +1744,7 @@ private fun DraggedNotesGroup(
     modifier: Modifier = Modifier
 ) {
     val anchorNote = notes.first()
-    val firstLine = if (anchorNote.titleEnabled && anchorNote.titleText.isNotBlank()) anchorNote.titleText.trim()
+    val firstLine = if ((anchorNote.type == RecordType.TASK || anchorNote.titleEnabled) && anchorNote.titleText.isNotBlank()) anchorNote.titleText.trim()
     else anchorNote.blocks.asSequence().mapNotNull {
         it.text.lineSequence().map(String::trim).firstOrNull { line -> line.isNotEmpty() }
     }.firstOrNull() ?: "Пустая заметка"
@@ -1878,7 +1878,7 @@ private fun NoteRow(
     statusNow: Long, onClick: () -> Unit, onLongPress: () -> Unit,
     colorSwipeEnabled: Boolean, onChangeColor: (Int) -> Unit
 ) {
-    val firstLine = if (note.titleEnabled && note.titleText.isNotBlank()) note.titleText.trim()
+    val firstLine = if ((note.type == RecordType.TASK || note.titleEnabled) && note.titleText.isNotBlank()) note.titleText.trim()
     else note.blocks.asSequence().mapNotNull {
         it.text.lineSequence().map(String::trim).firstOrNull { line -> line.isNotEmpty() }
     }.firstOrNull() ?: "Пустая заметка"
@@ -2202,12 +2202,29 @@ private fun NoteEditor(
                         .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        "Задачи",
-                        color = noteTextColor(topBarColor),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1
+                    BasicTextField(
+                        value = note.titleText,
+                        onValueChange = { onChange(note.copy(titleText = it)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            color = noteTextColor(topBarColor),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (note.titleText.isEmpty()) {
+                                    Text(
+                                        "Название задачи",
+                                        color = noteTextColor(topBarColor).copy(alpha = 0.48f),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
