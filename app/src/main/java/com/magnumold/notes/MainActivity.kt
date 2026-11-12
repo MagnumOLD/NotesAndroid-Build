@@ -2079,7 +2079,7 @@ private fun AppIcon(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun NoteEditor(
     note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, autoFocus: Boolean,
