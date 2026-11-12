@@ -14,6 +14,7 @@
 - A Task opens its own detail screen.
 - A Task contains a flat list of multiline task entries, not nested cards or a universal block model.
 - Each task entry has its own status. Completed entries are shown with struck-through text.
+- A Purchase opens its own editor, separate from the Task editor. Its nested entries are goods: show a checkbox on the right immediately before the drag handle; checked goods use the completed state and struck-through text. Purchase parent retains its own manual status; nested goods do not expose task-style status menus.
 - The task title is derived from its first line; do not add a separate title field unless explicitly requested.
 - Keep the interface minimalist and consistent with the existing app.
 
