@@ -1098,18 +1098,18 @@ private fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text("Светлая тема") },
                     trailingContent = { RadioButton(selected = themeMode == "light", onClick = { onThemeModeChange("light") }) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable { onThemeModeChange("light") }
+                    modifier = Modifier.clickable { onThemeModeChange("light") }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 ListItem(
                     headlineContent = { Text("Тёмная тема") },
                     trailingContent = { RadioButton(selected = themeMode == "dark", onClick = { onThemeModeChange("dark") }) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable { onThemeModeChange("dark") }
+                    modifier = Modifier.clickable { onThemeModeChange("dark") }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 ListItem(
                     headlineContent = { Text("Своя тема") },
                     supportingContent = { Text("Независимое оформление приложения") },
                     trailingContent = { RadioButton(selected = themeMode == "custom", onClick = { onThemeModeChange("custom") }) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable { onThemeModeChange("custom") }
+                    modifier = Modifier.clickable { onThemeModeChange("custom") }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
                 ListItem(headlineContent = { Text(if (themeMode == "custom") "Настройка своей темы" else "Настройка цветов темы", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
@@ -1126,7 +1126,7 @@ private fun SettingsScreen(
                         headlineContent = { Text(label) },
                         leadingContent = { Box(Modifier.size(30.dp).background(color, RoundedCornerShape(7.dp))) },
                         trailingContent = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable { customColorEditorKey = key }
+                        modifier = Modifier.clickable { customColorEditorKey = key }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                     )
                 }
                 TextButton(onClick = onResetThemeColors, modifier = Modifier.padding(start = AppSpacing.screenHorizontal)) {
@@ -1139,7 +1139,7 @@ private fun SettingsScreen(
                         headlineContent = { Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index]) },
                         leadingContent = { Box(Modifier.size(30.dp).background(color.copy(alpha = noteColorOpacity), RoundedCornerShape(7.dp))) },
                         trailingContent = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable { colorEditorIndex = index }
+                        modifier = Modifier.clickable { colorEditorIndex = index }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                     )
                 }
                 CompactOpacitySlider(value = noteColorOpacity, onValueChange = onNoteColorOpacityChange)
@@ -1152,7 +1152,7 @@ private fun SettingsScreen(
                     supportingContent = { Text("Темы и цвета интерфейса и заметок") },
                     leadingContent = { AppIcon(NoteIcon.Palette, contentDescription = null) },
                     trailingContent = { Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable { personalizationVisible = true }
+                    modifier = Modifier.clickable { personalizationVisible = true }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
                 ListItem(headlineContent = { Text("Хранение", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
@@ -1160,13 +1160,13 @@ private fun SettingsScreen(
                     headlineContent = { Text("Архив") },
                     supportingContent = { Text("Отложенные заметки") },
                     leadingContent = { AppIcon(NoteIcon.Archive, contentDescription = null) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable(onClick = onOpenArchive)
+                    modifier = Modifier.clickable(onClick = onOpenArchive).padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 ListItem(
                     headlineContent = { Text("Корзина") },
                     supportingContent = { Text("Удалённые заметки") },
                     leadingContent = { AppIcon(NoteIcon.Trash, contentDescription = null) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable(onClick = onOpenTrash)
+                    modifier = Modifier.clickable(onClick = onOpenTrash).padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
                 ListItem(headlineContent = { Text("Данные", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
@@ -1174,13 +1174,13 @@ private fun SettingsScreen(
                     headlineContent = { Text("Экспорт заметок") },
                     supportingContent = { Text("Сохранить резервную копию в JSON-файл") },
                     leadingContent = { AppIcon(NoteIcon.Upload, contentDescription = null) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable(onClick = onExport)
+                    modifier = Modifier.clickable(onClick = onExport).padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 ListItem(
                     headlineContent = { Text("Импорт заметок") },
                     supportingContent = { Text("Добавить заметки из резервной копии") },
                     leadingContent = { AppIcon(NoteIcon.Download, contentDescription = null) },
-                    modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset).clickable(onClick = onImport)
+                    modifier = Modifier.clickable(onClick = onImport).padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
             }
         }
