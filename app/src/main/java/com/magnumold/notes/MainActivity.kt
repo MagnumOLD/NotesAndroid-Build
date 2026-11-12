@@ -2835,21 +2835,6 @@ private fun NoteEditor(
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
                                 Spacer(Modifier.width(12.dp))
-                                Checkbox(
-                                    checked = childStatus == RecordStatus.COMPLETED,
-                                    onCheckedChange = { checked ->
-                                        val changed = child.copy(
-                                            status = if (checked) RecordStatus.COMPLETED else RecordStatus.WAITING,
-                                            deadlineResumeOverride = false
-                                        )
-                                        latestPurchaseOnChange.value(
-                                            withUpdatedPurchaseChildren(latestPurchaseNote.value,
-                                                latestPurchaseChildren.value.map { if (it.id == child.id) changed else it })
-                                        )
-                                    },
-                                    modifier = Modifier.size(40.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
                                 Box(
                                     modifier = Modifier.size(width = 36.dp, height = 40.dp),
                                     contentAlignment = Alignment.Center
@@ -3523,6 +3508,22 @@ private fun PurchaseEditor(
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
                                 Spacer(Modifier.width(12.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Checkbox(
+                                    checked = childStatus == RecordStatus.COMPLETED,
+                                    onCheckedChange = { checked ->
+                                        val changed = child.copy(
+                                            status = if (checked) RecordStatus.COMPLETED else RecordStatus.WAITING,
+                                            deadlineResumeOverride = false
+                                        )
+                                        latestPurchaseOnChange.value(
+                                            withUpdatedPurchaseChildren(latestPurchaseNote.value,
+                                                latestPurchaseChildren.value.map { if (it.id == child.id) changed else it })
+                                        )
+                                    },
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
                                 Box(
                                     modifier = Modifier.size(width = 36.dp, height = 40.dp),
                                     contentAlignment = Alignment.Center
