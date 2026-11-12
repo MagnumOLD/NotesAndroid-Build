@@ -1622,6 +1622,11 @@ private fun NotesHome(
                                     down.position.y >= it.offset &&
                                         down.position.y < it.offset + it.size
                                 } ?: return@awaitEachGesture
+                                val handleTop = item.offset + 11.dp.toPx()
+                                val handleBottom = handleTop + 40.dp.toPx()
+                                if (down.position.y < handleTop || down.position.y > handleBottom) {
+                                    return@awaitEachGesture
+                                }
                                 val key = item.key as? String ?: return@awaitEachGesture
                                 val row = latestRowsForPointer.value.firstOrNull { it.key == key }
                                     ?: return@awaitEachGesture
