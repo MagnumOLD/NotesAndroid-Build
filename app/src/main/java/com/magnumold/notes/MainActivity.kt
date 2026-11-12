@@ -797,6 +797,7 @@ class MainActivity : ComponentActivity() {
                         dark = dark,
                         topBarColor = activeThemeColors.topBar,
                         addButtonColor = activeThemeColors.addButton,
+                        selectionColor = activeThemeColors.selection,
                         autoFocus = autoFocusNewNote,
                         onBack = {
                             if (!selected.hasContent()) updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
@@ -1053,7 +1054,7 @@ private fun SettingsScreen(
                     if (themeMode == "custom") add(Triple("background", "Фон приложения", themeColors.background))
                     add(Triple("topBar", "Панель приложения", themeColors.topBar))
                     add(Triple("statusBar", "Строка состояния", themeColors.statusBar))
-                    add(Triple("selection", "Выделенные заметки", themeColors.selection))
+                    add(Triple("selection", "Цвет выделенных карточек", themeColors.selection))
                     add(Triple("addButton", "Кнопки добавления", themeColors.addButton))
                     add(Triple("collectionText", "Текст выбранной подборки", themeColors.collectionText))
                 }
@@ -2147,7 +2148,7 @@ private fun AppIcon(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun NoteEditor(
-    note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, autoFocus: Boolean,
+    note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, selectionColor: Color, autoFocus: Boolean,
     isTaskListItem: Boolean = false,
     onBack: () -> Unit, onChange: (Note) -> Unit, onDelete: (Boolean) -> Unit, onShare: () -> Unit
 ) {
@@ -2215,7 +2216,7 @@ private fun NoteEditor(
     if (selectedChild != null) {
         NoteEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
-            addButtonColor = addButtonColor, autoFocus = false, isTaskListItem = true,
+            addButtonColor = addButtonColor, selectionColor = selectionColor, autoFocus = false, isTaskListItem = true,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
@@ -2559,7 +2560,7 @@ private fun NoteEditor(
                         }
                     }
                 },
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else 4.dp),
             contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
@@ -2726,12 +2727,13 @@ private fun NoteEditor(
                     val group = row.notes.size > 1
                     Column(
                         modifier = Modifier.fillMaxWidth()
+                            .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
                         if (group) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                                    .background(Color.Transparent)
                                     .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -2747,7 +2749,7 @@ private fun NoteEditor(
                             val dragHandleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                             Row(
                                 modifier = Modifier.fillMaxWidth()
-                                    .background(if (childSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else Color.Transparent)
+                                    .background(Color.Transparent)
                                     .padding(vertical = AppSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
