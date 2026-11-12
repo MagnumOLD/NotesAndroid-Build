@@ -2835,6 +2835,21 @@ private fun NoteEditor(
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
                                 Spacer(Modifier.width(12.dp))
+                                Checkbox(
+                                    checked = childStatus == RecordStatus.COMPLETED,
+                                    onCheckedChange = { checked ->
+                                        val changed = child.copy(
+                                            status = if (checked) RecordStatus.COMPLETED else RecordStatus.WAITING,
+                                            deadlineResumeOverride = false
+                                        )
+                                        latestPurchaseOnChange.value(
+                                            withUpdatedPurchaseChildren(latestPurchaseNote.value,
+                                                latestPurchaseChildren.value.map { if (it.id == child.id) changed else it })
+                                        )
+                                    },
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
                                 Box(
                                     modifier = Modifier.size(width = 36.dp, height = 40.dp),
                                     contentAlignment = Alignment.Center
@@ -3080,7 +3095,7 @@ private fun PurchaseEditor(
                             Box {
                                 if (note.titleText.isEmpty()) {
                                     Text(
-                                        "Название покупки",
+                                        "Название товара",
                                         color = noteTextColor(topBarColor).copy(alpha = 0.48f),
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Medium
@@ -3122,7 +3137,7 @@ private fun PurchaseEditor(
                 }
             } else {
                 TopAppBar(
-                    title = { Text(if (isPurchaseListItem) "Покупка" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
+                    title = { Text(if (isPurchaseListItem) "Товар" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
                     navigationIcon = {},
                     actions = {
                         if (isPurchaseListItem) {
@@ -3188,10 +3203,10 @@ private fun PurchaseEditor(
                         contentColor = noteTextColor(addButtonColor),
                         shape = RoundedCornerShape(50)
                     ) {
-                        AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить покупку", modifier = Modifier.size(28.dp))
+                        AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить товар", modifier = Modifier.size(28.dp))
                     }
                     DropdownMenu(expanded = addMenuExpanded, onDismissRequest = { addMenuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Добавить покупку") }, onClick = { createChild(RecordType.PURCHASE) })
+                        DropdownMenuItem(text = { Text("Добавить товар") }, onClick = { createChild(RecordType.PURCHASE) })
                     }
                 }
             }
@@ -3366,7 +3381,7 @@ private fun PurchaseEditor(
                         }
                     }
                 }
-                if (isPurchaseListItem && purchaseDetailsExpanded) {
+                if (isPurchaseListItem && purchaseDetailsExpanded && note.type != RecordType.PURCHASE) {
                     item(key = "record_status") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
@@ -3449,7 +3464,7 @@ private fun PurchaseEditor(
                 if (note.children.isEmpty()) {
                     item(key = "empty_nested_tasks") {
                         Text(
-                            "Пока нет покупок",
+                            "Пока нет товаров",
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
@@ -3477,7 +3492,7 @@ private fun PurchaseEditor(
                         } else {
                             val child = row.notes.first()
                             val childStatus = child.recordStatus()
-                            val childText = child.blocks.toPlainText().ifBlank { "Пустая покупка" }
+                            val childText = child.blocks.toPlainText().ifBlank { "Пустой товар" }
                             val childSelected = child.id in selectedChildIds
                             val dragHandleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                             Row(
@@ -3486,33 +3501,6 @@ private fun PurchaseEditor(
                                     .padding(vertical = AppSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
-                                Box {
-                                    Box(Modifier.size(40.dp).clickable { childStatusMenuExpanded = true },
-                                        contentAlignment = Alignment.Center) {
-                                        TaskStatusMarker(childStatus)
-                                    }
-                                    DropdownMenu(
-                                        expanded = childStatusMenuExpanded,
-                                        onDismissRequest = { childStatusMenuExpanded = false }
-                                    ) {
-                                        RecordStatus.values().forEach { status ->
-                                            DropdownMenuItem(
-                                                text = { Text(recordStatusText(status)) },
-                                                onClick = {
-                                                    childStatusMenuExpanded = false
-                                                    val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                    val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
-                                                    latestPurchaseOnChange.value(
-                                                        withUpdatedPurchaseChildren(latestPurchaseNote.value,
-                                                            latestPurchaseChildren.value.map { if (it.id == child.id) changed else it })
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                                Spacer(Modifier.width(4.dp))
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
