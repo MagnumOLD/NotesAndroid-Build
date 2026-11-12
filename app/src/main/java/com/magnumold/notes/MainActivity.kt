@@ -2411,7 +2411,6 @@ private fun NoteEditor(
         mutableStateOf(listOf(listOf(NoteBlock(initialText, id = editorBlockId))))
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
-    var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
@@ -3040,7 +3039,6 @@ private fun PurchaseEditor(
         mutableStateOf(listOf(listOf(NoteBlock(initialText, id = editorBlockId))))
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
-    var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var purchaseDetailsExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
