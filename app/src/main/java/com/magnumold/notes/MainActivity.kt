@@ -2135,12 +2135,21 @@ private fun NoteRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (note.type != RecordType.NOTE) {
-                        Text(
-                            metadata,
-                            fontSize = 12.sp,
-                            color = rowTextColor.copy(alpha = 0.62f),
-                            maxLines = 1
-                        )
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    lerp(selectedBackground, rowTextColor, if (dark) 0.10f else 0.07f),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                metadata,
+                                fontSize = 12.sp,
+                                color = rowTextColor.copy(alpha = 0.82f),
+                                maxLines = 1
+                            )
+                        }
                     }
                     Spacer(Modifier.weight(1f))
                     Text(
