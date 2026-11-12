@@ -2618,7 +2618,7 @@ private fun NoteEditor(
                                                             ).coerceIn(0f, 1f)
                                                     else -> 0f
                                                 }
-                                                if (edgeScroll != 0f) listState.scrollBy(edgeScroll)
+                                                if (edgeScroll != 0f) listState.dispatchRawDelta(edgeScroll)
                                             }
                                         )
                                     },
