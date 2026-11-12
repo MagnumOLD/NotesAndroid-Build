@@ -2243,21 +2243,27 @@ private fun AppIcon(
 }
 
 @Composable
-private fun RecordTitleField(
-    noteId: Long,
-    value: String,
+private fun ParentRecordHeader(
+    note: Note,
     placeholder: String,
-    textColor: Color,
+    topBarColor: Color,
     autoFocus: Boolean,
-    modifier: Modifier = Modifier,
-    onValueChange: (String) -> Unit
+    selectedCount: Int,
+    onBack: () -> Unit,
+    onClearSelection: () -> Unit,
+    onDelete: () -> Unit,
+    onShare: () -> Unit,
+    onChange: (Note) -> Unit
 ) {
+    var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
+    var actionsMenuExpanded by remember(note.id) { mutableStateOf(false) }
+    val foreground = noteTextColor(topBarColor)
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    val focusRequester = remember(noteId) { FocusRequester() }
-    var fieldLaidOut by remember(noteId) { mutableStateOf(false) }
+    val focusRequester = remember(note.id) { FocusRequester() }
+    var fieldLaidOut by remember(note.id) { mutableStateOf(false) }
 
-    LaunchedEffect(noteId, autoFocus, fieldLaidOut) {
+    LaunchedEffect(note.id, autoFocus, fieldLaidOut) {
         if (autoFocus && fieldLaidOut) {
             withFrameNanos { }
             focusRequester.requestFocus()
@@ -2266,114 +2272,145 @@ private fun RecordTitleField(
         }
     }
 
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier
-            .focusRequester(focusRequester)
-            .onGloballyPositioned { fieldLaidOut = true },
-        singleLine = true,
-        textStyle = TextStyle(
-            color = textColor,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium
-        ),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(
-            onDone = {
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            }
-        ),
-        decorationBox = { innerTextField ->
-            Box {
-                if (value.isEmpty()) {
-                    Text(
-                        placeholder,
-                        color = textColor.copy(alpha = 0.48f),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                innerTextField()
-            }
-        }
-    )
-}
-
-@Composable
-private fun ParentRecordTopBar(
-    note: Note,
-    placeholder: String,
-    topBarColor: Color,
-    autoFocus: Boolean,
-    selectedCount: Int,
-    onClearSelection: () -> Unit,
-    onChange: (Note) -> Unit
-) {
-    var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
-    val foreground = noteTextColor(topBarColor)
-
-    if (selectedCount > 0) {
-        Row(
-            modifier = Modifier.fillMaxWidth().background(topBarColor)
-                .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("$selectedCount выбрано", fontSize = 18.sp, fontWeight = FontWeight.Medium,
-                color = foreground)
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = onClearSelection) {
-                AppIcon(NoteIcon.Close, "Отменить выделение", tint = foreground)
-            }
-        }
-    } else {
+    Column(
+        modifier = Modifier.fillMaxWidth().background(topBarColor)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth()
-                .background(topBarColor)
-                .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = AppSpacing.screenHorizontal, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RecordTitleField(
-                noteId = note.id,
-                value = note.titleText,
-                placeholder = placeholder,
-                textColor = foreground,
-                autoFocus = autoFocus,
-                modifier = Modifier.weight(1f),
-                onValueChange = { onChange(note.copy(titleText = it)) }
-            )
-            Text(
-                note.dateAt?.let { formatRecordDate(it) } ?: "—",
-                color = if (note.dateAt == null) foreground.copy(alpha = 0.58f)
-                    else foreground.copy(alpha = 0.82f),
-                fontSize = 12.sp,
-                maxLines = 1
-            )
-            Box {
-                Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
-                    contentAlignment = Alignment.Center) {
-                    TaskStatusMarker(note.recordStatus())
+            IconButton(
+                onClick = { if (selectedCount > 0) onClearSelection() else onBack() }
+            ) {
+                AppIcon(NoteIcon.Back, "Назад", tint = foreground)
+            }
+
+            if (selectedCount > 0) {
+                Text(
+                    "$selectedCount выбрано",
+                    modifier = Modifier.weight(1f),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = foreground
+                )
+                IconButton(onClick = onClearSelection) {
+                    AppIcon(NoteIcon.Close, "Отменить выделение", tint = foreground)
                 }
-                DropdownMenu(
-                    expanded = statusMenuExpanded,
-                    onDismissRequest = { statusMenuExpanded = false }
-                ) {
-                    RecordStatus.values().forEach { status ->
+            } else {
+                Spacer(Modifier.weight(1f))
+                Box {
+                    IconButton(onClick = { actionsMenuExpanded = true }) {
+                        AppIcon(NoteIcon.More, "Действия", tint = foreground)
+                    }
+                    DropdownMenu(
+                        expanded = actionsMenuExpanded,
+                        onDismissRequest = { actionsMenuExpanded = false }
+                    ) {
                         DropdownMenuItem(
-                            text = { Text(recordStatusText(status)) },
+                            text = { Text("Поделиться") },
                             onClick = {
-                                statusMenuExpanded = false
-                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
-                                    status != RecordStatus.MISSED
-                                onChange(note.copy(
-                                    status = status,
-                                    statusBeforeAutoCompletion = null,
-                                    deadlineResumeOverride = resumingMissed
-                                ))
+                                actionsMenuExpanded = false
+                                onShare()
                             }
                         )
+                        DropdownMenuItem(
+                            text = { Text("Удалить") },
+                            onClick = {
+                                actionsMenuExpanded = false
+                                onDelete()
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        if (selectedCount == 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(
+                        start = AppSpacing.screenHorizontal,
+                        end = AppSpacing.screenHorizontal,
+                        top = 2.dp,
+                        bottom = AppSpacing.sm
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+                verticalAlignment = Alignment.Top
+            ) {
+                BasicTextField(
+                    value = note.titleText,
+                    onValueChange = { onChange(note.copy(titleText = it)) },
+                    modifier = Modifier.weight(1f)
+                        .padding(vertical = 4.dp)
+                        .focusRequester(focusRequester)
+                        .onGloballyPositioned { fieldLaidOut = true },
+                    textStyle = TextStyle(
+                        color = foreground,
+                        fontSize = 18.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(foreground),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        }
+                    ),
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (note.titleText.isEmpty()) {
+                                Text(
+                                    placeholder,
+                                    color = foreground.copy(alpha = 0.48f),
+                                    fontSize = 18.sp,
+                                    lineHeight = 24.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(foreground.copy(alpha = 0.12f))
+                            .clickable { statusMenuExpanded = true }
+                            .padding(horizontal = 10.dp, vertical = 7.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            recordStatusText(note.recordStatus()),
+                            color = foreground,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = statusMenuExpanded,
+                        onDismissRequest = { statusMenuExpanded = false }
+                    ) {
+                        RecordStatus.values().forEach { status ->
+                            DropdownMenuItem(
+                                text = { Text(recordStatusText(status)) },
+                                onClick = {
+                                    statusMenuExpanded = false
+                                    val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                                        status != RecordStatus.MISSED
+                                    onChange(note.copy(
+                                        status = status,
+                                        statusBeforeAutoCompletion = null,
+                                        deadlineResumeOverride = resumingMissed
+                                    ))
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -2566,13 +2603,16 @@ private fun NoteEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                ParentRecordTopBar(
+                ParentRecordHeader(
                     note = note,
                     placeholder = "Название задачи",
                     topBarColor = topBarColor,
                     autoFocus = autoFocus,
                     selectedCount = selectedChildIds.size,
+                    onBack = onBack,
                     onClearSelection = { selectedChildIds = emptySet() },
+                    onDelete = { onDelete(false) },
+                    onShare = onShare,
                     onChange = onChange
                 )
             } else {
@@ -3194,13 +3234,16 @@ private fun PurchaseEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
-                ParentRecordTopBar(
+                ParentRecordHeader(
                     note = note,
-                    placeholder = "Название товара",
+                    placeholder = "Название покупки",
                     topBarColor = topBarColor,
                     autoFocus = autoFocus,
                     selectedCount = selectedChildIds.size,
+                    onBack = onBack,
                     onClearSelection = { selectedChildIds = emptySet() },
+                    onDelete = { onDelete(false) },
+                    onShare = onShare,
                     onChange = onChange
                 )
             } else {
