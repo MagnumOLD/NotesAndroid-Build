@@ -218,13 +218,6 @@ private fun withUpdatedPurchaseChildren(parent: Note, children: List<Note>): Not
     }
 }
 
-private fun statusPillBackground(cardBackground: Color, textColor: Color): Color {
-    // Keep the pill deliberately understated on black, white, and user-colored cards.
-    val base = cardBackground.copy(alpha = 1f)
-    val foreground = textColor.copy(alpha = 1f)
-    return lerp(base, foreground, 0.09f)
-}
-
 private fun formatRecordDate(timestamp: Long): String =
     java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).apply {
         timeZone = java.util.TimeZone.getTimeZone("UTC")
@@ -2142,21 +2135,12 @@ private fun NoteRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (note.type != RecordType.NOTE) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    statusPillBackground(selectedBackground, rowTextColor),
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                metadata,
-                                fontSize = 12.sp,
-                                color = rowTextColor.copy(alpha = 0.82f),
-                                maxLines = 1
-                            )
-                        }
+                        Text(
+                            metadata,
+                            fontSize = 12.sp,
+                            color = rowTextColor.copy(alpha = 0.82f),
+                            maxLines = 1
+                        )
                     }
                     Spacer(Modifier.weight(1f))
                     Text(
