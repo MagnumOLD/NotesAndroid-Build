@@ -2215,16 +2215,17 @@ private fun NoteEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                Column(
+                Row(
                     modifier = Modifier.fillMaxWidth()
                         .background(topBarColor)
                         .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     BasicTextField(
                         value = note.titleText,
                         onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.weight(1f),
                         singleLine = true,
                         textStyle = TextStyle(
                             color = noteTextColor(topBarColor),
@@ -2245,41 +2246,32 @@ private fun NoteEditor(
                             }
                         }
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                note.dateAt?.let { formatRecordDate(it) } ?: "—",
-                                color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
-                                    else noteTextColor(topBarColor).copy(alpha = 0.82f),
-                                fontSize = 12.sp,
-                                maxLines = 1
-                            )
-                            Box {
-                                Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
-                                    contentAlignment = Alignment.Center) {
-                                    TaskStatusMarker(note.recordStatus())
-                                }
-                                DropdownMenu(
-                                    expanded = statusMenuExpanded,
-                                    onDismissRequest = { statusMenuExpanded = false }
-                                ) {
-                                    RecordStatus.values().forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(recordStatusText(status)) },
-                                            onClick = {
-                                                statusMenuExpanded = false
-                                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                val updated = note.copy(status = status, statusBeforeAutoCompletion = null,
-                                                    deadlineResumeOverride = resumingMissed)
-                                                onChange(updated)
-                                            }
-                                        )
+                    Text(
+                        note.dateAt?.let { formatRecordDate(it) } ?: "—",
+                        color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
+                            else noteTextColor(topBarColor).copy(alpha = 0.82f),
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+                    Box {
+                        Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
+                            contentAlignment = Alignment.Center) {
+                            TaskStatusMarker(note.recordStatus())
+                        }
+                        DropdownMenu(
+                            expanded = statusMenuExpanded,
+                            onDismissRequest = { statusMenuExpanded = false }
+                        ) {
+                            RecordStatus.values().forEach { status ->
+                                DropdownMenuItem(
+                                    text = { Text(recordStatusText(status)) },
+                                    onClick = {
+                                        statusMenuExpanded = false
+                                        val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
+                                        onChange(note.copy(status = status, statusBeforeAutoCompletion = null,
+                                            deadlineResumeOverride = resumingMissed))
                                     }
-                                }
+                                )
                             }
                         }
                     }
