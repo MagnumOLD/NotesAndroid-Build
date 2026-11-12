@@ -151,6 +151,20 @@ internal data class Note(
     val deadlineResumeOverride: Boolean = false, val children: List<Note> = emptyList(),
     val statusBeforeAutoCompletion: RecordStatus? = null
 )
+
+private data class ChildDragRow(val notes: List<Note>, val key: String)
+
+private fun createChildDragRows(children: List<Note>, selectedIds: Set<Long>): List<ChildDragRow> {
+    val selected = children.filter { it.id in selectedIds }
+    if (selected.size <= 1) return children.map { ChildDragRow(listOf(it), "nested_${it.id}") }
+    val firstSelectedIndex = children.indexOfFirst { it.id in selectedIds }
+    return buildList {
+        children.forEachIndexed { index, child ->
+            if (index == firstSelectedIndex) add(ChildDragRow(selected, "nested_group"))
+            if (child.id !in selectedIds) add(ChildDragRow(listOf(child), "nested_${child.id}"))
+        }
+    }
+}
 private data class NoteCollection(val id: Long, val name: String, val notes: List<Note> = emptyList())
 private data class VaultNote(val note: Note, val collectionId: Long?, val position: Int, val movedAt: Long)
 
@@ -2153,6 +2167,7 @@ private fun NoteEditor(
         datePickerState.selectedDateMillis = note.dateAt
     }
     var selectedChildId by remember(note.id) { mutableStateOf<Long?>(null) }
+    var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
@@ -2160,7 +2175,7 @@ private fun NoteEditor(
     val latestTaskChildren = rememberUpdatedState(note.children)
     val latestTaskOnChange = rememberUpdatedState(onChange)
     var childReorderSession by remember(note.id) { mutableStateOf<ReorderSession?>(null) }
-    var childDragBaseRows by remember(note.id) { mutableStateOf<Map<String, Note>>(emptyMap()) }
+    var childDragBaseRows by remember(note.id) { mutableStateOf<Map<String, ChildDragRow>>(emptyMap()) }
     var childDragPointerY by remember(note.id) { mutableFloatStateOf(0f) }
     var childDragGrabOffsetPx by remember(note.id) { mutableFloatStateOf(0f) }
     var childDragReleaseRequested by remember(note.id) { mutableStateOf(false) }
@@ -2230,9 +2245,10 @@ private fun NoteEditor(
         val session = childReorderSession
         if (session != null) {
             val currentChildren = latestTaskChildren.value
-            val currentByKey = currentChildren.associateBy { "nested_${it.id}" }
-            val reordered = session.keys.mapNotNull { currentByKey[it] }
-            if (reordered.size == currentChildren.size) {
+            val reordered = session.keys.flatMap { childDragBaseRows[it]?.notes.orEmpty() }
+            if (reordered.size == currentChildren.size &&
+                reordered.map { it.id }.toSet() == currentChildren.map { it.id }.toSet()
+            ) {
                 latestTaskOnChange.value.invoke(
                     withUpdatedTaskChildren(latestTaskNote.value, reordered)
                 )
@@ -2241,9 +2257,9 @@ private fun NoteEditor(
         resetChildDrag()
     }
 
-    val displayedChildren = childReorderSession?.keys
+    val displayedChildRows = childReorderSession?.keys
         ?.mapNotNull { childDragBaseRows[it] }
-        ?: note.children
+        ?: note.children.map { ChildDragRow(listOf(it), "nested_${it.id}") }
 
     AdjacentReorderEffect(
         isDragging = childReorderSession != null,
@@ -2289,7 +2305,20 @@ private fun NoteEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                Row(
+                if (selectedChildIds.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(topBarColor)
+                            .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("${selectedChildIds.size} выбрано", fontSize = 18.sp, fontWeight = FontWeight.Medium,
+                            color = noteTextColor(topBarColor))
+                        Spacer(Modifier.weight(1f))
+                        IconButton(onClick = { selectedChildIds = emptySet() }) {
+                            AppIcon(NoteIcon.Close, "Отменить выделение", tint = noteTextColor(topBarColor))
+                        }
+                    }
+                } else Row(
                     modifier = Modifier.fillMaxWidth()
                         .background(topBarColor)
                         .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
@@ -2449,9 +2478,10 @@ private fun NoteEditor(
                         } ?: return@awaitEachGesture
                         val key = item.key as? String ?: return@awaitEachGesture
                         if (!key.startsWith("nested_")) return@awaitEachGesture
-                        val grabbedChild = latestTaskChildren.value.firstOrNull {
-                            "nested_${it.id}" == key
-                        } ?: return@awaitEachGesture
+                        val grabbedRow = displayedChildRows.firstOrNull { it.key == key }
+                            ?: return@awaitEachGesture
+                        val grabbedChild = grabbedRow.notes.firstOrNull()
+                            ?: return@awaitEachGesture
 
                         var totalX = 0f
                         var totalY = 0f
@@ -2480,14 +2510,27 @@ private fun NoteEditor(
                         }
 
                         val currentChildren = latestTaskChildren.value
-                        val keys = currentChildren.map { "nested_${it.id}" }
+                        val movingIds = if (grabbedChild.id in selectedChildIds && selectedChildIds.size > 1) {
+                            selectedChildIds
+                        } else {
+                            setOf(grabbedChild.id)
+                        }
+                        val rows = createChildDragRows(currentChildren, movingIds)
+                        val keys = rows.map { it.key }
                         if (keys.size < 2 || currentChildren.none { it.id == grabbedChild.id }) {
                             return@awaitEachGesture
                         }
-                        childDragBaseRows = currentChildren.associateBy { "nested_${it.id}" }
-                        childReorderSession = AdjacentReorderEngine.begin(keys, key)
+                        val firstMovingChild = rows.firstOrNull { row -> row.notes.any { it.id in movingIds } }
+                            ?.notes?.firstOrNull()
+                        val groupAnchorOffset = firstMovingChild?.let { anchor ->
+                            listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "nested_${anchor.id}" }?.offset
+                        } ?: item.offset
+                        childDragBaseRows = rows.associateBy { it.key }
+                        val movingKey = rows.firstOrNull { row -> row.notes.any { it.id == grabbedChild.id } }?.key
+                            ?: return@awaitEachGesture
+                        childReorderSession = AdjacentReorderEngine.begin(keys, movingKey)
                         childDragPointerY = dragStartY
-                        childDragGrabOffsetPx = dragStartY - item.offset
+                        childDragGrabOffsetPx = dragStartY - groupAnchorOffset
                         childDragReleaseRequested = false
 
                         var released = false
@@ -2677,70 +2720,94 @@ private fun NoteEditor(
                         )
                     }
                 }
-                itemsIndexed(displayedChildren, key = { _, child -> "nested_${child.id}" }) { index, child ->
-                    val childStatus = child.recordStatus()
-                    val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
+                itemsIndexed(displayedChildRows, key = { _, row -> row.key }) { index, row ->
+                    val group = row.notes.size > 1
                     Column(
-                        modifier = Modifier.animateItemPlacement(
-                            animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS)
-                        )
+                        modifier = Modifier.fillMaxWidth()
+                            .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
-                        val dragHandleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
-                            Box {
-                                Box(Modifier.size(40.dp).clickable { childStatusMenuExpanded = true },
-                                    contentAlignment = Alignment.Center) {
-                                    TaskStatusMarker(childStatus)
-                                }
-                                DropdownMenu(
-                                    expanded = childStatusMenuExpanded,
-                                    onDismissRequest = { childStatusMenuExpanded = false }
-                                ) {
-                                    RecordStatus.values().forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(recordStatusText(status)) },
-                                            onClick = {
-                                                childStatusMenuExpanded = false
-                                                val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
-                                                latestTaskOnChange.value(
-                                                    withUpdatedTaskChildren(latestTaskNote.value,
-                                                        latestTaskChildren.value.map { if (it.id == child.id) changed else it })
-                                                )
-                                            }
-                                        )
+                        if (group) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                                    .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.md),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Группа", modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                DragHandleIcon(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f), compressed = true)
+                            }
+                        } else {
+                            val child = row.notes.first()
+                            val childStatus = child.recordStatus()
+                            val childText = child.blocks.toPlainText().ifBlank { "Пустая задача" }
+                            val childSelected = child.id in selectedChildIds
+                            val dragHandleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .background(if (childSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else Color.Transparent)
+                                    .padding(vertical = AppSpacing.md),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
+                                Box {
+                                    Box(Modifier.size(40.dp).clickable { childStatusMenuExpanded = true },
+                                        contentAlignment = Alignment.Center) {
+                                        TaskStatusMarker(childStatus)
+                                    }
+                                    DropdownMenu(
+                                        expanded = childStatusMenuExpanded,
+                                        onDismissRequest = { childStatusMenuExpanded = false }
+                                    ) {
+                                        RecordStatus.values().forEach { status ->
+                                            DropdownMenuItem(
+                                                text = { Text(recordStatusText(status)) },
+                                                onClick = {
+                                                    childStatusMenuExpanded = false
+                                                    val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
+                                                    val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
+                                                    latestTaskOnChange.value(
+                                                        withUpdatedTaskChildren(latestTaskNote.value,
+                                                            latestTaskChildren.value.map { if (it.id == child.id) changed else it })
+                                                    )
+                                                }
+                                            )
+                                        }
                                     }
                                 }
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    childText,
+                                    modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (selectedChildIds.isNotEmpty()) {
+                                                    selectedChildIds = if (childSelected) selectedChildIds - child.id else selectedChildIds + child.id
+                                                } else {
+                                                    selectedChildId = child.id
+                                                }
+                                            },
+                                            onLongPress = { selectedChildIds = selectedChildIds + child.id }
+                                        )
+                                    },
+                                    color = if (childStatus == RecordStatus.COMPLETED)
+                                        MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 16.sp,
+                                    lineHeight = 24.sp,
+                                    textDecoration = if (childStatus == RecordStatus.COMPLETED)
+                                        TextDecoration.LineThrough else TextDecoration.None
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier.size(width = 36.dp, height = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    DragHandleIcon(color = dragHandleColor)
+                                }
                             }
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                childText,
-                                modifier = Modifier.weight(1f).clickable { selectedChildId = child.id },
-                                color = if (childStatus == RecordStatus.COMPLETED)
-                                    MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                                fontSize = 16.sp,
-                                lineHeight = 24.sp,
-                                textDecoration = if (childStatus == RecordStatus.COMPLETED)
-                                    TextDecoration.LineThrough else TextDecoration.None
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Box(
-                                modifier = Modifier.size(width = 36.dp, height = 40.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                DragHandleIcon(color = dragHandleColor)
-                            }
-
                         }
-                        if (index != displayedChildren.lastIndex) {
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
-                                thickness = 0.6.dp
-                            )
+                        if (index != displayedChildRows.lastIndex) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), thickness = 0.6.dp)
                         }
                     }
                 }
