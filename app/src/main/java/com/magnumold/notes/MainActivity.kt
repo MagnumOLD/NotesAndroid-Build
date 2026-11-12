@@ -69,6 +69,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.debounce
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
@@ -173,6 +174,12 @@ private fun createChildDragRows(
     }
 }
 private data class NoteCollection(val id: Long, val name: String, val notes: List<Note> = emptyList())
+private data class PersistenceSnapshot(
+    val notes: List<Note>,
+    val collections: List<NoteCollection>,
+    val archived: List<VaultNote>,
+    val trash: List<VaultNote>
+)
 private data class VaultNote(val note: Note, val collectionId: Long?, val position: Int, val movedAt: Long)
 
 private fun List<NoteBlock>.toPlainText(): String = joinToString("\n\n") { block ->
@@ -698,8 +705,20 @@ class MainActivity : ComponentActivity() {
                     flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                 }
             }
-            LaunchedEffect(notes.toList(), collections.toList(), archived.toList(), trash.toList()) {
-                saveNotes(notes.toList()); saveCollections(collections.toList()); saveVault("archive", archived.toList()); saveVault("trash", trash.toList())
+            LaunchedEffect(Unit) {
+                snapshotFlow {
+                    PersistenceSnapshot(
+                        notes = notes.toList(),
+                        collections = collections.toList(),
+                        archived = archived.toList(),
+                        trash = trash.toList()
+                    )
+                }.debounce(300).collect { snapshot ->
+                    saveNotes(snapshot.notes)
+                    saveCollections(snapshot.collections)
+                    saveVault("archive", snapshot.archived)
+                    saveVault("trash", snapshot.trash)
+                }
             }
             LaunchedEffect(themeMode, dark) {
                 getPreferences(Context.MODE_PRIVATE).edit().putString("theme_mode", themeMode)
@@ -2237,15 +2256,6 @@ private fun RecordTitleField(
     val focusManager = LocalFocusManager.current
     val focusRequester = remember(noteId) { FocusRequester() }
     var fieldLaidOut by remember(noteId) { mutableStateOf(false) }
-    var fieldValue by remember(noteId) {
-        mutableStateOf(TextFieldValue(value, TextRange(value.length)))
-    }
-
-    LaunchedEffect(noteId, value) {
-        if (fieldValue.text != value) {
-            fieldValue = TextFieldValue(value, TextRange(value.length))
-        }
-    }
 
     LaunchedEffect(noteId, autoFocus, fieldLaidOut) {
         if (autoFocus && fieldLaidOut) {
@@ -2257,11 +2267,8 @@ private fun RecordTitleField(
     }
 
     BasicTextField(
-        value = fieldValue,
-        onValueChange = {
-            fieldValue = it
-            onValueChange(it.text)
-        },
+        value = value,
+        onValueChange = onValueChange,
         modifier = modifier
             .focusRequester(focusRequester)
             .onGloballyPositioned { fieldLaidOut = true },
@@ -2280,7 +2287,7 @@ private fun RecordTitleField(
         ),
         decorationBox = { innerTextField ->
             Box {
-                if (fieldValue.text.isEmpty()) {
+                if (value.isEmpty()) {
                     Text(
                         placeholder,
                         color = textColor.copy(alpha = 0.48f),
@@ -2292,6 +2299,86 @@ private fun RecordTitleField(
             }
         }
     )
+}
+
+@Composable
+private fun ParentRecordTopBar(
+    note: Note,
+    placeholder: String,
+    topBarColor: Color,
+    autoFocus: Boolean,
+    selectedCount: Int,
+    onClearSelection: () -> Unit,
+    onChange: (Note) -> Unit
+) {
+    var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
+    val foreground = noteTextColor(topBarColor)
+
+    if (selectedCount > 0) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(topBarColor)
+                .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("$selectedCount выбрано", fontSize = 18.sp, fontWeight = FontWeight.Medium,
+                color = foreground)
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onClearSelection) {
+                AppIcon(NoteIcon.Close, "Отменить выделение", tint = foreground)
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .background(topBarColor)
+                .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RecordTitleField(
+                noteId = note.id,
+                value = note.titleText,
+                placeholder = placeholder,
+                textColor = foreground,
+                autoFocus = autoFocus,
+                modifier = Modifier.weight(1f),
+                onValueChange = { onChange(note.copy(titleText = it)) }
+            )
+            Text(
+                note.dateAt?.let { formatRecordDate(it) } ?: "—",
+                color = if (note.dateAt == null) foreground.copy(alpha = 0.58f)
+                    else foreground.copy(alpha = 0.82f),
+                fontSize = 12.sp,
+                maxLines = 1
+            )
+            Box {
+                Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
+                    contentAlignment = Alignment.Center) {
+                    TaskStatusMarker(note.recordStatus())
+                }
+                DropdownMenu(
+                    expanded = statusMenuExpanded,
+                    onDismissRequest = { statusMenuExpanded = false }
+                ) {
+                    RecordStatus.values().forEach { status ->
+                        DropdownMenuItem(
+                            text = { Text(recordStatusText(status)) },
+                            onClick = {
+                                statusMenuExpanded = false
+                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                                    status != RecordStatus.MISSED
+                                onChange(note.copy(
+                                    status = status,
+                                    statusBeforeAutoCompletion = null,
+                                    deadlineResumeOverride = resumingMissed
+                                ))
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -2479,65 +2566,15 @@ private fun NoteEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                if (selectedChildIds.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().background(topBarColor)
-                            .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("${selectedChildIds.size} выбрано", fontSize = 18.sp, fontWeight = FontWeight.Medium,
-                            color = noteTextColor(topBarColor))
-                        Spacer(Modifier.weight(1f))
-                        IconButton(onClick = { selectedChildIds = emptySet() }) {
-                            AppIcon(NoteIcon.Close, "Отменить выделение", tint = noteTextColor(topBarColor))
-                        }
-                    }
-                } else Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .background(topBarColor)
-                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RecordTitleField(
-                        noteId = note.id,
-                        value = note.titleText,
-                        placeholder = "Название задачи",
-                        textColor = noteTextColor(topBarColor),
-                        autoFocus = autoFocus,
-                        modifier = Modifier.weight(1f),
-                        onValueChange = { onChange(note.copy(titleText = it)) }
-                    )
-                    Text(
-                        note.dateAt?.let { formatRecordDate(it) } ?: "—",
-                        color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
-                            else noteTextColor(topBarColor).copy(alpha = 0.82f),
-                        fontSize = 12.sp,
-                        maxLines = 1
-                    )
-                    Box {
-                        Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
-                            contentAlignment = Alignment.Center) {
-                            TaskStatusMarker(note.recordStatus())
-                        }
-                        DropdownMenu(
-                            expanded = statusMenuExpanded,
-                            onDismissRequest = { statusMenuExpanded = false }
-                        ) {
-                            RecordStatus.values().forEach { status ->
-                                DropdownMenuItem(
-                                    text = { Text(recordStatusText(status)) },
-                                    onClick = {
-                                        statusMenuExpanded = false
-                                        val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                        onChange(note.copy(status = status, statusBeforeAutoCompletion = null,
-                                            deadlineResumeOverride = resumingMissed))
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                ParentRecordTopBar(
+                    note = note,
+                    placeholder = "Название задачи",
+                    topBarColor = topBarColor,
+                    autoFocus = autoFocus,
+                    selectedCount = selectedChildIds.size,
+                    onClearSelection = { selectedChildIds = emptySet() },
+                    onChange = onChange
+                )
             } else {
                 TopAppBar(
                     title = { Text(if (isTaskListItem) "Подзадача" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
@@ -3158,65 +3195,15 @@ private fun PurchaseEditor(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
-                if (selectedChildIds.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().background(topBarColor)
-                            .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("${selectedChildIds.size} выбрано", fontSize = 18.sp, fontWeight = FontWeight.Medium,
-                            color = noteTextColor(topBarColor))
-                        Spacer(Modifier.weight(1f))
-                        IconButton(onClick = { selectedChildIds = emptySet() }) {
-                            AppIcon(NoteIcon.Close, "Отменить выделение", tint = noteTextColor(topBarColor))
-                        }
-                    }
-                } else Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .background(topBarColor)
-                        .padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RecordTitleField(
-                        noteId = note.id,
-                        value = note.titleText,
-                        placeholder = "Название товара",
-                        textColor = noteTextColor(topBarColor),
-                        autoFocus = autoFocus,
-                        modifier = Modifier.weight(1f),
-                        onValueChange = { onChange(note.copy(titleText = it)) }
-                    )
-                    Text(
-                        note.dateAt?.let { formatRecordDate(it) } ?: "—",
-                        color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
-                            else noteTextColor(topBarColor).copy(alpha = 0.82f),
-                        fontSize = 12.sp,
-                        maxLines = 1
-                    )
-                    Box {
-                        Box(Modifier.size(36.dp).clickable { statusMenuExpanded = true },
-                            contentAlignment = Alignment.Center) {
-                            TaskStatusMarker(note.recordStatus())
-                        }
-                        DropdownMenu(
-                            expanded = statusMenuExpanded,
-                            onDismissRequest = { statusMenuExpanded = false }
-                        ) {
-                            RecordStatus.values().forEach { status ->
-                                DropdownMenuItem(
-                                    text = { Text(recordStatusText(status)) },
-                                    onClick = {
-                                        statusMenuExpanded = false
-                                        val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                        onChange(note.copy(status = status, statusBeforeAutoCompletion = null,
-                                            deadlineResumeOverride = resumingMissed))
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                ParentRecordTopBar(
+                    note = note,
+                    placeholder = "Название товара",
+                    topBarColor = topBarColor,
+                    autoFocus = autoFocus,
+                    selectedCount = selectedChildIds.size,
+                    onClearSelection = { selectedChildIds = emptySet() },
+                    onChange = onChange
+                )
             } else {
                 TopAppBar(
                     title = { Text(if (isPurchaseListItem) "Товар" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
