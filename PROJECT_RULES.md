@@ -19,7 +19,7 @@
 - Keep the interface minimalist and consistent with the existing app.
 - Main-list cards for all three record types share one structure: multiline content/title at the upper left, drag handle at the upper right aligned with the first text line, and a metadata row below with note type or task/purchase status on the left and creation date on the right.
 - Main-list card height is content-driven with a compact minimum height; do not truncate a long first line to one visual line.
-- Format the creation date on the right as a Russian weekday and abbreviated month: `Чт, 12 нояб.` for the current year and `Чт, 12 нояб. 2025` for another year. Keep record type/status on the left.
+- Format the creation date on the right dynamically: `Сегодня` for the current local calendar day, `Вчера` for the previous local calendar day, `Чт. 11.11` for other dates in the current year, and `Чт. 11.11.2025` for dates in another year. Calculate the label from the creation timestamp and device-local calendar whenever the card is rendered; never persist relative labels as text. Keep record type/status on the left.
 - Keep the drag handle in the same top-right position for every card, including cards with multiline text and the temporary grouped-drag placeholder. Preserve the existing stable-key drag hit target and adjacent-swap behavior. Keep its geometry unchanged; use a subdued tint adapted to the actual rendered card background (#555555 when the card text is light, #AAAAAA when the card text is dark); preserve the existing theme-based tint for nested task/purchase entries.
 
 ## Change discipline
