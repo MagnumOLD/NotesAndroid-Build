@@ -1880,15 +1880,30 @@ private fun NotesHome(
 private fun MainCardHeader(
     text: String,
     textColor: Color,
-    pinned: Boolean = false
+    pinned: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    onLongPress: (() -> Unit)? = null
 ) {
+    val latestOnClick by rememberUpdatedState(onClick)
+    val latestOnLongPress by rememberUpdatedState(onLongPress)
+    val textInteractionModifier = if (onClick != null || onLongPress != null) {
+        Modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onTap = { latestOnClick?.invoke() },
+                onLongPress = { latestOnLongPress?.invoke() }
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
     ) {
         Text(
             text,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).then(textInteractionModifier),
             fontSize = 16.sp,
             lineHeight = 22.sp,
             fontWeight = FontWeight.Medium,
@@ -2202,7 +2217,13 @@ private fun NoteRow(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                MainCardHeader(firstLine, rowTextColor, pinned)
+                MainCardHeader(
+                    text = firstLine,
+                    textColor = rowTextColor,
+                    pinned = pinned,
+                    onClick = onClick,
+                    onLongPress = onLongPress
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .pointerInput(note.id, selected) {
