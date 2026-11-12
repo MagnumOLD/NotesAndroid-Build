@@ -3491,7 +3491,8 @@ private fun PurchaseEditor(
                             val childStatus = child.recordStatus()
                             val childText = child.blocks.toPlainText().ifBlank { "Пустой товар" }
                             val childSelected = child.id in selectedChildIds
-                            val dragHandleColor = subtleDragHandleColor(MaterialTheme.colorScheme.onSurface)
+                            val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                            val dragHandleColor = subtleDragHandleColor(childTextColor)
                             Row(
                                 modifier = Modifier.fillMaxWidth()
                                     .background(Color.Transparent)
@@ -3512,8 +3513,7 @@ private fun PurchaseEditor(
                                             onLongPress = { selectedChildIds = selectedChildIds + child.id }
                                         )
                                     },
-                                    color = if (childStatus == RecordStatus.COMPLETED)
-                                        MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                    color = childTextColor,
                                     fontSize = 16.sp,
                                     lineHeight = 24.sp,
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
