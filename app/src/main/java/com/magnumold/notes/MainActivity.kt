@@ -81,6 +81,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalFocusManager
@@ -2251,7 +2252,6 @@ private fun ParentRecordHeader(
     autoFocus: Boolean,
     onAutoFocusConsumed: () -> Unit,
     selectedCount: Int,
-    onBack: () -> Unit,
     onClearSelection: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit,
@@ -2301,7 +2301,10 @@ private fun ParentRecordHeader(
                         textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None
                     ),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(foreground),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
                     keyboardActions = KeyboardActions(
                         onDone = {
                             keyboardController?.hide()
@@ -2323,13 +2326,6 @@ private fun ParentRecordHeader(
                         }
                     }
                 )
-            }
-        },
-        navigationIcon = {
-            IconButton(
-                onClick = { if (selectedCount > 0) onClearSelection() else onBack() }
-            ) {
-                AppIcon(NoteIcon.Back, "Назад", tint = foreground)
             }
         },
         actions = {
@@ -2586,7 +2582,6 @@ private fun NoteEditor(
                     autoFocus = autoFocus && !parentAutoFocusConsumed,
                     onAutoFocusConsumed = { parentAutoFocusConsumed = true },
                     selectedCount = selectedChildIds.size,
-                    onBack = onBack,
                     onClearSelection = { selectedChildIds = emptySet() },
                     onDelete = { onDelete(false) },
                     onShare = onShare,
@@ -2775,7 +2770,9 @@ private fun NoteEditor(
                                 onValueChange = { onChange(note.copy(titleText = it)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text("Название") },
-                                singleLine = true
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                             )
                         }
                         if (note.descriptionEnabled) {
@@ -3219,7 +3216,6 @@ private fun PurchaseEditor(
                     autoFocus = autoFocus && !parentAutoFocusConsumed,
                     onAutoFocusConsumed = { parentAutoFocusConsumed = true },
                     selectedCount = selectedChildIds.size,
-                    onBack = onBack,
                     onClearSelection = { selectedChildIds = emptySet() },
                     onDelete = { onDelete(false) },
                     onShare = onShare,
