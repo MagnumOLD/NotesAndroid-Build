@@ -8,212 +8,220 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 internal const val NOTE_REORDER_ANIMATION_DURATION_MILLIS = 220
-private const val REORDER_VIEWPORT_ANCHOR_ITEM_COUNT = 1
 private const val REORDER_LAYOUT_TIMEOUT_MILLIS = 2_000L
+private const val REORDER_EDGE_SIZE_DP = 64f
+private const val REORDER_EDGE_SPEED_DP_PER_SECOND = 720f
 
 /**
- * Coordinates one drag session.
+ * Shared coordinator for note cards and nested tasks.
  *
- * A neighbouring exchange is unlocked only after both stable keys reach their
- * requested layout indices and one full placement-animation duration has
- * elapsed from a rendered frame after that layout was applied.
+ * Both lists supply stable keys and measured LazyList geometry. The coordinator
+ * owns neighbour detection, one-swap-at-a-time sequencing, layout acknowledgement,
+ * animation settling, and frame-rate-independent edge scrolling. Domain-specific
+ * ordering rules remain in canSwap and the caller's finish callback.
  */
 @Composable
 internal fun AdjacentReorderEffect(
     isDragging: Boolean,
-    dragRows: List<DragRow>,
-    draggingIds: Set<Long>,
+    orderedKeys: List<String>,
     reorderSession: ReorderSession?,
     pointerY: Float,
     grabOffsetPx: Float,
     releaseRequested: Boolean,
     listState: LazyListState,
     density: Density,
+    canSwap: (movingKey: String, neighbourKey: String) -> Boolean = { _, _ -> true },
     onSessionChange: (ReorderSession) -> Unit,
     onFinishDrag: () -> Unit
 ) {
     val latestIsDragging = rememberUpdatedState(isDragging)
-    val latestDragRows = rememberUpdatedState(dragRows)
+    val latestOrderedKeys = rememberUpdatedState(orderedKeys)
     val latestReorderSession = rememberUpdatedState(reorderSession)
-    val latestDraggingIds = rememberUpdatedState(draggingIds)
     val latestPointerY = rememberUpdatedState(pointerY)
+    val latestGrabOffset = rememberUpdatedState(grabOffsetPx)
     val latestReleaseRequested = rememberUpdatedState(releaseRequested)
+    val latestCanSwap = rememberUpdatedState(canSwap)
     val latestFinishDrag = rememberUpdatedState(onFinishDrag)
     val latestSessionChange = rememberUpdatedState(onSessionChange)
 
     LaunchedEffect(isDragging) {
         if (!isDragging) return@LaunchedEffect
 
+        var previousFrameNanos = 0L
         while (latestIsDragging.value) {
             if (latestReleaseRequested.value) {
                 latestFinishDrag.value.invoke()
                 break
             }
 
-            val rows = latestDragRows.value
-            val ids = latestDraggingIds.value
-            val movingRowIndex = rows.indexOfFirst { row -> row.notes.any { it.id in ids } }
+            val session = latestReorderSession.value
+            val keys = latestOrderedKeys.value
+            if (session == null || keys.isEmpty() || session.movingKey !in keys) {
+                latestFinishDrag.value.invoke()
+                break
+            }
 
-            if (movingRowIndex >= 0) {
-                val visibleItems = listState.layoutInfo.visibleItemsInfo
-                val movingKey = rows[movingRowIndex].key
-                val movingInfo = visibleItems.firstOrNull { it.key == movingKey }
-                val previousInfo = rows.getOrNull(movingRowIndex - 1)?.let { adjacent ->
-                    visibleItems.firstOrNull { it.key == adjacent.key }
-                }
-                val nextInfo = rows.getOrNull(movingRowIndex + 1)?.let { adjacent ->
-                    visibleItems.firstOrNull { it.key == adjacent.key }
-                }
+            val movingIndex = keys.indexOf(session.movingKey)
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val movingInfo = visibleItems.firstOrNull { it.key == session.movingKey }
+            val previousKey = keys.getOrNull(movingIndex - 1)
+            val nextKey = keys.getOrNull(movingIndex + 1)
+            val previousInfo = previousKey?.let { key -> visibleItems.firstOrNull { it.key == key } }
+            val nextInfo = nextKey?.let { key -> visibleItems.firstOrNull { it.key == key } }
 
-                val direction = movingInfo?.let {
-                    AdjacentReorderController.crossedNeighbour(
-                        pointerY = latestPointerY.value,
-                        grabOffset = grabOffsetPx,
-                        movingHeight = it.size.toFloat(),
-                        previous = previousInfo?.let { item ->
-                            ReorderItemBounds(item.offset.toFloat(), (item.offset + item.size).toFloat())
-                        },
-                        next = nextInfo?.let { item ->
-                            ReorderItemBounds(item.offset.toFloat(), (item.offset + item.size).toFloat())
-                        }
-                    )
-                }
+            val direction = movingInfo?.let {
+                AdjacentReorderController.crossedNeighbour(
+                    pointerY = latestPointerY.value,
+                    grabOffset = latestGrabOffset.value,
+                    movingHeight = it.size.toFloat(),
+                    previous = previousInfo?.let { item ->
+                        ReorderItemBounds(item.offset.toFloat(), (item.offset + item.size).toFloat())
+                    },
+                    next = nextInfo?.let { item ->
+                        ReorderItemBounds(item.offset.toFloat(), (item.offset + item.size).toFloat())
+                    }
+                )
+            }
 
-                // Pinned notes form a fixed leading partition. Mixed-pinned groups
-                // cannot be exchanged because they do not belong to one partition.
-                val movingPinStates = rows.getOrNull(movingRowIndex)
-                    ?.notes?.map { it.pinned }?.distinct().orEmpty()
-                val adjacentIndex = when (direction) {
-                    ReorderDirection.TowardStart -> movingRowIndex - 1
-                    ReorderDirection.TowardEnd -> movingRowIndex + 1
-                    null -> -1
-                }
-                val adjacentPinStates = rows.getOrNull(adjacentIndex)
-                    ?.notes?.map { it.pinned }?.distinct().orEmpty()
-                val allowedDirection = direction?.takeIf {
-                    movingPinStates.size == 1 && adjacentPinStates.size == 1 &&
-                        movingPinStates.single() == adjacentPinStates.single()
+            val neighbourKey = when (direction) {
+                ReorderDirection.TowardStart -> previousKey
+                ReorderDirection.TowardEnd -> nextKey
+                null -> null
+            }
+
+            if (direction != null && neighbourKey != null &&
+                latestCanSwap.value.invoke(session.movingKey, neighbourKey)
+            ) {
+                if (latestReleaseRequested.value) {
+                    latestFinishDrag.value.invoke()
+                    break
                 }
 
-                if (allowedDirection != null) {
-                    if (latestReleaseRequested.value) {
-                        latestFinishDrag.value.invoke()
-                        break
-                    }
-
-                    val currentSession = latestReorderSession.value ?: break
-                    val swappingSession = AdjacentReorderEngine.requestSwap(currentSession, allowedDirection)
-                    if (swappingSession == null) {
-                        delay(16)
-                        continue
-                    }
-
-                    val expectedMovingIndex = swappingSession.expectedIndex ?: break
-                    val neighborKey = swappingSession.expectedNeighborKey ?: break
-                    val expectedNeighborIndex = swappingSession.expectedNeighborIndex ?: break
-
-                    // Preserve the first visible keyed row only when a swap touches
-                    // the current scrolled anchor. At absolute top, the permanent
-                    // 1dp sentinel already owns the viewport anchor.
-                    val firstVisibleItem = listState.layoutInfo.visibleItemsInfo.firstOrNull()
-                    val firstVisibleIndex = listState.firstVisibleItemIndex
-                    val firstVisibleOffset = listState.firstVisibleItemScrollOffset
-                    val mustPreserveScrolledAnchor =
-                        firstVisibleItem?.key == movingKey || firstVisibleItem?.key == neighborKey
-
-                    latestSessionChange.value.invoke(swappingSession)
-
-                    if (mustPreserveScrolledAnchor) {
-                        listState.requestScrollToItem(firstVisibleIndex, firstVisibleOffset)
-                    }
-
-                    // LazyListItemInfo.offset is the target layout offset; it does
-                    // not expose animateItemPlacement's in-flight visual offset.
-                    // First wait for both stable keys to reach the committed indices,
-                    // then wait by frame time for the same duration as the placement
-                    // tween. This avoids mistaking rounded, temporarily unchanged
-                    // integer offsets for a finished animation.
-                    val placementFinished = withTimeoutOrNull(REORDER_LAYOUT_TIMEOUT_MILLIS) {
-                        var layoutApplied = false
-                        while (latestIsDragging.value && !latestReleaseRequested.value && !layoutApplied) {
-                            withFrameNanos { }
-                            val measured = listState.layoutInfo.visibleItemsInfo
-                            val movingActual = measured.firstOrNull { it.key == movingKey }
-                            val neighborActual = measured.firstOrNull { it.key == neighborKey }
-                            layoutApplied =
-                                movingActual?.index == expectedMovingIndex + REORDER_VIEWPORT_ANCHOR_ITEM_COUNT &&
-                                neighborActual?.index == expectedNeighborIndex + REORDER_VIEWPORT_ANCHOR_ITEM_COUNT
-                        }
-
-                        if (!layoutApplied) {
-                            false
-                        } else {
-                            var firstFrameNanos: Long? = null
-                            var elapsedNanos = 0L
-                            val durationNanos = NOTE_REORDER_ANIMATION_DURATION_MILLIS * 1_000_000L
-                            while (
-                                elapsedNanos < durationNanos &&
-                                latestIsDragging.value &&
-                                !latestReleaseRequested.value
-                            ) {
-                                val frameNanos = withFrameNanos { it }
-                                if (firstFrameNanos == null) firstFrameNanos = frameNanos
-                                elapsedNanos = frameNanos - firstFrameNanos!!
-                            }
-                            elapsedNanos >= durationNanos
-                        }
-                    } ?: false
-
-                    if (latestReleaseRequested.value) {
-                        latestFinishDrag.value.invoke()
-                        break
-                    }
-                    if (!latestIsDragging.value) break
-                    if (!placementFinished) {
-                        // A missing layout acknowledgement must not leave the
-                        // reorder state machine locked indefinitely.
-                        latestFinishDrag.value.invoke()
-                        break
-                    }
-
-                    val measured = listState.layoutInfo.visibleItemsInfo
-                    val movingActual = measured.firstOrNull { it.key == movingKey }
-                    val neighborActual = measured.firstOrNull { it.key == neighborKey }
-                    val completedSession = if (movingActual != null && neighborActual != null) {
-                        AdjacentReorderEngine.completeSwap(
-                            swappingSession,
-                            actualMovingIndex = movingActual.index - REORDER_VIEWPORT_ANCHOR_ITEM_COUNT,
-                            actualNeighborIndex = neighborActual.index - REORDER_VIEWPORT_ANCHOR_ITEM_COUNT
-                        )
-                    } else null
-
-                    if (completedSession == null) {
-                        latestFinishDrag.value.invoke()
-                        break
-                    }
-
-                    latestSessionChange.value.invoke(completedSession)
+                val swappingSession = AdjacentReorderEngine.requestSwap(session, direction)
+                if (swappingSession == null) {
+                    // The previous adjacent exchange is still animating.
+                    // Wait for a rendered frame rather than consuming input events.
+                    withFrameNanos { }
                     continue
                 }
+
+                val expectedMovingIndex = swappingSession.expectedIndex ?: break
+                val expectedNeighbourKey = swappingSession.expectedNeighborKey ?: break
+                val expectedNeighbourIndex = swappingSession.expectedNeighborIndex ?: break
+
+                // LazyList indices include all non-reorder items (editor content,
+                // viewport sentinels, headers). Derive the stable offset from any
+                // currently visible reorder row instead of assuming a fixed index.
+                val indexOffset = visibleItems.firstNotNullOfOrNull { item ->
+                    val key = item.key as? String ?: return@firstNotNullOfOrNull null
+                    val relativeIndex = keys.indexOf(key)
+                    if (relativeIndex >= 0) item.index - relativeIndex else null
+                } ?: 0
+
+                val firstVisibleItem = visibleItems.firstOrNull()
+                val firstVisibleIndex = listState.firstVisibleItemIndex
+                val firstVisibleOffset = listState.firstVisibleItemScrollOffset
+                val preserveViewportAnchor =
+                    firstVisibleItem?.key == session.movingKey ||
+                        firstVisibleItem?.key == expectedNeighbourKey
+
+                latestSessionChange.value.invoke(swappingSession)
+                if (preserveViewportAnchor) {
+                    listState.requestScrollToItem(firstVisibleIndex, firstVisibleOffset)
+                }
+
+                // Wait until both stable keys reach their requested indices, then
+                // let the placement animation finish for its full configured time.
+                val placementFinished = withTimeoutOrNull(REORDER_LAYOUT_TIMEOUT_MILLIS) {
+                    var layoutApplied = false
+                    while (latestIsDragging.value && !latestReleaseRequested.value && !layoutApplied) {
+                        withFrameNanos { }
+                        val measured = listState.layoutInfo.visibleItemsInfo
+                        val movingActual = measured.firstOrNull { it.key == session.movingKey }
+                        val neighbourActual = measured.firstOrNull { it.key == expectedNeighbourKey }
+                        layoutApplied =
+                            movingActual?.index == expectedMovingIndex + indexOffset &&
+                                neighbourActual?.index == expectedNeighbourIndex + indexOffset
+                    }
+
+                    if (!layoutApplied) {
+                        false
+                    } else {
+                        var firstFrameNanos: Long? = null
+                        var elapsedNanos = 0L
+                        val durationNanos = NOTE_REORDER_ANIMATION_DURATION_MILLIS * 1_000_000L
+                        while (
+                            elapsedNanos < durationNanos &&
+                            latestIsDragging.value &&
+                            !latestReleaseRequested.value
+                        ) {
+                            val frameNanos = withFrameNanos { it }
+                            if (firstFrameNanos == null) firstFrameNanos = frameNanos
+                            elapsedNanos = frameNanos - firstFrameNanos!!
+                        }
+                        elapsedNanos >= durationNanos
+                    }
+                } ?: false
+
+                if (latestReleaseRequested.value) {
+                    latestFinishDrag.value.invoke()
+                    break
+                }
+                if (!latestIsDragging.value) break
+                if (!placementFinished) {
+                    latestFinishDrag.value.invoke()
+                    break
+                }
+
+                val measured = listState.layoutInfo.visibleItemsInfo
+                val movingActual = measured.firstOrNull { it.key == session.movingKey }
+                val neighbourActual = measured.firstOrNull { it.key == expectedNeighbourKey }
+                val completedSession = if (movingActual != null && neighbourActual != null) {
+                    AdjacentReorderEngine.completeSwap(
+                        swappingSession,
+                        actualMovingIndex = movingActual.index - indexOffset,
+                        actualNeighborIndex = neighbourActual.index - indexOffset
+                    )
+                } else null
+
+                if (completedSession == null) {
+                    latestFinishDrag.value.invoke()
+                    break
+                }
+
+                latestSessionChange.value.invoke(completedSession)
+                previousFrameNanos = 0L
+                continue
             }
 
-            // Edge scrolling is independent of a neighbour exchange.
-            val viewportHeight = listState.layoutInfo.viewportSize.height.toFloat()
-            val edgeSize = with(density) { 64.dp.toPx() }
-            val maxStep = with(density) { 12.dp.toPx() }
+            // Edge scrolling is driven by frame time, not pointer-event frequency.
+            val frameNanos = withFrameNanos { it }
+            val deltaSeconds = if (previousFrameNanos == 0L) {
+                0f
+            } else {
+                ((frameNanos - previousFrameNanos) / 1_000_000_000f).coerceIn(0f, 0.05f)
+            }
+            previousFrameNanos = frameNanos
+
+            val layout = listState.layoutInfo
+            val viewportStart = layout.viewportStartOffset.toFloat()
+            val viewportEnd = layout.viewportEndOffset.toFloat()
+            val edgeSize = with(density) { REORDER_EDGE_SIZE_DP.dp.toPx() }
+            val maxSpeed = with(density) { REORDER_EDGE_SPEED_DP_PER_SECOND.dp.toPx() }
             val y = latestPointerY.value
-            val scrollDelta = when {
-                y < edgeSize -> -maxStep * ((edgeSize - y) / edgeSize).coerceIn(0f, 1f)
-                y > viewportHeight - edgeSize ->
-                    maxStep * ((y - (viewportHeight - edgeSize)) / edgeSize).coerceIn(0f, 1f)
+            val edgeProgress = when {
+                y < viewportStart + edgeSize ->
+                    -((viewportStart + edgeSize - y) / edgeSize).coerceIn(0f, 1f)
+                y > viewportEnd - edgeSize ->
+                    ((y - (viewportEnd - edgeSize)) / edgeSize).coerceIn(0f, 1f)
                 else -> 0f
             }
-            if (scrollDelta != 0f) listState.scrollBy(scrollDelta)
-            delay(16)
+            if (edgeProgress != 0f && deltaSeconds > 0f) {
+                listState.scrollBy(maxSpeed * edgeProgress * deltaSeconds)
+            }
         }
     }
 }
