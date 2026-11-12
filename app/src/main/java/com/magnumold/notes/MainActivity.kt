@@ -2771,7 +2771,6 @@ private fun NoteEditor(
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text("Название") },
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                             )
                         }
@@ -3404,7 +3403,8 @@ private fun PurchaseEditor(
                                 onValueChange = { onChange(note.copy(titleText = it)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text("Название") },
-                                singleLine = true
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                             )
                         }
                         if (note.descriptionEnabled) {
