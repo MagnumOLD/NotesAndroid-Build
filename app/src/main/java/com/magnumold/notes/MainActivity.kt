@@ -2513,10 +2513,19 @@ private fun NoteEditor(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Spacer(Modifier.width(4.dp))
                             TaskStatusMarker(childStatus)
                             Spacer(Modifier.width(12.dp))
-                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                childText,
+                                modifier = Modifier.weight(1f).clickable { selectedChildId = child.id },
+                                color = if (childStatus == RecordStatus.COMPLETED)
+                                    MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                textDecoration = if (childStatus == RecordStatus.COMPLETED)
+                                    TextDecoration.LineThrough else TextDecoration.None
+                            )
+                            Spacer(Modifier.width(12.dp))
                             Box(
                                 modifier = Modifier.size(width = 36.dp, height = 40.dp)
                                     .pointerInput(child.id, listState) {
@@ -2629,3 +2638,96 @@ private fun NoteEditor(
                                         )
                                     }
                                 }
+                            }
+
+                        }
+                        if (index != note.children.lastIndex) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                                thickness = 0.6.dp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (datePickerVisible) {
+        DatePickerDialog(
+            onDismissRequest = { datePickerVisible = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selectedDate = datePickerState.selectedDateMillis
+                    if (selectedDate != null) {
+                        onChange(note.copy(
+                            status = if (note.recordStatus() == RecordStatus.MISSED) RecordStatus.MISSED else note.status,
+                            dateMode = pendingDateMode,
+                            dateAt = selectedDate,
+                            deadlineResumeOverride = false
+                        ))
+                    }
+                    datePickerVisible = false
+                }) { Text("Готово") }
+            },
+            dismissButton = {
+                TextButton(onClick = { datePickerVisible = false }) { Text("Отмена") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@Composable
+private fun ChecklistMark(checked: Boolean, onClick: () -> Unit) {
+    val markColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val checkColor = MaterialTheme.colorScheme.background
+
+    Box(
+        modifier = Modifier.width(22.dp).height(24.dp),
+        contentAlignment = Alignment.CenterStart,
+        content = {
+            Canvas(
+                modifier = Modifier.size(18.dp).pointerInput(checked) {
+                    detectTapGestures { point ->
+                        val radius = size.width * (3.5f / 18f)
+                        val nearestX = point.x.coerceIn(radius, size.width - radius)
+                        val nearestY = point.y.coerceIn(radius, size.height - radius)
+                        val dx = point.x - nearestX
+                        val dy = point.y - nearestY
+                        if (dx * dx + dy * dy <= radius * radius) onClick()
+                    }
+                },
+                onDraw = {
+                    val stroke = 1.5.dp.toPx()
+                    val radius = 3.5.dp.toPx()
+                    val inset = stroke / 2f
+                    drawRoundRect(
+                        color = markColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                        size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius),
+                        style = if (checked) androidx.compose.ui.graphics.drawscope.Fill
+                        else androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+                    )
+                    if (checked) {
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(size.width * 0.23f, size.height * 0.51f)
+                            lineTo(size.width * 0.42f, size.height * 0.69f)
+                            lineTo(size.width * 0.78f, size.height * 0.32f)
+                        }
+                        drawPath(
+                            path = path,
+                            color = checkColor,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                width = 1.8.dp.toPx(),
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                join = androidx.compose.ui.graphics.StrokeJoin.Round
+                            )
+                        )
+                    }
+                }
+            )
+        }
+    )
+}
