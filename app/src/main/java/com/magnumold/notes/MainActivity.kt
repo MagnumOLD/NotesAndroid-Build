@@ -2278,8 +2278,8 @@ private fun NoteEditor(
                 }
             } else {
                 TopAppBar(
-                    title = {},
-                    navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+                    title = { Text("Заметка") },
+                    navigationIcon = {},
                     actions = {
                         if (note.type != RecordType.NOTE) {
                             IconButton(onClick = { onChange(note.copy(titleEnabled = !note.titleEnabled)) }) {
