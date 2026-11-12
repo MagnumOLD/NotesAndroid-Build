@@ -2138,12 +2138,14 @@ private fun NoteRow(
                         },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        metadata,
-                        fontSize = 12.sp,
-                        color = rowTextColor.copy(alpha = 0.62f),
-                        maxLines = 1
-                    )
+                    if (note.type != RecordType.NOTE) {
+                        Text(
+                            metadata,
+                            fontSize = 12.sp,
+                            color = rowTextColor.copy(alpha = 0.62f),
+                            maxLines = 1
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     Text(
                         formatNoteCreationDate(note.created),
