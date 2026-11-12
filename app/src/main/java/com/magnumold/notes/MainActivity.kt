@@ -125,8 +125,8 @@ private object AppSpacing {
 
 
 /**
- * Единая система размеров карточек заметок.
- * Высота строки включает содержимое карточки и нижний разделитель.
+ * Shared main-list card dimensions.
+ * contentHeight is a minimum; long first lines can increase the measured row height.
  */
 private object CardDimensions {
     val contentHeight = 88.dp
@@ -134,10 +134,6 @@ private object CardDimensions {
     val rowHeight = contentHeight + dividerThickness
 
     val handleRightInset = 28.dp
-    val groupTextEndInset = 64.dp
-
-    val metadataGapLight = 4.dp
-    val metadataGapDark = 5.dp
 }
 
 internal data class NoteBlock(val text: String = "", val checked: Boolean = false, val isChecklist: Boolean = false, val id: String = java.util.UUID.randomUUID().toString())
@@ -1929,22 +1925,6 @@ private fun recordStatusText(status: RecordStatus): String = when (status) {
     RecordStatus.MISSED -> "Пропущено"
 }
 
-@Composable
-private fun RecordStatusPill(status: RecordStatus, textColor: Color) {
-    Box(
-        modifier = Modifier.width(116.dp).height(24.dp)
-            .background(textColor.copy(alpha = 0.08f), RoundedCornerShape(6.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = recordStatusText(status),
-            color = textColor.copy(alpha = 0.9f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1
-        )
-    }
-}
 
 @Composable
 private fun TaskStatusMarker(status: RecordStatus) {
