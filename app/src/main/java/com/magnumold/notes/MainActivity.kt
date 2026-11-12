@@ -15,6 +15,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -1505,25 +1509,36 @@ private fun NotesHome(
         floatingActionButton = {
             if (!selectionMode && !isDragging) {
                 Box {
-                    FloatingActionButton(
-                        onClick = { createMenuExpanded = true },
-                        modifier = Modifier.offset(y = (-65).dp),
-                        containerColor = themeColors.addButton,
-                        contentColor = noteTextColor(themeColors.addButton),
-                        shape = RoundedCornerShape(50)
+                    Box(
+                        modifier = Modifier
+                            .offset(y = (-65).dp)
+                            .size(56.dp)
+                            .shadow(6.dp, androidx.compose.foundation.shape.CircleShape)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(themeColors.addButton)
+                            .combinedClickable(
+                                role = Role.Button,
+                                onClick = { onCreate(RecordType.NOTE) },
+                                onLongClick = { createMenuExpanded = true }
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("+", fontSize = 34.sp, fontWeight = FontWeight.Light)
+                        Text(
+                            "+",
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Light,
+                            color = noteTextColor(themeColors.addButton)
+                        )
                     }
-                    DropdownMenu(expanded = createMenuExpanded, onDismissRequest = { createMenuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Заметка") }, onClick = {
-                            createMenuExpanded = false
-                            onCreate(RecordType.NOTE)
-                        })
+                    DropdownMenu(
+                        expanded = createMenuExpanded,
+                        onDismissRequest = { createMenuExpanded = false }
+                    ) {
                         DropdownMenuItem(text = { Text("Задача") }, onClick = {
                             createMenuExpanded = false
                             onCreate(RecordType.TASK)
                         })
-                        DropdownMenuItem(text = { Text("Покупки") }, onClick = {
+                        DropdownMenuItem(text = { Text("Покупка") }, onClick = {
                             createMenuExpanded = false
                             onCreate(RecordType.PURCHASE)
                         })
