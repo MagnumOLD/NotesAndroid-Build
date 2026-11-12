@@ -55,3 +55,10 @@ For each implementation task, report:
 4. Whether a fresh APK artifact is available.
 
 If a check cannot be run or its result cannot be verified, say so plainly.
+
+## Editor autofocus rules
+
+- Opening an existing task subitem or purchase item must never show the keyboard automatically.
+- Only the exact child record created by the current add action may receive autofocus; tapping an existing child clears that creation-only autofocus state.
+- New top-level tasks and purchases autofocus their title field only after that field has completed layout. Do not rely on an early focus request before the title field is attached.
+- Existing notes, tasks, purchases, and child records must not inherit autofocus from a previous creation action.
