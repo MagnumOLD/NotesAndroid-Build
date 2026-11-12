@@ -73,11 +73,15 @@ import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalDensity
@@ -2221,6 +2225,77 @@ private fun AppIcon(
 }
 
 @Composable
+private fun RecordTitleField(
+    noteId: Long,
+    value: String,
+    placeholder: String,
+    textColor: Color,
+    autoFocus: Boolean,
+    modifier: Modifier = Modifier,
+    onValueChange: (String) -> Unit
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val focusRequester = remember(noteId) { FocusRequester() }
+    var fieldLaidOut by remember(noteId) { mutableStateOf(false) }
+    var fieldValue by remember(noteId) {
+        mutableStateOf(TextFieldValue(value, TextRange(value.length)))
+    }
+
+    LaunchedEffect(noteId, value) {
+        if (fieldValue.text != value) {
+            fieldValue = TextFieldValue(value, TextRange(value.length))
+        }
+    }
+
+    LaunchedEffect(noteId, autoFocus, fieldLaidOut) {
+        if (autoFocus && fieldLaidOut) {
+            withFrameNanos { }
+            focusRequester.requestFocus()
+            withFrameNanos { }
+            keyboardController?.show()
+        }
+    }
+
+    BasicTextField(
+        value = fieldValue,
+        onValueChange = {
+            fieldValue = it
+            onValueChange(it.text)
+        },
+        modifier = modifier
+            .focusRequester(focusRequester)
+            .onGloballyPositioned { fieldLaidOut = true },
+        singleLine = true,
+        textStyle = TextStyle(
+            color = textColor,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                keyboardController?.hide()
+                focusManager.clearFocus()
+            }
+        ),
+        decorationBox = { innerTextField ->
+            Box {
+                if (fieldValue.text.isEmpty()) {
+                    Text(
+                        placeholder,
+                        color = textColor.copy(alpha = 0.48f),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                innerTextField()
+            }
+        }
+    )
+}
+
+@Composable
 private fun RecordEditor(
     note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, selectionColor: Color, autoFocus: Boolean,
     onBack: () -> Unit, onChange: (Note) -> Unit, onDelete: (Boolean) -> Unit, onShare: () -> Unit
@@ -2264,16 +2339,6 @@ private fun NoteEditor(
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val titleFocusRequester = remember(note.id) { FocusRequester() }
-    var titleFieldLaidOut by remember(note.id) { mutableStateOf(false) }
-    LaunchedEffect(note.id, autoFocus, isTaskListItem, titleFieldLaidOut) {
-        if (autoFocus && note.type == RecordType.TASK && !isTaskListItem && titleFieldLaidOut) {
-            withFrameNanos { }
-            titleFocusRequester.requestFocus()
-            withFrameNanos { }
-            keyboardController?.show()
-        }
-    }
     val listState = rememberLazyListState()
     val latestTaskNote = rememberUpdatedState(note)
     val latestTaskChildren = rememberUpdatedState(note.children)
@@ -2435,30 +2500,14 @@ private fun NoteEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    BasicTextField(
+                    RecordTitleField(
+                        noteId = note.id,
                         value = note.titleText,
-                        onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester)
-                            .onGloballyPositioned { titleFieldLaidOut = true },
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            color = noteTextColor(topBarColor),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        decorationBox = { innerTextField ->
-                            Box {
-                                if (note.titleText.isEmpty()) {
-                                    Text(
-                                        "Название задачи",
-                                        color = noteTextColor(topBarColor).copy(alpha = 0.48f),
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        }
+                        placeholder = "Название задачи",
+                        textColor = noteTextColor(topBarColor),
+                        autoFocus = autoFocus,
+                        modifier = Modifier.weight(1f),
+                        onValueChange = { onChange(note.copy(titleText = it)) }
                     )
                     Text(
                         note.dateAt?.let { formatRecordDate(it) } ?: "—",
@@ -2501,13 +2550,6 @@ private fun NoteEditor(
                             }
                         }
                         if (!isTaskListItem && note.type != RecordType.NOTE) {
-                            IconButton(onClick = { onChange(note.copy(titleEnabled = !note.titleEnabled)) }) {
-                                Icon(
-                                    Icons.Outlined.Title,
-                                    contentDescription = "Название",
-                                    tint = if (note.titleEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                                )
-                            }
                             IconButton(onClick = { onChange(note.copy(descriptionEnabled = !note.descriptionEnabled)) }) {
                                 Icon(
                                     Icons.Outlined.Description,
@@ -2671,10 +2713,10 @@ private fun NoteEditor(
                 }
             }
             if (note.type != RecordType.NOTE &&
-                (note.titleEnabled || note.descriptionEnabled || isTaskListItem)) {
+                (note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
                     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-                        if (note.titleEnabled) {
+                        if (note.titleEnabled && isTaskListItem) {
                             OutlinedTextField(
                                 value = note.titleText,
                                 onValueChange = { onChange(note.copy(titleText = it)) },
@@ -2976,16 +3018,6 @@ private fun PurchaseEditor(
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val titleFocusRequester = remember(note.id) { FocusRequester() }
-    var titleFieldLaidOut by remember(note.id) { mutableStateOf(false) }
-    LaunchedEffect(note.id, autoFocus, isPurchaseListItem, titleFieldLaidOut) {
-        if (autoFocus && note.type == RecordType.PURCHASE && !isPurchaseListItem && titleFieldLaidOut) {
-            withFrameNanos { }
-            titleFocusRequester.requestFocus()
-            withFrameNanos { }
-            keyboardController?.show()
-        }
-    }
     val listState = rememberLazyListState()
     val latestPurchaseNote = rememberUpdatedState(note)
     val latestPurchaseChildren = rememberUpdatedState(note.children)
@@ -3147,30 +3179,14 @@ private fun PurchaseEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    BasicTextField(
+                    RecordTitleField(
+                        noteId = note.id,
                         value = note.titleText,
-                        onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester)
-                            .onGloballyPositioned { titleFieldLaidOut = true },
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            color = noteTextColor(topBarColor),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        decorationBox = { innerTextField ->
-                            Box {
-                                if (note.titleText.isEmpty()) {
-                                    Text(
-                                        "Название товара",
-                                        color = noteTextColor(topBarColor).copy(alpha = 0.48f),
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        }
+                        placeholder = "Название товара",
+                        textColor = noteTextColor(topBarColor),
+                        autoFocus = autoFocus,
+                        modifier = Modifier.weight(1f),
+                        onValueChange = { onChange(note.copy(titleText = it)) }
                     )
                     Text(
                         note.dateAt?.let { formatRecordDate(it) } ?: "—",
@@ -3213,13 +3229,6 @@ private fun PurchaseEditor(
                             }
                         }
                         if (!isPurchaseListItem && note.type != RecordType.NOTE) {
-                            IconButton(onClick = { onChange(note.copy(titleEnabled = !note.titleEnabled)) }) {
-                                Icon(
-                                    Icons.Outlined.Title,
-                                    contentDescription = "Название",
-                                    tint = if (note.titleEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                                )
-                            }
                             IconButton(onClick = { onChange(note.copy(descriptionEnabled = !note.descriptionEnabled)) }) {
                                 Icon(
                                     Icons.Outlined.Description,
@@ -3383,10 +3392,10 @@ private fun PurchaseEditor(
                 }
             }
             if (note.type != RecordType.NOTE &&
-                (note.titleEnabled || note.descriptionEnabled || isPurchaseListItem)) {
+                (note.descriptionEnabled || isPurchaseListItem)) {
                 item(key = "record_options") {
                     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-                        if (note.titleEnabled) {
+                        if (note.titleEnabled && isPurchaseListItem) {
                             OutlinedTextField(
                                 value = note.titleText,
                                 onValueChange = { onChange(note.copy(titleText = it)) },
