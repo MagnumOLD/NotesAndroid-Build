@@ -1806,10 +1806,6 @@ private fun DraggedNotesGroup(
     modifier: Modifier = Modifier
 ) {
     val anchorNote = notes.first()
-    val firstLine = if ((anchorNote.type == RecordType.TASK || anchorNote.type == RecordType.PURCHASE || anchorNote.titleEnabled) && anchorNote.titleText.isNotBlank()) anchorNote.titleText.trim()
-    else anchorNote.blocks.asSequence().mapNotNull {
-        it.text.lineSequence().map(String::trim).firstOrNull { line -> line.isNotEmpty() }
-    }.firstOrNull() ?: "Пустая заметка"
     val groupColor = if (anchorNote.colorIndex == 0) {
         MaterialTheme.colorScheme.background
     } else {
@@ -1827,29 +1823,29 @@ private fun DraggedNotesGroup(
             .height(CardDimensions.rowHeight)
             .background(selectedBackground)
     ) {
-        Box(
-            Modifier.fillMaxSize().padding(start = AppSpacing.screenHorizontal, end = CardDimensions.groupTextEndInset),
-            contentAlignment = Alignment.CenterStart
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(
+                start = AppSpacing.screenHorizontal,
+                end = CardDimensions.handleRightInset,
+                top = 16.dp
+            ),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (notes.size == 1 && anchorNote.type != RecordType.NOTE) {
-                    RecordStatusPill(anchorNote.recordStatus(), groupTextColor)
-                    Spacer(Modifier.width(12.dp))
-                }
-                Text(
-                    if (notes.size == 1) firstLine else "Группа",
-                    fontSize = 16.sp,
-                    color = groupTextColor,
-                    maxLines = 1
-                )
+            Text(
+                "Группа",
+                modifier = Modifier.weight(1f),
+                color = groupTextColor,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.width(10.dp))
+            Box(
+                modifier = Modifier.size(30.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                DragHandleIcon(color = groupTextColor.copy(alpha = 0.65f), compressed = true)
             }
         }
-        Box(
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = CardDimensions.handleRightInset).size(30.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            DragHandleIcon(color = groupTextColor.copy(alpha = 0.65f), compressed = true)        }
-        // Keep the same bottom separator that every regular note row has.
         HorizontalDivider(
             modifier = Modifier.align(Alignment.BottomCenter),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
@@ -1910,6 +1906,14 @@ private fun DragHandleIcon(
             cap = androidx.compose.ui.graphics.StrokeCap.Round
         )
     }
+}
+
+private fun recordStatusCompactText(status: RecordStatus): String = when (status) {
+    RecordStatus.WAITING -> "Ожидает"
+    RecordStatus.IN_PROGRESS -> "В работе"
+    RecordStatus.COMPLETED -> "Выполнено"
+    RecordStatus.CANCELLED -> "Отменено"
+    RecordStatus.MISSED -> "Просрочено"
 }
 
 private fun recordStatusText(status: RecordStatus): String = when (status) {
@@ -2006,114 +2010,137 @@ private fun NoteRow(
     } else {
         lerp(displayedColor, Color(0xFF808080), if (dark) 0.07f else 0.14f)
     }
+    val metadata = if (note.type == RecordType.NOTE) "Заметка" else recordStatusCompactText(note.recordStatus(statusNow))
+
     Column(Modifier.fillMaxWidth().background(selectedBackground)) {
-        Box(Modifier.fillMaxWidth().height(CardDimensions.contentHeight)
-            .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
-                if (colorSwipeEnabled) {
-                var horizontalDistance = 0f
-                var colorSwipeStarted = false
-                detectHorizontalDragGestures(
-                    onHorizontalDrag = { change, dragAmount ->
-                        horizontalDistance += dragAmount
-                        if (horizontalDistance > 0f && !colorSwipeStarted) {
-                            swipeFromColor = rowColor
-                            swipeToColor = nextColor
-                            swipeFromIndex = note.colorIndex
-                            swipeToIndex = nextColorIndex
-                            colorSwipeStarted = true
-                        }
-                        swipeProgress = if (horizontalDistance > 0f) (horizontalDistance / size.width.toFloat()).coerceIn(0f, 1f) else 0f
-                        change.consume()
-                    }, 
-                    onDragEnd = {
-                        val completed = horizontalDistance >= 60.dp.toPx()
-                        val currentProgress = swipeProgress
-                        scope.launch {
-                            fillAnimation.snapTo(currentProgress)
-                            if (completed) {
-                                fillAnimation.animateTo(1f, tween(180))
-                                onChangeColor(nextColorIndex)
-                                swipeFromColor = nextColor
-                                swipeToColor = nextColor
-                                swipeFromIndex = nextColorIndex
-                                swipeToIndex = nextColorIndex
-                            } else {
-                                fillAnimation.animateTo(0f, tween(160))
-                                swipeFromColor = rowColor
-                                swipeToColor = rowColor
-                                swipeFromIndex = note.colorIndex
-                                swipeToIndex = note.colorIndex
+        Box(
+            Modifier.fillMaxWidth().heightIn(min = CardDimensions.contentHeight)
+                .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
+                    if (colorSwipeEnabled) {
+                        var horizontalDistance = 0f
+                        var colorSwipeStarted = false
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, dragAmount ->
+                                horizontalDistance += dragAmount
+                                if (horizontalDistance > 0f && !colorSwipeStarted) {
+                                    swipeFromColor = rowColor
+                                    swipeToColor = nextColor
+                                    swipeFromIndex = note.colorIndex
+                                    swipeToIndex = nextColorIndex
+                                    colorSwipeStarted = true
+                                }
+                                swipeProgress = if (horizontalDistance > 0f) (horizontalDistance / size.width.toFloat()).coerceIn(0f, 1f) else 0f
+                                change.consume()
+                            },
+                            onDragEnd = {
+                                val completed = horizontalDistance >= 60.dp.toPx()
+                                val currentProgress = swipeProgress
+                                scope.launch {
+                                    fillAnimation.snapTo(currentProgress)
+                                    if (completed) {
+                                        fillAnimation.animateTo(1f, tween(180))
+                                        onChangeColor(nextColorIndex)
+                                        swipeFromColor = nextColor
+                                        swipeToColor = nextColor
+                                        swipeFromIndex = nextColorIndex
+                                        swipeToIndex = nextColorIndex
+                                    } else {
+                                        fillAnimation.animateTo(0f, tween(160))
+                                        swipeFromColor = rowColor
+                                        swipeToColor = rowColor
+                                        swipeFromIndex = note.colorIndex
+                                        swipeToIndex = note.colorIndex
+                                    }
+                                    swipeProgress = 0f
+                                    fillAnimation.snapTo(0f)
+                                }
+                                horizontalDistance = 0f
+                                colorSwipeStarted = false
+                            },
+                            onDragCancel = {
+                                val currentProgress = swipeProgress
+                                scope.launch {
+                                    fillAnimation.snapTo(currentProgress)
+                                    fillAnimation.animateTo(0f, tween(160))
+                                    swipeFromColor = rowColor
+                                    swipeToColor = rowColor
+                                    swipeFromIndex = note.colorIndex
+                                    swipeToIndex = note.colorIndex
+                                    swipeProgress = 0f
+                                    fillAnimation.snapTo(0f)
+                                }
+                                horizontalDistance = 0f
+                                colorSwipeStarted = false
                             }
-                            swipeProgress = 0f
-                            fillAnimation.snapTo(0f)
-                        }
-                        horizontalDistance = 0f
-                        colorSwipeStarted = false
-                    },
-                    onDragCancel = {
-                        val currentProgress = swipeProgress
-                        scope.launch {
-                            fillAnimation.snapTo(currentProgress)
-                            fillAnimation.animateTo(0f, tween(160))
-                            swipeFromColor = rowColor
-                            swipeToColor = rowColor
-                            swipeFromIndex = note.colorIndex
-                            swipeToIndex = note.colorIndex
-                            swipeProgress = 0f
-                            fillAnimation.snapTo(0f)
-                        }
-                        horizontalDistance = 0f
-                        colorSwipeStarted = false
+                        )
                     }
-                )
                 }
-            }
         ) {
-            Row(
-                Modifier.fillMaxSize().padding(start = AppSpacing.screenHorizontal, end = CardDimensions.handleRightInset),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(
+                    start = AppSpacing.screenHorizontal,
+                    end = CardDimensions.handleRightInset,
+                    top = 16.dp,
+                    bottom = 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (note.type != RecordType.NOTE) {
-                    RecordStatusPill(note.recordStatus(statusNow), rowTextColor)
-                    Spacer(Modifier.width(12.dp))
-                }
-                Box(
-                    Modifier.weight(1f).fillMaxHeight()
-                        .pointerInput(note.id, selected) {
-                            detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
-                        },
-                    contentAlignment = Alignment.CenterStart
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(if (dark) CardDimensions.metadataGapDark else CardDimensions.metadataGapLight)) {
-                        Text(
-                            firstLine,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = rowTextColor,
-                            maxLines = 1
-                        )
-                        Text(
-                            formatNoteCreationDate(note.created),
-                            fontSize = 12.sp,
-                            color = rowTextColor.copy(alpha = 0.62f),
-                            maxLines = 1
+                    Text(
+                        firstLine,
+                        modifier = Modifier.weight(1f)
+                            .pointerInput(note.id, selected) {
+                                detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
+                            },
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = rowTextColor
+                    )
+                    if (pinned) {
+                        Spacer(Modifier.width(8.dp))
+                        AppIcon(
+                            NoteIcon.Pin,
+                            contentDescription = "Закреплено",
+                            tint = rowTextColor.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(top = 5.dp).size(16.dp)
                         )
                     }
-                }
-                if (pinned) {
-                    AppIcon(NoteIcon.Pin, contentDescription = "Закреплено", tint = rowTextColor.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(10.dp))
+                    Box(
+                        modifier = Modifier.size(30.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        DragHandleIcon(color = rowTextColor.copy(alpha = 0.65f))
+                    }
                 }
-                Spacer(Modifier.width(18.dp))
-                Box(
-                    modifier = Modifier.size(30.dp),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DragHandleIcon(color = rowTextColor.copy(alpha = 0.65f))
+                    Text(
+                        formatNoteCreationDate(note.created),
+                        fontSize = 12.sp,
+                        color = rowTextColor.copy(alpha = 0.62f),
+                        maxLines = 1
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        metadata,
+                        fontSize = 12.sp,
+                        color = rowTextColor.copy(alpha = 0.62f),
+                        maxLines = 1
+                    )
                 }
             }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f), thickness = CardDimensions.dividerThickness)
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
+            thickness = CardDimensions.dividerThickness
+        )
     }
 }
 
