@@ -2249,6 +2249,7 @@ private fun ParentRecordHeader(
     placeholder: String,
     topBarColor: Color,
     autoFocus: Boolean,
+    onAutoFocusConsumed: () -> Unit,
     selectedCount: Int,
     onBack: () -> Unit,
     onClearSelection: () -> Unit,
@@ -2271,6 +2272,7 @@ private fun ParentRecordHeader(
             focusRequester.requestFocus()
             withFrameNanos { }
             keyboardController?.show()
+            onAutoFocusConsumed()
         }
     }
 
@@ -2432,6 +2434,7 @@ private fun NoteEditor(
     }
     var selectedChildId by remember(note.id) { mutableStateOf<Long?>(null) }
     var autoFocusChildId by remember(note.id) { mutableStateOf<Long?>(null) }
+    var parentAutoFocusConsumed by remember(note.id) { mutableStateOf(false) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -2580,7 +2583,8 @@ private fun NoteEditor(
                     note = note,
                     placeholder = "Название задачи",
                     topBarColor = topBarColor,
-                    autoFocus = autoFocus,
+                    autoFocus = autoFocus && !parentAutoFocusConsumed,
+                    onAutoFocusConsumed = { parentAutoFocusConsumed = true },
                     selectedCount = selectedChildIds.size,
                     onBack = onBack,
                     onClearSelection = { selectedChildIds = emptySet() },
@@ -3063,6 +3067,7 @@ private fun PurchaseEditor(
     }
     var selectedChildId by remember(note.id) { mutableStateOf<Long?>(null) }
     var autoFocusChildId by remember(note.id) { mutableStateOf<Long?>(null) }
+    var parentAutoFocusConsumed by remember(note.id) { mutableStateOf(false) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -3211,7 +3216,8 @@ private fun PurchaseEditor(
                     note = note,
                     placeholder = "Название покупки",
                     topBarColor = topBarColor,
-                    autoFocus = autoFocus,
+                    autoFocus = autoFocus && !parentAutoFocusConsumed,
+                    onAutoFocusConsumed = { parentAutoFocusConsumed = true },
                     selectedCount = selectedChildIds.size,
                     onBack = onBack,
                     onClearSelection = { selectedChildIds = emptySet() },
