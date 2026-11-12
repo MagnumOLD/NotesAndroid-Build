@@ -2284,7 +2284,7 @@ private fun NoteEditor(
                     actions = {
                         if (isTaskListItem) {
                             IconButton(onClick = { taskDetailsExpanded = !taskDetailsExpanded }) {
-                                Icon(Icons.Outlined.Tune, contentDescription = if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус")
+                                Icon(Icons.Outlined.MoreVert, contentDescription = if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус")
                             }
                         }
                         if (!isTaskListItem && note.type != RecordType.NOTE) {
