@@ -1507,7 +1507,7 @@ private fun NotesHome(
                 Box {
                     FloatingActionButton(
                         onClick = { createMenuExpanded = true },
-                        modifier = Modifier.offset(y = (-30).dp),
+                        modifier = Modifier.offset(y = (-65).dp),
                         containerColor = themeColors.addButton,
                         contentColor = noteTextColor(themeColors.addButton),
                         shape = RoundedCornerShape(50)
