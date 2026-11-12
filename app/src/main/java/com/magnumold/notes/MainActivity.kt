@@ -1813,7 +1813,7 @@ private fun NotesHome(
                                 if (search.isBlank()) {
                                     Box(
                                         Modifier.align(Alignment.TopEnd)
-                                             .padding(top = AppSpacing.md, end = CardDimensions.handleHitTargetRightInset)
+                                            .padding(top = AppSpacing.md, end = CardDimensions.handleHitTargetRightInset)
                                             // Keep the touch target centered on the handle in the first row.
                                             .size(40.dp)
                                             .zIndex(2f)
@@ -2133,8 +2133,8 @@ private fun NoteRow(
                 modifier = Modifier.fillMaxWidth().padding(
                     start = AppSpacing.screenHorizontal,
                     end = AppSpacing.screenHorizontal,
-                    top = 16.dp,
-                    bottom = 16.dp
+                    top = AppSpacing.md,
+                    bottom = AppSpacing.md
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
