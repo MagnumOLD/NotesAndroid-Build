@@ -2597,8 +2597,8 @@ private fun NoteEditor(
             contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                // Keep the first task row from becoming LazyColumn's viewport anchor
-                // while adjacent tasks exchange positions.
+                // Keep the first purchase row from becoming LazyColumn's viewport anchor
+                // while adjacent purchases exchange positions.
                 item(key = "task_reorder_viewport_anchor") {
                     Spacer(Modifier.height(1.dp))
                 }
@@ -2747,7 +2747,7 @@ private fun NoteEditor(
             }
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 if (note.children.isEmpty()) {
-                    item(key = "empty_nested_tasks") {
+                    item(key = "empty_nested_purchases") {
                         Text(
                             "Пока нет задач",
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
