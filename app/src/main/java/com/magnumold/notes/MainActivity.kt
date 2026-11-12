@@ -2248,6 +2248,14 @@ private fun NoteEditor(
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val titleFocusRequester = remember(note.id) { FocusRequester() }
+    LaunchedEffect(note.id, autoFocus, isTaskListItem) {
+        if (autoFocus && note.type == RecordType.TASK && !isTaskListItem) {
+            withFrameNanos { }
+            titleFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
     val listState = rememberLazyListState()
     val latestTaskNote = rememberUpdatedState(note)
     val latestTaskChildren = rememberUpdatedState(note.children)
@@ -2408,7 +2416,7 @@ private fun NoteEditor(
                     BasicTextField(
                         value = note.titleText,
                         onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester),
                         singleLine = true,
                         textStyle = TextStyle(
                             color = noteTextColor(topBarColor),
@@ -2943,6 +2951,14 @@ private fun PurchaseEditor(
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val titleFocusRequester = remember(note.id) { FocusRequester() }
+    LaunchedEffect(note.id, autoFocus, isPurchaseListItem) {
+        if (autoFocus && note.type == RecordType.PURCHASE && !isPurchaseListItem) {
+            withFrameNanos { }
+            titleFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
     val listState = rememberLazyListState()
     val latestPurchaseNote = rememberUpdatedState(note)
     val latestPurchaseChildren = rememberUpdatedState(note.children)
@@ -3103,7 +3119,7 @@ private fun PurchaseEditor(
                     BasicTextField(
                         value = note.titleText,
                         onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester),
                         singleLine = true,
                         textStyle = TextStyle(
                             color = noteTextColor(topBarColor),
