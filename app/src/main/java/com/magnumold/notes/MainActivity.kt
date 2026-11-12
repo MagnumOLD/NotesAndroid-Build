@@ -174,12 +174,16 @@ private fun Note.recordStatus(now: Long = System.currentTimeMillis()): RecordSta
     else RecordStatusRules.applyDeadline(status, dateMode, dateAt, now)
 
 private fun withUpdatedTaskChildren(parent: Note, children: List<Note>): Note {
-    val allCompleted = children.isNotEmpty() && children.all { it.recordStatus() == RecordStatus.COMPLETED }
+    val wasAllCompleted = parent.children.isNotEmpty() &&
+        parent.children.all { it.recordStatus() == RecordStatus.COMPLETED }
+    val isAllCompleted = children.isNotEmpty() &&
+        children.all { it.recordStatus() == RecordStatus.COMPLETED }
     return when {
-        allCompleted -> parent.copy(children = children, status = RecordStatus.COMPLETED,
-            statusBeforeAutoCompletion = parent.statusBeforeAutoCompletion ?: parent.status)
-        parent.statusBeforeAutoCompletion != null -> parent.copy(children = children,
-            status = parent.statusBeforeAutoCompletion, statusBeforeAutoCompletion = null)
+        isAllCompleted && !wasAllCompleted -> parent.copy(children = children,
+            status = RecordStatus.COMPLETED, statusBeforeAutoCompletion = parent.status)
+        wasAllCompleted && !isAllCompleted && parent.statusBeforeAutoCompletion != null ->
+            parent.copy(children = children, status = parent.statusBeforeAutoCompletion,
+                statusBeforeAutoCompletion = null)
         else -> parent.copy(children = children)
     }
 }
@@ -2246,37 +2250,6 @@ private fun NoteEditor(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box {
-                            Text(
-                                note.dateAt?.let { formatRecordDate(it) } ?: "—",
-                                modifier = Modifier.clickable { dateModeMenuExpanded = true }
-                                    .padding(vertical = 2.dp),
-                                color = if (note.dateAt == null) noteTextColor(topBarColor).copy(alpha = 0.58f)
-                                    else noteTextColor(topBarColor).copy(alpha = 0.82f),
-                                fontSize = 12.sp
-                            )
-                            DropdownMenu(
-                                expanded = dateModeMenuExpanded,
-                                onDismissRequest = { dateModeMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(text = { Text("Обычная дата") }, onClick = {
-                                    pendingDateMode = RecordDateMode.DATE
-                                    dateModeMenuExpanded = false
-                                    datePickerVisible = true
-                                })
-                                DropdownMenuItem(text = { Text("Срок выполнения") }, onClick = {
-                                    pendingDateMode = RecordDateMode.DEADLINE
-                                    dateModeMenuExpanded = false
-                                    datePickerVisible = true
-                                })
-                                if (note.dateAt != null) {
-                                    DropdownMenuItem(text = { Text("Убрать дату") }, onClick = {
-                                        dateModeMenuExpanded = false
-                                        onChange(note.copy(dateMode = null, dateAt = null))
-                                    })
-                                }
-                            }
-                        }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 note.dateAt?.let { formatRecordDate(it) } ?: "—",
@@ -2300,10 +2273,8 @@ private fun NoteEditor(
                                             onClick = {
                                                 statusMenuExpanded = false
                                                 val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                val updated = if (note.statusBeforeAutoCompletion != null) {
-                                                    note.copy(status = RecordStatus.COMPLETED, statusBeforeAutoCompletion = status,
-                                                        deadlineResumeOverride = resumingMissed)
-                                                } else note.copy(status = status, deadlineResumeOverride = resumingMissed)
+                                                val updated = note.copy(status = status, statusBeforeAutoCompletion = null,
+                                                    deadlineResumeOverride = resumingMissed)
                                                 onChange(updated)
                                             }
                                         )
