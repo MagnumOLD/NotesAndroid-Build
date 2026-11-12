@@ -9,7 +9,7 @@
 
 ## Product model
 
-- The main list contains only two record types: Note and Task.
+- The main list contains three record types: Note, Task, and Purchase.
 - A Note is freeform text, edited like a plain text note.
 - A Task opens its own detail screen.
 - A Task contains a flat list of multiline task entries, not nested cards or a universal block model.
