@@ -17,6 +17,7 @@
 - A Purchase opens its own editor, separate from the Task editor. Its nested entries are goods: show a checkbox on the right immediately before the drag handle; checked goods use the completed state and struck-through text. Purchase parent retains its own manual status; nested goods do not expose task-style status menus.
 - The task title is derived from its first line; do not add a separate title field unless explicitly requested.
 - Keep the interface minimalist and consistent with the existing app.
+- Position the main-screen add FAB (creates Note, Task, or Purchase) at `Modifier.offset(y = (-65).dp)` as the current target for a 2340 px-tall reference screen; this raises its center by approximately 105 px from the previous -30 dp placement. Do not change task/purchase detail-screen FAB offsets as part of this rule.
 - Main-list cards for all three record types share one structure: multiline content/title at the upper left, drag handle at the upper right aligned with the first text line, and a metadata row below. Task and purchase status appears on the left; ordinary notes do not show a redundant «Заметка» label. Creation date stays right-aligned for all record types.
 - Main-list card height is content-driven with a compact minimum height; do not truncate a long first line to one visual line.
 - Show the main-card status on the left as plain text with no background, pill, border, or extra padding. Keep the existing status text size/color and the creation date unchanged.
