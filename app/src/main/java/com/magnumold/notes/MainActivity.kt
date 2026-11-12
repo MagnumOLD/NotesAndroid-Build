@@ -1913,7 +1913,7 @@ private fun DragHandleIcon(
         val lineWidth = 16.dp.toPx()
         // Keep the handle in the same color family as the row text.
         // It is slightly quieter at rest and becomes clearer while pressed.
-        val visibleColor = color.copy(alpha = color.alpha * if (pressed) 0.96f else 0.76f)
+        val visibleColor = color.copy(alpha = color.alpha * if (pressed) 0.96f else 0.50f)
         val startX = (size.width - lineWidth) / 2f
         val centerY = size.height / 2f
         val halfSpacing = spacing.dp.toPx() / 2f
