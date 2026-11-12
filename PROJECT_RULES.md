@@ -2,11 +2,10 @@
 
 ## Source of truth and branches
 
-- The private repository `MagnumOLD/NotesAndroid` is the source of truth.
-- Do all active development on `proto`.
-- Do not modify `main` or `stable` unless the user explicitly asks.
-- The public `NotesAndroid-Build` repository is a build mirror, not the canonical source.
-- Never silently copy unrelated or unreviewed changes between repositories.
+- The public repository `MagnumOLD/NotesAndroid-Build`, branch `main`, is the only active source of truth.
+- Make all active development directly on `main`.
+- Do not depend on or synchronize from the private `MagnumOLD/NotesAndroid` repository.
+- APK builds are triggered from pushes to this public `main` branch.
 
 ## Product model
 
