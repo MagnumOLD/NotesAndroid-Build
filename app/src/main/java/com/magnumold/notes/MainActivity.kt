@@ -2250,10 +2250,12 @@ private fun NoteEditor(
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val titleFocusRequester = remember(note.id) { FocusRequester() }
-    LaunchedEffect(note.id, autoFocus, isTaskListItem) {
-        if (autoFocus && note.type == RecordType.TASK && !isTaskListItem) {
+    var titleFieldLaidOut by remember(note.id) { mutableStateOf(false) }
+    LaunchedEffect(note.id, autoFocus, isTaskListItem, titleFieldLaidOut) {
+        if (autoFocus && note.type == RecordType.TASK && !isTaskListItem && titleFieldLaidOut) {
             withFrameNanos { }
             titleFocusRequester.requestFocus()
+            withFrameNanos { }
             keyboardController?.show()
         }
     }
@@ -2421,7 +2423,8 @@ private fun NoteEditor(
                     BasicTextField(
                         value = note.titleText,
                         onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester),
+                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester)
+                            .onGloballyPositioned { titleFieldLaidOut = true },
                         singleLine = true,
                         textStyle = TextStyle(
                             color = noteTextColor(topBarColor),
@@ -2959,10 +2962,12 @@ private fun PurchaseEditor(
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val titleFocusRequester = remember(note.id) { FocusRequester() }
-    LaunchedEffect(note.id, autoFocus, isPurchaseListItem) {
-        if (autoFocus && note.type == RecordType.PURCHASE && !isPurchaseListItem) {
+    var titleFieldLaidOut by remember(note.id) { mutableStateOf(false) }
+    LaunchedEffect(note.id, autoFocus, isPurchaseListItem, titleFieldLaidOut) {
+        if (autoFocus && note.type == RecordType.PURCHASE && !isPurchaseListItem && titleFieldLaidOut) {
             withFrameNanos { }
             titleFocusRequester.requestFocus()
+            withFrameNanos { }
             keyboardController?.show()
         }
     }
@@ -3130,7 +3135,8 @@ private fun PurchaseEditor(
                     BasicTextField(
                         value = note.titleText,
                         onValueChange = { onChange(note.copy(titleText = it)) },
-                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester),
+                        modifier = Modifier.weight(1f).focusRequester(titleFocusRequester)
+                            .onGloballyPositioned { titleFieldLaidOut = true },
                         singleLine = true,
                         textStyle = TextStyle(
                             color = noteTextColor(topBarColor),
