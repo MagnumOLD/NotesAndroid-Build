@@ -2,7 +2,8 @@ package com.magnumold.notes
 
 internal enum class RecordType {
     NOTE,
-    TASK
+    TASK,
+    PURCHASE
 }
 
 internal enum class RecordStatus {
