@@ -1833,10 +1833,15 @@ private fun DragHandleIcon(
             .size(26.dp)
             .pointerInput(compressed) {
                 awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
+                    val down = awaitFirstDown(requireUnconsumed = false)
                     pressed = true
                     try {
-                        waitForUpOrCancellation()
+                        var tracking = true
+                        while (tracking) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id }
+                            if (change == null || !change.pressed) tracking = false
+                        }
                     } finally {
                         pressed = false
                     }
