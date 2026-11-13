@@ -20,7 +20,9 @@ internal class AppNavigationState {
     var search by mutableStateOf("")
         private set
     var searchVisible by mutableStateOf(false)
+        private set
     var settingsVisible by mutableStateOf(false)
+        private set
     var vaultScreen by mutableStateOf<String?>(null)
         private set
     fun selectCollection(id: Long?) {
