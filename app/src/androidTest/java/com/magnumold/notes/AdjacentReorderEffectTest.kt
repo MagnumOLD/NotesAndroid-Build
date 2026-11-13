@@ -48,7 +48,7 @@ class AdjacentReorderEffectTest {
             AdjacentReorderEngine.begin(rows.map { it.key }, "1")
         )
         var pointerY by mutableFloatStateOf(0f)
-        var dragging by mutableStateOf(true)
+        var dragging by mutableStateOf(false)
 
         composeRule.setContent {
             val density = LocalDensity.current
@@ -80,6 +80,7 @@ class AdjacentReorderEffectTest {
 
         composeRule.waitUntil(2_000) { listState.layoutInfo.visibleItemsInfo.any { it.key == "1" } }
         composeRule.runOnUiThread {
+            dragging = true
             pointerY = with(composeRule.density) { 134.dp.toPx() }
         }
         composeRule.waitUntil(3_000) {
@@ -108,7 +109,7 @@ class AdjacentReorderEffectTest {
             AdjacentReorderEngine.begin(rows.map { it.key }, "group")
         )
         var pointerY by mutableFloatStateOf(0f)
-        var dragging by mutableStateOf(true)
+        var dragging by mutableStateOf(false)
         lateinit var listState: LazyListState
 
         composeRule.setContent {
@@ -144,6 +145,7 @@ class AdjacentReorderEffectTest {
 
         composeRule.waitUntil(2_000) { listState.layoutInfo.visibleItemsInfo.any { it.key == "group" } }
         composeRule.runOnUiThread {
+            dragging = true
             // The next row center is 1 + 88 + 120 + 44 = 253dp.
             // With the actual 120dp group height, its center crosses at 254dp.
             pointerY = with(composeRule.density) { 254.dp.toPx() }
