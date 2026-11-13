@@ -38,11 +38,11 @@ internal object CollectionOperations {
         ids: Set<Long>
     ): PersistenceSnapshot {
         if (sourceId == targetId || ids.isEmpty()) return snapshot
-        val source = activeNotes(snapshot, sourceId)
+        val source = RecordListOperations.activeNotes(snapshot, sourceId)
         val moving = source.filter { it.id in ids }
         if (moving.isEmpty()) return snapshot
         val remaining = source.filterNot { it.id in ids }
-        val withoutMoving = replaceActiveNotes(snapshot, sourceId, remaining)
+        val withoutMoving = RecordListOperations.replace(snapshot, sourceId, remaining)
         return if (targetId == null) {
             withoutMoving.copy(notes = moving + withoutMoving.notes)
         } else {
@@ -50,42 +50,6 @@ internal object CollectionOperations {
                 if (collection.id == targetId) collection.copy(notes = moving + collection.notes) else collection
             })
         }
-    }
-
-    fun reorder(
-        snapshot: PersistenceSnapshot,
-        collectionId: Long?,
-        ids: Set<Long>,
-        afterId: Long?
-    ): PersistenceSnapshot {
-        val current = activeNotes(snapshot, collectionId)
-        val reordered = NoteReorderModel.moveSelected(current, ids, afterId)
-        return if (reordered == current) snapshot else replaceActiveNotes(snapshot, collectionId, reordered)
-    }
-
-    fun togglePinned(
-        snapshot: PersistenceSnapshot,
-        collectionId: Long?,
-        ids: Set<Long>
-    ): PersistenceSnapshot {
-        val current = activeNotes(snapshot, collectionId)
-        val allPinned = current.filter { it.id in ids }.all { it.pinned }
-        val updated = current.map { if (it.id in ids) it.copy(pinned = !allPinned) else it }
-        return replaceActiveNotes(snapshot, collectionId, updated.sortedByDescending { it.pinned })
-    }
-
-    fun changeColor(
-        snapshot: PersistenceSnapshot,
-        collectionId: Long?,
-        noteId: Long,
-        colorIndex: Int
-    ): PersistenceSnapshot {
-        val current = activeNotes(snapshot, collectionId)
-        val index = current.indexOfFirst { it.id == noteId }
-        if (index < 0) return snapshot
-        return replaceActiveNotes(snapshot, collectionId, current.toMutableList().apply {
-            this[index] = this[index].copy(colorIndex = colorIndex)
-        })
     }
 
     fun activeNotes(snapshot: PersistenceSnapshot, collectionId: Long?): List<Note> =

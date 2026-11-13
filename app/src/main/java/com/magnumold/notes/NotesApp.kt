@@ -1,32 +1,10 @@
 package com.magnumold.notes
 
 import android.content.Context
-import android.content.Intent
-import android.os.Bundle
-import android.view.View
-import androidx.activity.ComponentActivity
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.activity.compose.setContent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
-import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import kotlinx.coroutines.launch
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import org.json.JSONArray
-import org.json.JSONObject
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 internal fun NotesApp(
@@ -66,15 +44,6 @@ internal fun NotesApp(
             val selectedId = navigation.selectedId
             val activeNotes = if (navigation.activeCollectionId == null) notes.toList()
                 else collections.firstOrNull { it.id == activeCollectionId }?.notes.orEmpty()
-            fun updateActiveNotes(updated: List<Note>) {
-                val collectionId = activeCollectionId
-                recordsViewModel.updateSnapshot { current ->
-                    if (collectionId == null) current.copy(notes = updated)
-                    else current.copy(collections = current.collections.map { collection ->
-                        if (collection.id == collectionId) collection.copy(notes = updated) else collection
-                    })
-                }
-            }
             val autoFocusNewNote = navigation.autoFocusNewNote
             val search = navigation.search
             val searchVisible = navigation.searchVisible
@@ -177,23 +146,23 @@ internal fun NotesApp(
                         },
                         onMoveSelected = { ids, afterId ->
                             recordsViewModel.updateSnapshot {
-                                CollectionOperations.reorder(it, activeCollectionId, ids, afterId)
+                                RecordListOperations.reorder(it, activeCollectionId, ids, afterId)
                             }
                         },
                         onTogglePinned = { ids ->
                             recordsViewModel.updateSnapshot {
-                                CollectionOperations.togglePinned(it, activeCollectionId, ids)
+                                RecordListOperations.togglePinned(it, activeCollectionId, ids)
                             }
                         },
                         onChangeNoteColor = { noteId, colorIndex ->
                             recordsViewModel.updateSnapshot {
-                                CollectionOperations.changeColor(it, activeCollectionId, noteId, colorIndex)
+                                RecordListOperations.changeColor(it, activeCollectionId, noteId, colorIndex)
                             }
                         },
                         onCreate = { type ->
                             val now = System.currentTimeMillis()
                             val id = newRecordId()
-                            updateActiveNotes(listOf(Note(id, "", listOf(NoteBlock()), now, created = now, type = type)) + activeNotes)
+                            recordsViewModel.updateSnapshot { RecordListOperations.create(it, activeCollectionId, Note(id, "", listOf(NoteBlock()), now, created = now, type = type)) }
                             navigation.autoFocusNewNote = true
                             navigation.selectedId = id
                         }
@@ -207,13 +176,13 @@ internal fun NotesApp(
                         selectionColor = activeThemeColors.selection,
                         autoFocus = autoFocusNewNote,
                         onBack = {
-                            if (!selected.hasContent()) updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
+                            if (!selected.hasContent()) recordsViewModel.updateSnapshot { RecordListOperations.remove(it, activeCollectionId, selected.id) }
                             navigation.selectedId = null
                             navigation.autoFocusNewNote = false
                         },
                         onChange = { changed ->
                             val index = activeNotes.indexOfFirst { it.id == changed.id }
-                            if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = changed.copy(updated = System.currentTimeMillis()) })
+                            if (index >= 0) recordsViewModel.updateSnapshot { RecordListOperations.update(it, activeCollectionId, changed.copy(updated = System.currentTimeMillis())) }
                         },
                         onDelete = { promoteChildren ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
