@@ -503,7 +503,7 @@ class MainActivity : ComponentActivity() {
                         onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = vaultScreen == "archive") },
                         onMoveToTrash = { entry -> recordsViewModel.moveArchivedToTrash(entry) },
                         onDeleteForever = { entry -> recordsViewModel.deleteFromTrash(entry) },
-                        onEmptyTrash = { recordsViewModel.emptyTrash() }
+                        onEmptyTrash = { recordsViewModel.emptyTrash() },
                         themeColors = activeThemeColors
                     )
                 } else if (settingsVisible && selected == null) {
