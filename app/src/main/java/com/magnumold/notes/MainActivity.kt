@@ -1923,13 +1923,12 @@ private fun MainCardHeader(
                 modifier = Modifier.padding(top = 5.dp).size(16.dp)
             )
         }
+        Spacer(Modifier.width(20.dp))
+        DragHandleIcon(
+            modifier = Modifier.padding(top = 6.6.dp),
+            color = textColor
+        )
         Spacer(Modifier.width(10.dp))
-        Box(
-            modifier = Modifier.size(width = 36.dp, height = CardDimensions.headerFirstLineHeight),
-            contentAlignment = Alignment.Center
-        ) {
-            DragHandleIcon(color = textColor)
-        }
     }
 }
 
@@ -2011,7 +2010,7 @@ private fun DragHandleIcon(
     )
     Canvas(
         modifier = modifier
-            .size(26.dp)
+            .size(width = 16.dp, height = (spacing + 0.8f).dp)
             .pointerInput(compressed) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -2030,11 +2029,11 @@ private fun DragHandleIcon(
             }
     ) {
         val stroke = 0.8.dp.toPx()
-        val lineWidth = 16.dp.toPx()
+        val lineWidth = size.width - stroke
         // Keep the handle in the same color family as the row text.
         // It is slightly quieter at rest and becomes clearer while pressed.
         val visibleColor = color.copy(alpha = color.alpha * if (pressed) 0.96f else 0.50f)
-        val startX = (size.width - lineWidth) / 2f
+        val startX = stroke / 2f
         val centerY = size.height / 2f
         val halfSpacing = spacing.dp.toPx() / 2f
         drawLine(
@@ -2989,12 +2988,14 @@ private fun NoteEditor(
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
                                     .background(Color.Transparent)
-                                    .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.md),
+                                    .padding(start = AppSpacing.sm, end = 0.dp, top = AppSpacing.md, bottom = AppSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Группа", modifier = Modifier.weight(1f),
                                     color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(10.dp))
                                 DragHandleIcon(color = MaterialTheme.colorScheme.onSurface, compressed = true)
+                                Spacer(Modifier.width(10.dp))
                             }
                         } else {
                             val child = row.notes.first()
@@ -3057,13 +3058,9 @@ private fun NoteEditor(
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
-                                Spacer(Modifier.width(12.dp))
-                                Box(
-                                    modifier = Modifier.size(width = 36.dp, height = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    DragHandleIcon(color = dragHandleColor)
-                                }
+                                Spacer(Modifier.width(22.dp))
+                                DragHandleIcon(color = dragHandleColor)
+                                Spacer(Modifier.width(10.dp))
                             }
                         }
                         if (index != displayedChildRows.lastIndex) {
@@ -3647,13 +3644,9 @@ private fun PurchaseEditor(
                                     },
                                     modifier = Modifier.size(40.dp)
                                 )
-                                Spacer(Modifier.width(4.dp))
-                                Box(
-                                    modifier = Modifier.size(width = 36.dp, height = 40.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    DragHandleIcon(color = dragHandleColor)
-                                }
+                                Spacer(Modifier.width(14.dp))
+                                DragHandleIcon(color = dragHandleColor)
+                                Spacer(Modifier.width(10.dp))
                             }
                         }
                         if (index != displayedChildRows.lastIndex) {
