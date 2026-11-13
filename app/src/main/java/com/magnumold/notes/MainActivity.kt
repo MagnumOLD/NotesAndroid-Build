@@ -2737,6 +2737,11 @@ private fun NoteEditor(
                             down.position.y >= it.offset &&
                                 down.position.y < it.offset + it.size
                         } ?: return@awaitEachGesture
+                        val handleHeight = 40.dp.toPx()
+                        val handleTop = item.offset + (item.size - handleHeight) / 2f
+                        if (down.position.y < handleTop || down.position.y > handleTop + handleHeight) {
+                            return@awaitEachGesture
+                        }
                         val key = item.key as? String ?: return@awaitEachGesture
                         if (!key.startsWith("nested_")) return@awaitEachGesture
                         val grabbedRow = displayedChildRows.firstOrNull { it.key == key }
