@@ -3588,12 +3588,14 @@ private fun PurchaseEditor(
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
                                     .background(Color.Transparent)
-                                    .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.md),
+                                    .padding(start = AppSpacing.sm, end = 0.dp, top = AppSpacing.md, bottom = AppSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Группа", modifier = Modifier.weight(1f),
                                     color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(10.dp))
                                 DragHandleIcon(color = MaterialTheme.colorScheme.onSurface, compressed = true)
+                                Spacer(Modifier.width(10.dp))
                             }
                         } else {
                             val child = row.notes.first()
