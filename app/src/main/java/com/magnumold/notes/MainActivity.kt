@@ -13,7 +13,8 @@ class MainActivity : ComponentActivity() {
         val initialDark = getPreferences(Context.MODE_PRIVATE).getBoolean("dark_v2", true)
         val savedThemeMode = getPreferences(Context.MODE_PRIVATE).getString("theme_mode", null)
             ?.takeIf { it in listOf("light", "dark", "custom") } ?: if (initialDark) "dark" else "light"
-        val initialThemeColorSets = loadThemeColorSets(this)
+        val themeSettings = ThemeSettingsStore(getSharedPreferences("notes_settings", Context.MODE_PRIVATE))
+        val initialThemeColorSets = themeSettings.loadThemeColorSets()
         val initialThemeColors = themeColorsForMode(initialThemeColorSets, savedThemeMode)
         window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(
             if (savedThemeMode == "custom") initialThemeColors.background.toArgbInt()

@@ -36,6 +36,9 @@ internal fun NotesApp(
     initialThemeColorSets: ThemeColorSets
 ) {
             val snapshot by recordsViewModel.snapshot.collectAsStateWithLifecycle()
+            val themeSettings = remember(activity) {
+                ThemeSettingsStore(activity.getSharedPreferences("notes_settings", Context.MODE_PRIVATE))
+            }
             var themeMode by remember { mutableStateOf(savedThemeMode) }
             var themeColorSets by remember { mutableStateOf(initialThemeColorSets) }
             val activeThemeColors = themeColorsForMode(themeColorSets, themeMode)
@@ -44,8 +47,8 @@ internal fun NotesApp(
                 "custom" -> noteTextColor(activeThemeColors.background) == Color.White
                 else -> false
             }
-            var noteColors by remember { mutableStateOf(loadNoteColors(activity)) }
-            var noteColorOpacities by remember { mutableStateOf(loadNoteColorOpacities(activity)) }
+            var noteColors by remember { mutableStateOf(themeSettings.loadNoteColors()) }
+            var noteColorOpacities by remember { mutableStateOf(themeSettings.loadNoteColorOpacities()) }
             val activeNoteColorOpacity = when (themeMode) {
                 "light" -> noteColorOpacities.light
                 "dark" -> noteColorOpacities.dark
@@ -126,9 +129,9 @@ internal fun NotesApp(
                 activity.getPreferences(Context.MODE_PRIVATE).edit().putString("theme_mode", themeMode)
                     .putBoolean("dark_v2", dark).apply()
             }
-            LaunchedEffect(themeColorSets) { saveThemeColorSets(activity, themeColorSets) }
-            LaunchedEffect(noteColors) { saveNoteColors(activity, noteColors) }
-            LaunchedEffect(noteColorOpacities) { saveNoteColorOpacities(activity, noteColorOpacities) }
+            LaunchedEffect(themeColorSets) { themeSettings.saveThemeColorSets(themeColorSets) }
+            LaunchedEffect(noteColors) { themeSettings.saveNoteColors(noteColors) }
+            LaunchedEffect(noteColorOpacities) { themeSettings.saveNoteColorOpacities(noteColorOpacities) }
 
             NotesTheme(dark, activeThemeColors, themeMode == "custom") {
                 val selected = activeNotes.firstOrNull { it.id == selectedId }
