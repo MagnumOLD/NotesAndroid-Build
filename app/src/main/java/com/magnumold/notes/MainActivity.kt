@@ -166,18 +166,6 @@ private object CardDimensions {
     val nestedGroupMinHeight = 72.dp
 }
 
-internal data class NoteBlock(val text: String = "", val checked: Boolean = false, val isChecklist: Boolean = false, val id: String = java.util.UUID.randomUUID().toString())
-internal data class Note(
-    val id: Long, val title: String, val blocks: List<NoteBlock>, val updated: Long,
-    val colorIndex: Int = 0, val pinned: Boolean = false, val created: Long = updated,
-    val type: RecordType = RecordType.NOTE, val status: RecordStatus = RecordStatus.WAITING,
-    val dateMode: RecordDateMode? = null, val dateAt: Long? = null,
-    val titleEnabled: Boolean = false, val titleText: String = "",
-    val descriptionEnabled: Boolean = false, val descriptionText: String = "",
-    val deadlineResumeOverride: Boolean = false, val children: List<Note> = emptyList(),
-    val statusBeforeAutoCompletion: RecordStatus? = null
-)
-
 private data class ChildDragRow(val notes: List<Note>, val key: String)
 
 private fun createChildDragRows(
@@ -195,64 +183,6 @@ private fun createChildDragRows(
         }
     }
 }
-private data class NoteCollection(val id: Long, val name: String, val notes: List<Note> = emptyList())
-private data class PersistenceSnapshot(
-    val notes: List<Note>,
-    val collections: List<NoteCollection>,
-    val archived: List<VaultNote>,
-    val trash: List<VaultNote>
-)
-private data class VaultNote(val note: Note, val collectionId: Long?, val position: Int, val movedAt: Long)
-
-private fun List<NoteBlock>.toPlainText(): String = joinToString("\n\n") { block ->
-    (if (block.isChecklist) (if (block.checked) "☑ " else "☐ ") else "") + block.text
-}
-
-private fun Note.matchesSearch(query: String): Boolean =
-    blocks.any { it.text.contains(query, ignoreCase = true) } ||
-        titleText.contains(query, ignoreCase = true) ||
-        descriptionText.contains(query, ignoreCase = true) ||
-        children.any { it.matchesSearch(query) }
-
-private fun Note.hasContent(): Boolean =
-    blocks.any { it.text.isNotBlank() } ||
-        titleText.isNotBlank() ||
-        descriptionText.isNotBlank() ||
-        children.any { it.hasContent() }
-
-private fun Note.recordStatus(now: Long = System.currentTimeMillis()): RecordStatus =
-    if (deadlineResumeOverride) status
-    else RecordStatusRules.applyDeadline(status, dateMode, dateAt, now)
-
-internal fun withUpdatedRecordChildren(parent: Note, children: List<Note>): Note {
-    val wasAllCompleted = parent.children.isNotEmpty() &&
-        parent.children.all { it.recordStatus() == RecordStatus.COMPLETED }
-    val isAllCompleted = children.isNotEmpty() &&
-        children.all { it.recordStatus() == RecordStatus.COMPLETED }
-    return when {
-        isAllCompleted && !wasAllCompleted -> parent.copy(
-            children = children,
-            status = RecordStatus.COMPLETED,
-            statusBeforeAutoCompletion = parent.status
-        )
-        wasAllCompleted && !isAllCompleted && parent.statusBeforeAutoCompletion != null ->
-            parent.copy(
-                children = children,
-                status = parent.statusBeforeAutoCompletion,
-                statusBeforeAutoCompletion = null
-            )
-        else -> parent.copy(children = children)
-    }
-}
-
-private fun newRecordId(): Long {
-    var id: Long
-    do {
-        id = java.util.UUID.randomUUID().mostSignificantBits and Long.MAX_VALUE
-    } while (id == 0L)
-    return id
-}
-
 private fun formatRecordDate(timestamp: Long): String =
     java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).apply {
         timeZone = java.util.TimeZone.getTimeZone("UTC")
@@ -450,175 +380,6 @@ private fun noteTextColor(color: Color, background: Color = Color.White): Color 
 }
 
 
-private data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>)
-private fun noteToJson(note: Note): JSONObject {
-    val blocks = JSONArray()
-    note.blocks.forEach { block ->
-        blocks.put(JSONObject().put("id", block.id).put("text", block.text)
-            .put("checked", block.checked).put("checklist", block.isChecklist))
-    }
-    return JSONObject()
-        .put("id", note.id).put("title", note.title).put("updated", note.updated)
-        .put("created", note.created).put("colorIndex", note.colorIndex).put("pinned", note.pinned)
-        .put("type", note.type.name).put("status", note.status.name)
-        .put("dateMode", note.dateMode?.name ?: JSONObject.NULL)
-        .put("dateAt", note.dateAt ?: JSONObject.NULL)
-        .put("titleEnabled", note.titleEnabled).put("titleText", note.titleText)
-        .put("descriptionEnabled", note.descriptionEnabled).put("descriptionText", note.descriptionText)
-        .put("deadlineResumeOverride", note.deadlineResumeOverride)
-        .put("statusBeforeAutoCompletion", note.statusBeforeAutoCompletion?.name ?: JSONObject.NULL)
-        .put("blocks", blocks).put("children", notesToJson(note.children))
-}
-private fun notesToJson(items: List<Note>): JSONArray {
-    val array = JSONArray()
-    items.filter { it.hasContent() }.forEach { array.put(noteToJson(it)) }
-    return array
-}
-private fun vaultToJson(items: List<VaultNote>): JSONArray {
-    val array = JSONArray()
-    items.forEach { entry ->
-        array.put(JSONObject().put("collectionId", entry.collectionId ?: JSONObject.NULL)
-            .put("position", entry.position).put("movedAt", entry.movedAt).put("note", noteToJson(entry.note)))
-    }
-    return array
-}
-private fun parseNoteObject(obj: JSONObject, index: Int): Note {
-    val blocksJson = obj.optJSONArray("blocks") ?: JSONArray()
-    var blocks = (0 until blocksJson.length()).map { blockIndex ->
-        val block = blocksJson.getJSONObject(blockIndex)
-        NoteBlock(block.optString("text"), block.optBoolean("checked"), block.optBoolean("checklist"),
-            block.optString("id").ifBlank { java.util.UUID.randomUUID().toString() })
-    }.ifEmpty { listOf(NoteBlock()) }
-    val oldTitle = obj.optString("title").trim()
-    if (oldTitle.isNotEmpty() && blocks.firstOrNull()?.text?.trim() != oldTitle) {
-        blocks = listOf(NoteBlock(oldTitle)) + blocks
-    }
-    val storedType = obj.optString("type", "NOTE")
-    // Legacy UNIVERSAL records are migrated to the new TASK container model.
-    val type = if (storedType == "UNIVERSAL") RecordType.TASK
-        else runCatching { RecordType.valueOf(storedType) }.getOrDefault(RecordType.NOTE)
-    val status = runCatching { RecordStatus.valueOf(obj.optString("status", "WAITING")) }.getOrDefault(RecordStatus.WAITING)
-    val dateMode = runCatching { RecordDateMode.valueOf(obj.optString("dateMode")) }.getOrNull()
-    val children = parseNotesArray(obj.optJSONArray("children") ?: JSONArray())
-    val updated = obj.optLong("updated", System.currentTimeMillis())
-    val created = obj.optLong("created",
-        obj.optLong("id", updated).takeIf { it > 1_000_000_000_000L } ?: updated)
-    return Note(
-        id = obj.optLong("id", index.toLong() + 1L), title = "", blocks = blocks, updated = updated,
-        colorIndex = obj.optInt("colorIndex", 0).coerceIn(0, 6), pinned = obj.optBoolean("pinned", false),
-        created = created, type = type, status = status, dateMode = dateMode,
-        dateAt = if (obj.isNull("dateAt")) null else obj.optLong("dateAt"),
-        titleEnabled = obj.optBoolean("titleEnabled", false), titleText = obj.optString("titleText"),
-        descriptionEnabled = obj.optBoolean("descriptionEnabled", false),
-        descriptionText = obj.optString("descriptionText"),
-        deadlineResumeOverride = obj.optBoolean("deadlineResumeOverride", false), children = children,
-        statusBeforeAutoCompletion = obj.optString("statusBeforeAutoCompletion").takeIf { it.isNotBlank() && it != "null" }
-            ?.let { runCatching { RecordStatus.valueOf(it) }.getOrNull() }
-    )
-}
-private fun parseNotesArray(array: JSONArray): List<Note> =
-    (0 until array.length()).map { index -> parseNoteObject(array.getJSONObject(index), index) }
-        .filter { it.hasContent() }
-private fun parseVaultArray(array: JSONArray?): List<VaultNote> {
-    if (array == null) return emptyList()
-    return (0 until array.length()).mapNotNull { index ->
-        val obj = array.optJSONObject(index) ?: return@mapNotNull null
-        val noteObj = obj.optJSONObject("note") ?: return@mapNotNull null
-        val note = parseNoteObject(noteObj, index).takeIf { it.hasContent() } ?: return@mapNotNull null
-        val collectionId = if (obj.isNull("collectionId")) null else obj.optLong("collectionId")
-        VaultNote(note, collectionId, obj.optInt("position", 0), obj.optLong("movedAt", System.currentTimeMillis()))
-    }
-}
-private fun createBackupJson(items: List<Note>, collections: List<NoteCollection>, archived: List<VaultNote>, trash: List<VaultNote>): String {
-    val collectionArray = JSONArray()
-    collections.forEach { collection ->
-        collectionArray.put(JSONObject().put("id", collection.id).put("name", collection.name).put("notes", notesToJson(collection.notes)))
-    }
-    return JSONObject().put("format", "notes_backup").put("version", 6).put("exportedAt", System.currentTimeMillis())
-        .put("notes", notesToJson(items)).put("collections", collectionArray)
-        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash)).toString(2)
-}
-private fun parseBackupJson(raw: String): BackupData {
-    val root = JSONObject(raw)
-    require(root.optString("format") == "notes_backup") { "Это не резервная копия блокнота" }
-    require(root.optInt("version") in 1..6) { "Неподдерживаемая версия файла" }
-    val notes = parseNotesArray(root.optJSONArray("notes") ?: error("В файле нет списка заметок"))
-    val array = root.optJSONArray("collections") ?: JSONArray()
-    val collections = (0 until array.length()).map { index ->
-        val obj = array.getJSONObject(index)
-        NoteCollection(obj.optLong("id", System.currentTimeMillis() + index),
-            obj.optString("name").ifBlank { "Подборка ${index + 1}" },
-            parseNotesArray(obj.optJSONArray("notes") ?: JSONArray()))
-    }
-    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")))
-}
-
-private fun Note.sameRecordContent(other: Note): Boolean =
-    type == other.type && blocks.toPlainText() == other.blocks.toPlainText() &&
-        titleText == other.titleText && descriptionText == other.descriptionText
-
-private fun mergeImportedNotes(existing: List<Note>, imported: List<Note>): List<Note> {
-    val result = existing.toMutableList()
-    imported.forEach { incoming ->
-        val sameIndex = result.indexOfFirst { it.sameRecordContent(incoming) }
-        if (sameIndex >= 0) {
-            val current = result[sameIndex]
-            result[sameIndex] = current.copy(
-                children = mergeImportedNotes(current.children, incoming.children)
-            )
-            return@forEach
-        }
-        val collision = result.any { it.id == incoming.id }
-        val safeId = if (!collision) incoming.id else {
-            var candidate = System.currentTimeMillis()
-            while (result.any { it.id == candidate }) candidate++
-            candidate
-        }
-        val blocks = if (collision) incoming.blocks.map {
-            it.copy(id = java.util.UUID.randomUUID().toString())
-        } else incoming.blocks
-        result.add(incoming.copy(id = safeId, blocks = blocks))
-    }
-    return result
-}
-
-private fun mergeImportedVault(existing: List<VaultNote>, imported: List<VaultNote>): List<VaultNote> {
-    val result = existing.toMutableList()
-    imported.forEach { incoming ->
-        val sameIndex = result.indexOfFirst { it.note.sameRecordContent(incoming.note) }
-        if (sameIndex >= 0) {
-            val current = result[sameIndex]
-            result[sameIndex] = current.copy(
-                note = current.note.copy(
-                    children = mergeImportedNotes(current.note.children, incoming.note.children)
-                )
-            )
-            return@forEach
-        }
-        val collision = result.any { it.note.id == incoming.note.id }
-        val safeNote = if (!collision) incoming.note else {
-            var candidate = System.currentTimeMillis()
-            while (result.any { it.note.id == candidate }) candidate++
-            incoming.note.copy(id = candidate, blocks = incoming.note.blocks.map { it.copy(id = java.util.UUID.randomUUID().toString()) })
-        }
-        result.add(incoming.copy(note = safeNote))
-    }
-    return result
-}
-
-private fun mergeImportedCollections(existing: List<NoteCollection>, imported: List<NoteCollection>): List<NoteCollection> {
-    val result = existing.toMutableList()
-    imported.forEach { incoming ->
-        val sameName = result.indexOfFirst { it.name.equals(incoming.name, true) }
-        if (sameName >= 0) result[sameName] = result[sameName].copy(notes = mergeImportedNotes(result[sameName].notes, incoming.notes))
-        else {
-            var id = incoming.id
-            while (result.any { it.id == id }) id++
-            result.add(incoming.copy(id = id))
-        }
-    }
-    return result
-}
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -632,7 +393,9 @@ class MainActivity : ComponentActivity() {
             else if (savedThemeMode == "dark") android.graphics.Color.BLACK else android.graphics.Color.WHITE
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
         setContent {
+            val initialPersistence = remember { repository.loadSnapshot() }
             var themeMode by remember { mutableStateOf(savedThemeMode) }
             var themeColorSets by remember { mutableStateOf(initialThemeColorSets) }
             val activeThemeColors = themeColorsForMode(themeColorSets, themeMode)
@@ -651,8 +414,8 @@ class MainActivity : ComponentActivity() {
             val displayedNoteColors = remember(noteColors, activeNoteColorOpacity) {
                 noteColors.map { it.copy(alpha = activeNoteColorOpacity) }
             }
-            val notes = remember { mutableStateListOf<Note>().apply { addAll(loadNotes()) } }
-            val collections = remember { mutableStateListOf<NoteCollection>().apply { addAll(loadCollections()) } }
+            val notes = remember { mutableStateListOf<Note>().apply { addAll(initialPersistence.notes) } }
+            val collections = remember { mutableStateListOf<NoteCollection>().apply { addAll(initialPersistence.collections) } }
             var activeCollectionId by remember { mutableStateOf<Long?>(null) }
             var selectedId by remember { mutableStateOf<Long?>(null) }
             val activeNotes = if (activeCollectionId == null) notes.toList()
@@ -670,8 +433,8 @@ class MainActivity : ComponentActivity() {
             var searchVisible by remember { mutableStateOf(false) }
             var settingsVisible by remember { mutableStateOf(false) }
             var vaultScreen by remember { mutableStateOf<String?>(null) }
-            val archived = remember { mutableStateListOf<VaultNote>().apply { addAll(loadVault("archive")) } }
-            val trash = remember { mutableStateListOf<VaultNote>().apply { addAll(loadVault("trash")) } }
+            val archived = remember { mutableStateListOf<VaultNote>().apply { addAll(initialPersistence.archived) } }
+            val trash = remember { mutableStateListOf<VaultNote>().apply { addAll(initialPersistence.trash) } }
 
             val exportLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/json")
@@ -735,10 +498,7 @@ class MainActivity : ComponentActivity() {
                         trash = trash.toList()
                     )
                 }.debounce(300).collect { snapshot ->
-                    saveNotes(snapshot.notes)
-                    saveCollections(snapshot.collections)
-                    saveVault("archive", snapshot.archived)
-                    saveVault("trash", snapshot.trash)
+                    repository.saveSnapshot(snapshot)
                 }
             }
             LaunchedEffect(themeMode, dark) {
@@ -907,40 +667,7 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent.createChooser(intent, "Поделиться заметкой"))
     }
 
-    private fun loadNotes(): List<Note> = try {
-        parseNotesArray(JSONArray(getPreferences(Context.MODE_PRIVATE).getString("notes", "[]") ?: "[]"))
-    } catch (_: Exception) { emptyList() }
 
-    private fun loadVault(key: String): List<VaultNote> = try {
-        parseVaultArray(JSONArray(getPreferences(Context.MODE_PRIVATE).getString(key, "[]") ?: "[]"))
-    } catch (_: Exception) { emptyList() }
-
-    private fun saveVault(key: String, items: List<VaultNote>) {
-        getPreferences(Context.MODE_PRIVATE).edit().putString(key, vaultToJson(items).toString()).apply()
-    }
-
-    private fun loadCollections(): List<NoteCollection> = try {
-        val array = JSONArray(getPreferences(Context.MODE_PRIVATE).getString("collections", "[]") ?: "[]")
-        (0 until array.length()).map { i ->
-            val obj = array.getJSONObject(i)
-            NoteCollection(obj.optLong("id", System.currentTimeMillis() + i),
-                obj.optString("name").ifBlank { "Подборка ${i + 1}" },
-                parseNotesArray(obj.optJSONArray("notes") ?: JSONArray()))
-        }
-    } catch (_: Exception) { emptyList() }
-
-    private fun saveCollections(items: List<NoteCollection>) {
-        val array = JSONArray()
-        items.forEach { collection ->
-            array.put(JSONObject().put("id", collection.id).put("name", collection.name).put("notes", notesToJson(collection.notes)))
-        }
-        getPreferences(Context.MODE_PRIVATE).edit().putString("collections", array.toString()).apply()
-    }
-
-    private fun saveNotes(items: List<Note>) {
-        getPreferences(Context.MODE_PRIVATE).edit()
-            .putString("notes", notesToJson(items).toString()).apply()
-    }
 }
 
 @Composable
