@@ -2732,7 +2732,6 @@ private fun NoteEditor(
             state = listState,
             modifier = Modifier.fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = AppSpacing.screenHorizontal)
                 .pointerInput(note.id) {
                     awaitEachGesture {
                         val down = awaitFirstDown(
@@ -2740,7 +2739,7 @@ private fun NoteEditor(
                             pass = PointerEventPass.Initial
                         )
                         val handleWidth = 40.dp.toPx()
-                        if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx()) ||
+                        if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx() + AppSpacing.screenHorizontal.toPx()) ||
                             childReorderSession != null
                         ) return@awaitEachGesture
 
@@ -2842,7 +2841,10 @@ private fun NoteEditor(
             if (note.type != RecordType.NOTE &&
                 (note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
-                    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                    ) {
                         if (note.titleEnabled && isTaskListItem) {
                             OutlinedTextField(
                                 value = note.titleText,
@@ -2906,7 +2908,7 @@ private fun NoteEditor(
                 if (isTaskListItem && taskDetailsExpanded) {
                     item(key = "record_status") {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.xs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
@@ -2956,6 +2958,7 @@ private fun NoteEditor(
                         updateText(it.text)
                     },
                     modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = AppSpacing.screenHorizontal)
                         .focusRequester(bodyFocusRequester)
                         .heightIn(min = 160.dp)
                         .onFocusChanged { state ->
@@ -2987,7 +2990,7 @@ private fun NoteEditor(
                     item(key = "empty_nested_purchases") {
                         Text(
                             "Пока нет задач",
-                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -2997,9 +3000,13 @@ private fun NoteEditor(
                     val group = row.notes.size > 1
                     Column(
                         modifier = Modifier.fillMaxWidth()
-                            .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = AppSpacing.screenHorizontal)
+                                .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
+                        ) {
                         if (group) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
@@ -3076,6 +3083,7 @@ private fun NoteEditor(
                                 Spacer(Modifier.width(22.dp))
                                 DragHandleIcon(color = dragHandleColor)
                             }
+                        }
                         }
                         if (index != displayedChildRows.lastIndex) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), thickness = 0.6.dp)
@@ -3367,7 +3375,6 @@ private fun PurchaseEditor(
             state = listState,
             modifier = Modifier.fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = AppSpacing.screenHorizontal)
                 .pointerInput(note.id) {
                     awaitEachGesture {
                         val down = awaitFirstDown(
@@ -3375,7 +3382,7 @@ private fun PurchaseEditor(
                             pass = PointerEventPass.Initial
                         )
                         val handleWidth = 40.dp.toPx()
-                        if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx()) ||
+                        if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx() + AppSpacing.screenHorizontal.toPx()) ||
                             childReorderSession != null
                         ) return@awaitEachGesture
 
@@ -3477,7 +3484,10 @@ private fun PurchaseEditor(
             if (note.type != RecordType.NOTE &&
                 (note.descriptionEnabled || isPurchaseListItem)) {
                 item(key = "record_options") {
-                    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                    ) {
                         if (note.titleEnabled && isPurchaseListItem) {
                             OutlinedTextField(
                                 value = note.titleText,
@@ -3560,6 +3570,7 @@ private fun PurchaseEditor(
                         updateText(it.text)
                     },
                     modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = AppSpacing.screenHorizontal)
                         .focusRequester(bodyFocusRequester)
                         .heightIn(min = 160.dp)
                         .onFocusChanged { state ->
@@ -3591,7 +3602,7 @@ private fun PurchaseEditor(
                     item(key = "empty_nested_tasks") {
                         Text(
                             "Пока нет товаров",
-                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -3601,9 +3612,13 @@ private fun PurchaseEditor(
                     val group = row.notes.size > 1
                     Column(
                         modifier = Modifier.fillMaxWidth()
-                            .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = AppSpacing.screenHorizontal)
+                                .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
+                        ) {
                         if (group) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
@@ -3669,6 +3684,7 @@ private fun PurchaseEditor(
                                 Spacer(Modifier.width(14.dp))
                                 DragHandleIcon(color = dragHandleColor)
                             }
+                        }
                         }
                         if (index != displayedChildRows.lastIndex) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), thickness = 0.6.dp)
