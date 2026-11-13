@@ -1,7 +1,9 @@
 package com.magnumold.notes
 
-import android.app.AlarmManager
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.provider.Settings
 import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +20,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +43,13 @@ internal fun TaskTimerControls(taskId: Long, modifier: Modifier = Modifier) {
     var totalMillis by remember { mutableStateOf(store.totalMillis(taskId)) }
     var limitText by remember(settings.defaultLimitMinutes) { mutableStateOf(settings.defaultLimitMinutes.toString()) }
     var modeMenu by remember { mutableStateOf(false) }
+    var pendingStart by remember { mutableStateOf(false) }
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted || Build.VERSION.SDK_INT < 33) startTimer(context, taskId, limitText, settings.defaultLimitMinutes)
+        pendingStart = false
+    }
 
     LaunchedEffect(taskId) {
         while (true) {
@@ -57,6 +68,7 @@ internal fun TaskTimerControls(taskId: Long, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium)
 
             val isThisTaskActive = active?.taskId == taskId && active?.breakUntilMillis == null
+            val isThisTaskOnBreak = active?.taskId == taskId && active?.breakUntilMillis != null
             val anotherTaskActive = active != null && active?.taskId != taskId
             if (isThisTaskActive) {
                 Text("Таймер: ${formatTrackedTime(active!!.remainingMillis(System.currentTimeMillis()))} осталось",
@@ -78,25 +90,34 @@ internal fun TaskTimerControls(taskId: Long, modifier: Modifier = Modifier) {
                     singleLine = true
                 )
                 Button(
-                    enabled = !anotherTaskActive && (isThisTaskActive || active == null),
+                    enabled = !anotherTaskActive && (isThisTaskActive || isThisTaskOnBreak || active == null),
                     onClick = {
-                        if (isThisTaskActive) {
+                        if (isThisTaskActive || isThisTaskOnBreak) {
                             context.startService(Intent(context, TaskTimerService::class.java)
                                 .setAction(ACTION_TASK_TIMER_STOP))
+                        } else if (Build.VERSION.SDK_INT >= 33 &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            pendingStart = true
+                            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                            val minutes = limitText.toIntOrNull()?.coerceIn(1, 240)
-                                ?: settings.defaultLimitMinutes
-                            val intent = Intent(context, TaskTimerService::class.java)
-                                .setAction(ACTION_TASK_TIMER_START)
-                                .putExtra("task_id", taskId)
-                                .putExtra("limit_minutes", minutes)
-                            if (Build.VERSION.SDK_INT >= 26) ContextCompat.startForegroundService(context, intent)
-                            else context.startService(intent)
+                            startTimer(context, taskId, limitText, settings.defaultLimitMinutes)
                         }
                     }
-                ) { Text(if (isThisTaskActive) "Остановить" else "Старт") }
+                ) { Text(if (isThisTaskActive || isThisTaskOnBreak) "Остановить" else "Старт") }
             }
 
+            if (Build.VERSION.SDK_INT >= 31 &&
+                !context.getSystemService(android.app.AlarmManager::class.java).canScheduleExactAlarms()
+            ) {
+                Text("Без точного доступа Android может задержать сигнал таймера.",
+                    color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = {
+                    context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = android.net.Uri.parse("package:" + context.packageName)
+                    })
+                }) { Text("Разрешить точные сигналы") }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("После сигнала", modifier = Modifier.weight(1f),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -144,4 +165,14 @@ private fun formatTrackedTime(millis: Long): String {
     val hours = totalMinutes / 60L
     val minutes = totalMinutes % 60L
     return if (hours > 0L) "${hours} ч ${minutes} мин" else "${minutes} мин"
+}
+
+private fun startTimer(context: Context, taskId: Long, limitText: String, defaultLimit: Int) {
+    val minutes = limitText.toIntOrNull()?.coerceIn(1, 240) ?: defaultLimit
+    val intent = Intent(context, TaskTimerService::class.java)
+        .setAction(ACTION_TASK_TIMER_START)
+        .putExtra("task_id", taskId)
+        .putExtra("limit_minutes", minutes)
+    if (Build.VERSION.SDK_INT >= 26) ContextCompat.startForegroundService(context, intent)
+    else context.startService(intent)
 }
