@@ -156,10 +156,10 @@ internal fun NotesApp(
                     )
                 } else if (selected == null) {
                     NotesHome(
-                        notes = activeNotes, navigation.search = search, navigation.searchVisible = searchVisible,
+                        notes = activeNotes, search = search, searchVisible = searchVisible,
                         noteColors = displayedNoteColors,
                         themeColors = activeThemeColors,
-                        collections = collections, navigation.activeCollectionId = activeCollectionId,
+                        collections = collections, activeCollectionId = activeCollectionId,
                         onSelectCollection = { navigation.activeCollectionId = it; navigation.selectedId = null },
                         onCreateCollection = { name -> val id = newRecordId(); recordsViewModel.updateSnapshot { it.copy(collections = it.collections + NoteCollection(id, name)) }; navigation.activeCollectionId = id },
                         onRenameCollection = { id, name ->
