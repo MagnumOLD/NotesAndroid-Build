@@ -111,26 +111,16 @@ internal fun NotesApp(
             BackHandler(enabled = settingsVisible && vaultScreen != null) { vaultScreen = null }
             BackHandler(enabled = settingsVisible && vaultScreen == null) { settingsVisible = false }
 
-            SideEffect {
-                val appBackground = if (themeMode == "custom") activeThemeColors.background else if (dark) Color.Black else Color.White
-                val statusBarBackground = activeThemeColors.statusBar
-                activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(appBackground.toArgbInt()))
-                activity.window.statusBarColor = statusBarBackground.toArgbInt()
-                val flags = activity.window.decorView.systemUiVisibility
-                val darkStatusIcons = noteTextColor(statusBarBackground) == Color(0xFF202020)
-                activity.window.decorView.systemUiVisibility = if (darkStatusIcons) {
-                    flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                } else {
-                    flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-                }
-            }
-            LaunchedEffect(themeMode, dark) {
-                activity.getPreferences(Context.MODE_PRIVATE).edit().putString("theme_mode", themeMode)
-                    .putBoolean("dark_v2", dark).apply()
-            }
-            LaunchedEffect(themeColorSets) { themeSettings.saveThemeColorSets(themeColorSets) }
-            LaunchedEffect(noteColors) { themeSettings.saveNoteColors(noteColors) }
-            LaunchedEffect(themeState.noteColorOpacities) { themeSettings.saveNoteColorOpacities(themeState.noteColorOpacities) }
+            AppThemeEffects(
+                activity = activity,
+                themeMode = themeMode,
+                dark = dark,
+                themeColors = activeThemeColors,
+                themeColorSets = themeColorSets,
+                noteColors = noteColors,
+                noteColorOpacities = themeState.noteColorOpacities,
+                themeSettings = themeSettings
+            )
 
             NotesTheme(dark, activeThemeColors, themeMode == "custom") {
                 val selected = activeNotes.firstOrNull { it.id == selectedId }
