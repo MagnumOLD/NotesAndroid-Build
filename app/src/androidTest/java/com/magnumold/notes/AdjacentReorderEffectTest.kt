@@ -125,6 +125,7 @@ class AdjacentReorderEffectTest {
                 releaseRequested = false,
                 listState = listState,
                 density = density,
+                canSwap = { _, neighbourKey -> neighbourKey != "1" },
                 onSessionChange = { session = it },
                 onFinishDrag = { dragging = false }
             )
