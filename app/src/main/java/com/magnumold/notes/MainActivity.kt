@@ -138,7 +138,7 @@ internal data class ThemeColorSets(
     val custom: CustomThemeColors = CustomThemeColors()
 )
 internal val defaultCustomThemeColors = CustomThemeColors()
-private fun Color.toArgbInt(): Int = android.graphics.Color.argb(
+internal fun Color.toArgbInt(): Int = android.graphics.Color.argb(
     (alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt()
 )
 internal fun colorToHex(color: Color): String = String.format("#%08X", color.toArgbInt())
@@ -181,7 +181,7 @@ private fun loadThemeColorSets(context: Context): ThemeColorSets {
     } catch (_: Exception) { defaultCustomThemeColors }
     return ThemeColorSets(custom = custom)
 }
-private fun saveThemeColorSets(context: Context, sets: ThemeColorSets) {
+internal fun saveThemeColorSets(context: Context, sets: ThemeColorSets) {
     fun encode(colors: CustomThemeColors) = JSONObject()
         .put("background", colorToHex(colors.background))
         .put("topBar", colorToHex(colors.topBar))
@@ -194,12 +194,12 @@ private fun saveThemeColorSets(context: Context, sets: ThemeColorSets) {
     context.getSharedPreferences("notes_settings", Context.MODE_PRIVATE).edit()
         .putString("theme_colors_v2", json.toString()).apply()
 }
-private fun themeColorsForMode(sets: ThemeColorSets, mode: String): CustomThemeColors = when (mode) {
+internal fun themeColorsForMode(sets: ThemeColorSets, mode: String): CustomThemeColors = when (mode) {
     "light" -> sets.light
     "dark" -> sets.dark
     else -> sets.custom
 }
-private fun updateThemeColorSets(sets: ThemeColorSets, mode: String, key: String, color: Color): ThemeColorSets {
+internal fun updateThemeColorSets(sets: ThemeColorSets, mode: String, key: String, color: Color): ThemeColorSets {
     fun update(current: CustomThemeColors) = when (key) {
         "background" -> current.copy(background = color)
         "topBar" -> current.copy(topBar = color)
@@ -227,7 +227,7 @@ private val colorPickerPresets = listOf(
     Color(0xFFFF375F), Color(0xFFBF5AF2), Color(0xFF007AFF), Color(0xFF5E5CE6),
     Color(0xFF8E8E93), Color(0xFFA2845E), Color(0xFFFF6961), Color(0xFF64D2FF)
 )
-private fun loadNoteColors(context: Context): List<Color> {
+internal fun loadNoteColors(context: Context): List<Color> {
     val raw = context.getSharedPreferences("notes_settings", Context.MODE_PRIVATE).getString("note_colors", null)
         ?: return defaultNoteColors
     return try {
@@ -237,7 +237,7 @@ private fun loadNoteColors(context: Context): List<Color> {
         }
     } catch (_: Exception) { defaultNoteColors }
 }
-private fun saveNoteColors(context: Context, colors: List<Color>) {
+internal fun saveNoteColors(context: Context, colors: List<Color>) {
     val array = JSONArray()
     colors.forEach { color ->
         val argb = android.graphics.Color.argb(
@@ -248,9 +248,9 @@ private fun saveNoteColors(context: Context, colors: List<Color>) {
     }
     context.getSharedPreferences("notes_settings", Context.MODE_PRIVATE).edit().putString("note_colors", array.toString()).apply()
 }
-private data class NoteColorOpacities(val light: Float = 0.5f, val dark: Float = 0.5f, val custom: Float = 0.5f)
+internal data class NoteColorOpacities(val light: Float = 0.5f, val dark: Float = 0.5f, val custom: Float = 0.5f)
 
-private fun loadNoteColorOpacities(context: Context): NoteColorOpacities {
+internal fun loadNoteColorOpacities(context: Context): NoteColorOpacities {
     val raw = context.getSharedPreferences("notes_settings", Context.MODE_PRIVATE)
         .getString("note_color_opacity_v1", null) ?: return NoteColorOpacities()
     return try {
@@ -263,7 +263,7 @@ private fun loadNoteColorOpacities(context: Context): NoteColorOpacities {
     } catch (_: Exception) { NoteColorOpacities() }
 }
 
-private fun saveNoteColorOpacities(context: Context, values: NoteColorOpacities) {
+internal fun saveNoteColorOpacities(context: Context, values: NoteColorOpacities) {
     val json = JSONObject().put("light", values.light).put("dark", values.dark).put("custom", values.custom)
     context.getSharedPreferences("notes_settings", Context.MODE_PRIVATE).edit()
         .putString("note_color_opacity_v1", json.toString()).apply()
@@ -295,329 +295,19 @@ class MainActivity : ComponentActivity() {
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
         val recordsViewModel = ViewModelProvider(this, NotesViewModelFactory(repository))[NotesViewModel::class.java]
         setContent {
-            val snapshot by recordsViewModel.snapshot.collectAsStateWithLifecycle()
-            var themeMode by remember { mutableStateOf(savedThemeMode) }
-            var themeColorSets by remember { mutableStateOf(initialThemeColorSets) }
-            val activeThemeColors = themeColorsForMode(themeColorSets, themeMode)
-            val dark = when (themeMode) {
-                "dark" -> true
-                "custom" -> noteTextColor(activeThemeColors.background) == Color.White
-                else -> false
-            }
-            var noteColors by remember { mutableStateOf(loadNoteColors(this@MainActivity)) }
-            var noteColorOpacities by remember { mutableStateOf(loadNoteColorOpacities(this@MainActivity)) }
-            val activeNoteColorOpacity = when (themeMode) {
-                "light" -> noteColorOpacities.light
-                "dark" -> noteColorOpacities.dark
-                else -> noteColorOpacities.custom
-            }
-            val displayedNoteColors = remember(noteColors, activeNoteColorOpacity) {
-                noteColors.map { it.copy(alpha = activeNoteColorOpacity) }
-            }
-            val notes = snapshot.notes
-            val collections = snapshot.collections
-            var activeCollectionId by remember { mutableStateOf<Long?>(null) }
-            var selectedId by remember { mutableStateOf<Long?>(null) }
-            val activeNotes = if (activeCollectionId == null) notes.toList()
-                else collections.firstOrNull { it.id == activeCollectionId }?.notes.orEmpty()
-            fun updateActiveNotes(updated: List<Note>) {
-                val collectionId = activeCollectionId
-                recordsViewModel.updateSnapshot { current ->
-                    if (collectionId == null) current.copy(notes = updated)
-                    else current.copy(collections = current.collections.map { collection ->
-                        if (collection.id == collectionId) collection.copy(notes = updated) else collection
-                    })
-                }
-            }
-            var autoFocusNewNote by remember { mutableStateOf(false) }
-            var search by remember { mutableStateOf("") }
-            var searchVisible by remember { mutableStateOf(false) }
-            var settingsVisible by remember { mutableStateOf(false) }
-            var vaultScreen by remember { mutableStateOf<String?>(null) }
-            val archived = snapshot.archived
-            val trash = snapshot.trash
-
-            val exportLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.CreateDocument("application/json")
-            ) { uri ->
-                if (uri != null) {
-                    try {
-                        contentResolver.openOutputStream(uri)?.use { output ->
-                            output.write(createBackupJson(snapshot.notes, snapshot.collections, snapshot.archived, snapshot.trash).toByteArray(Charsets.UTF_8))
-                        } ?: error("Не удалось открыть файл")
-                        Toast.makeText(this, "Резервная копия сохранена", Toast.LENGTH_SHORT).show()
-                    } catch (_: Exception) {
-                        Toast.makeText(this, "Не удалось сохранить резервную копию", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-            val importLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.OpenDocument()
-            ) { uri ->
-                if (uri != null) {
-                    try {
-                        val json = contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-                            ?: error("Не удалось прочитать файл")
-                        val importedCount = recordsViewModel.importBackup(json)
-                        Toast.makeText(this, "Импортировано заметок: $importedCount", Toast.LENGTH_LONG).show()
-                    } catch (_: Exception) {
-                        Toast.makeText(this, "Не удалось импортировать файл: неверный формат", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-
-            BackHandler(enabled = settingsVisible && vaultScreen != null) { vaultScreen = null }
-            BackHandler(enabled = settingsVisible && vaultScreen == null) { settingsVisible = false }
-
-            SideEffect {
-                val appBackground = if (themeMode == "custom") activeThemeColors.background else if (dark) Color.Black else Color.White
-                val statusBarBackground = activeThemeColors.statusBar
-                window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(appBackground.toArgbInt()))
-                window.statusBarColor = statusBarBackground.toArgbInt()
-                val flags = window.decorView.systemUiVisibility
-                val darkStatusIcons = noteTextColor(statusBarBackground) == Color(0xFF202020)
-                window.decorView.systemUiVisibility = if (darkStatusIcons) {
-                    flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                } else {
-                    flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-                }
-            }
-            LaunchedEffect(themeMode, dark) {
-                getPreferences(Context.MODE_PRIVATE).edit().putString("theme_mode", themeMode)
-                    .putBoolean("dark_v2", dark).apply()
-            }
-            LaunchedEffect(themeColorSets) { saveThemeColorSets(this@MainActivity, themeColorSets) }
-            LaunchedEffect(noteColors) { saveNoteColors(this@MainActivity, noteColors) }
-            LaunchedEffect(noteColorOpacities) { saveNoteColorOpacities(this@MainActivity, noteColorOpacities) }
-
-            NotesTheme(dark, activeThemeColors, themeMode == "custom") {
-                val selected = activeNotes.firstOrNull { it.id == selectedId }
-                if (settingsVisible && selected == null && vaultScreen != null) {
-                    VaultScreen(
-                        title = if (vaultScreen == "archive") "Архив" else "Корзина",
-                        entries = if (vaultScreen == "archive") archived else trash,
-                        isTrash = vaultScreen == "trash",
-                        onBack = { vaultScreen = null },
-                        onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = vaultScreen == "archive") },
-                        onMoveToTrash = { entry -> recordsViewModel.moveArchivedToTrash(entry) },
-                        onDeleteForever = { entry -> recordsViewModel.deleteFromTrash(entry) },
-                        onEmptyTrash = { recordsViewModel.emptyTrash() },
-                        themeColors = activeThemeColors
-                    )
-                } else if (settingsVisible && selected == null) {
-                    SettingsScreen(
-                        themeMode = themeMode,
-                        onThemeModeChange = { themeMode = it },
-                        themeColors = activeThemeColors,
-                        onThemeColorChange = { key, color -> themeColorSets = updateThemeColorSets(themeColorSets, themeMode, key, color) },
-                        onResetThemeColors = {
-                            val defaults = when (themeMode) { "light" -> ThemeColorSets().light; "dark" -> ThemeColorSets().dark; else -> defaultCustomThemeColors }
-                            themeColorSets = when (themeMode) {
-                                "light" -> themeColorSets.copy(light = defaults)
-                                "dark" -> themeColorSets.copy(dark = defaults)
-                                else -> themeColorSets.copy(custom = defaults)
-                            }
-                        },
-                        noteColors = noteColors,
-                        noteColorOpacity = activeNoteColorOpacity,
-                        onNoteColorsChange = { noteColors = it },
-                        onNoteColorOpacityChange = { opacity ->
-                            noteColorOpacities = when (themeMode) {
-                                "light" -> noteColorOpacities.copy(light = opacity)
-                                "dark" -> noteColorOpacities.copy(dark = opacity)
-                                else -> noteColorOpacities.copy(custom = opacity)
-                            }
-                        },
-                        onExport = { exportLauncher.launch("Notes-backup.json") },
-                        onImport = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) },
-                        onOpenArchive = { vaultScreen = "archive" },
-                        onOpenTrash = { vaultScreen = "trash" },
-                        onBack = { settingsVisible = false }
-                    )
-                } else if (selected == null) {
-                    NotesHome(
-                        notes = activeNotes, search = search, searchVisible = searchVisible,
-                        noteColors = displayedNoteColors,
-                        themeColors = activeThemeColors,
-                        collections = collections, activeCollectionId = activeCollectionId,
-                        onSelectCollection = { activeCollectionId = it; selectedId = null },
-                        onCreateCollection = { name -> val id = newRecordId(); recordsViewModel.updateSnapshot { it.copy(collections = it.collections + NoteCollection(id, name)) }; activeCollectionId = id },
-                        onRenameCollection = { id, name ->
-                            recordsViewModel.updateSnapshot { current -> current.copy(collections = current.collections.map { if (it.id == id) it.copy(name = name) else it }) }
-                        },
-                        onDeleteCollection = { id ->
-                            val collection = collections.firstOrNull { it.id == id }
-                            if (collection != null) { recordsViewModel.updateSnapshot { current -> current.copy(notes = collection.notes + current.notes, collections = current.collections.filterNot { it.id == id }) }; if (activeCollectionId == id) activeCollectionId = null }
-                        },
-                        onMoveCollection = { id, delta ->
-                            recordsViewModel.updateSnapshot { current ->
-                                val from = current.collections.indexOfFirst { it.id == id }
-                                if (from < 0 || current.collections.isEmpty()) current else {
-                                    val to = (from + delta).coerceIn(0, current.collections.lastIndex)
-                                    if (from == to) current else current.copy(collections = current.collections.toMutableList().apply { add(to, removeAt(from)) })
-                                }
-                            }
-                        },
-                        onTransferSelected = { ids, targetId ->
-                            if (targetId != activeCollectionId) {
-                                val moving = activeNotes.filter { it.id in ids }
-                                updateActiveNotes(activeNotes.filterNot { it.id in ids })
-                                recordsViewModel.updateSnapshot { current ->
-                                    if (targetId == null) current.copy(notes = moving + current.notes)
-                                    else current.copy(collections = current.collections.map { collection ->
-                                        if (collection.id == targetId) collection.copy(notes = moving + collection.notes) else collection
-                                    })
-                                }
-                            }
-                        },
-                        onSearch = { search = it },
-                        onToggleSearch = { searchVisible = !searchVisible; if (!searchVisible) search = "" },
-                        dark = dark,
-                        onOpenSettings = { settingsVisible = true },
-                        onOpen = { autoFocusNewNote = false; selectedId = it },
-                        onArchiveSelected = { ids ->
-                            recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = false)
-                        },
-                        onDeleteSelected = { ids ->
-                            recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = true)
-                        },
-                        onMoveSelected = { ids, afterId ->
-                            val reordered = NoteReorderModel.moveSelected(activeNotes, ids, afterId)
-                            if (reordered != activeNotes) updateActiveNotes(reordered)
-                        },
-                        onTogglePinned = { ids ->
-                            val current = activeNotes.toMutableList()
-                            val allPinned = current.filter { it.id in ids }.all { it.pinned }
-                            val updated = current.map { if (it.id in ids) it.copy(pinned = !allPinned) else it }
-                            updateActiveNotes(updated.sortedByDescending { it.pinned })
-                        },
-                        onChangeNoteColor = { noteId, colorIndex ->
-                            val index = activeNotes.indexOfFirst { it.id == noteId }
-                            if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = this[index].copy(colorIndex = colorIndex) })
-                        },
-                        onCreate = { type ->
-                            val now = System.currentTimeMillis()
-                            val id = newRecordId()
-                            updateActiveNotes(listOf(Note(id, "", listOf(NoteBlock()), now, created = now, type = type)) + activeNotes)
-                            autoFocusNewNote = true
-                            selectedId = id
-                        }
-                    )
-                } else {
-                    RecordEditor(
-                        note = selected,
-                        dark = dark,
-                        topBarColor = activeThemeColors.topBar,
-                        addButtonColor = activeThemeColors.addButton,
-                        selectionColor = activeThemeColors.selection,
-                        autoFocus = autoFocusNewNote,
-                        onBack = {
-                            if (!selected.hasContent()) updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
-                            selectedId = null
-                            autoFocusNewNote = false
-                        },
-                        onChange = { changed ->
-                            val index = activeNotes.indexOfFirst { it.id == changed.id }
-                            if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = changed.copy(updated = System.currentTimeMillis()) })
-                        },
-                        onDelete = { promoteChildren ->
-                            recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
-                            selectedId = null
-                            autoFocusNewNote = false
-                        },
-                        onShare = { shareNote(selected) }
-                    )
-                }
-            }
+            NotesApp(
+                activity = this@MainActivity,
+                recordsViewModel = recordsViewModel,
+                savedThemeMode = savedThemeMode,
+                initialThemeColorSets = initialThemeColorSets
+            )
         }
     }
 
-    private fun shareNote(note: Note) {
+    internal fun shareNote(note: Note) {
         val text = note.blocks.joinToString("\n\n") { (if (it.isChecklist) (if (it.checked) "☑ " else "☐ ") else "") + it.text }
         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text) }
         startActivity(Intent.createChooser(intent, "Поделиться заметкой"))
     }
 
-
-}
-
-@Composable
-private fun NotesTheme(dark: Boolean, themeColors: CustomThemeColors, customBackground: Boolean, content: @Composable () -> Unit) {
-    val foreground = if (customBackground) noteTextColor(themeColors.background) else if (dark) Color.White else Color.Black
-    val appBackground = if (customBackground) themeColors.background else if (dark) Color.Black else Color.White
-    val outline = if (dark) Color(0xFF38383A) else Color(0xFFD1D1D6)
-    val scheme = if (dark) darkColorScheme(
-        primary = themeColors.addButton, onPrimary = noteTextColor(themeColors.addButton),
-        background = appBackground, onBackground = foreground,
-        surface = appBackground, onSurface = foreground,
-        surfaceVariant = themeColors.topBar, onSurfaceVariant = Color(0xFF8E8E93), outline = outline
-    ) else lightColorScheme(
-        primary = themeColors.addButton, onPrimary = noteTextColor(themeColors.addButton),
-        background = appBackground, onBackground = foreground,
-        surface = appBackground, onSurface = foreground,
-        surfaceVariant = themeColors.topBar, onSurfaceVariant = Color(0xFF8E8E93), outline = outline
-    )
-    MaterialTheme(colorScheme = scheme, content = content)
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun VaultScreen(
-    title: String,
-    entries: List<VaultNote>,
-    isTrash: Boolean,
-    onBack: () -> Unit,
-    onRestore: (VaultNote) -> Unit,
-    onMoveToTrash: (VaultNote) -> Unit,
-    onDeleteForever: (VaultNote) -> Unit,
-    onEmptyTrash: () -> Unit,
-    themeColors: CustomThemeColors
-) {
-    var confirmEmpty by remember { mutableStateOf(false) }
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Surface(color = themeColors.topBar, contentColor = noteTextColor(themeColors.topBar)) {
-                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                    if (isTrash && entries.isNotEmpty()) TextButton(onClick = { confirmEmpty = true }) { Text("Очистить") }
-                }
-            }
-        }
-    ) { padding ->
-        if (entries.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(if (isTrash) "Корзина пуста" else "Архив пуст", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(vertical = AppSpacing.xs)) {
-                items(entries, key = { it.note.id }) { entry ->
-                    val preview = entry.note.blocks.asSequence().mapNotNull { block ->
-                        block.text.lineSequence().firstOrNull { it.isNotBlank() }
-                    }.firstOrNull() ?: "Пустая заметка"
-                    Column(Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.xs)) {
-                        Text(preview, fontSize = 16.sp, maxLines = 2)
-                        Text(if (entry.collectionId == null) "Основной блокнот" else "Подборка",
-                            fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            if (!isTrash) TextButton(onClick = { onMoveToTrash(entry) }) { Text("Удалить") }
-                            if (isTrash) TextButton(onClick = { onDeleteForever(entry) }) { Text("Удалить навсегда") }
-                            TextButton(onClick = { onRestore(entry) }) { Text("Восстановить") }
-                        }
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                }
-            }
-        }
-    }
-    if (confirmEmpty) AlertDialog(
-        onDismissRequest = { confirmEmpty = false },
-        title = { Text("Очистить корзину?") },
-        text = { Text("Все заметки будут удалены без возможности восстановления.") },
-        confirmButton = { TextButton(onClick = { onEmptyTrash(); confirmEmpty = false }) { Text("Очистить") } },
-        dismissButton = { TextButton(onClick = { confirmEmpty = false }) { Text("Отмена") } }
-    )
 }
