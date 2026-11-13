@@ -504,6 +504,13 @@ internal fun NoteEditor(
                     }
                 }
             }
+            if (isTaskListItem && taskDetailsExpanded) {
+                item(key = "task_time_tracking") {
+                    TaskTimerControls(taskId = note.id, modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = AppSpacing.screenHorizontal)
+                        .padding(vertical = AppSpacing.sm))
+                }
+            }
             if (note.type != RecordType.TASK || isTaskListItem) {
                 item(key = "record_body") {
                 val bodyFocusRequester = remember(note.id) { FocusRequester() }
