@@ -16,7 +16,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.app.ServiceCompat
 import android.content.pm.ServiceInfo
 
-internal const val TASK_TIMER_CHANNEL = "task_timer"
+internal const val TASK_TIMER_CHANNEL = "task_timer_ongoing"
+internal const val TASK_TIMER_ALERT_SOUND_CHANNEL = "task_timer_alert_sound"
+internal const val TASK_TIMER_ALERT_SILENT_CHANNEL = "task_timer_alert_silent"
 internal const val TASK_TIMER_NOTIFICATION_ID = 7311
 internal const val ACTION_TASK_TIMER_START = "com.magnumold.notes.prototype.TIMER_START"
 internal const val ACTION_TASK_TIMER_STOP = "com.magnumold.notes.prototype.TIMER_STOP"
@@ -166,13 +168,12 @@ class TaskTimerService : Service() {
 
     private fun showAlert(title: String, body: String) {
         val settings = store.preferences()
-        val builder = NotificationCompat.Builder(this, TASK_TIMER_CHANNEL)
+        val builder = NotificationCompat.Builder(this, if (settings.soundEnabled) TASK_TIMER_ALERT_SOUND_CHANNEL else TASK_TIMER_ALERT_SILENT_CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-        if (settings.soundEnabled) builder.setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
         getSystemService(NotificationManager::class.java).notify(TASK_TIMER_NOTIFICATION_ID + 1, builder.build())
     }
 
@@ -182,8 +183,21 @@ class TaskTimerService : Service() {
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            val channel = NotificationChannel(TASK_TIMER_CHANNEL, "Таймер задач", NotificationManager.IMPORTANCE_HIGH)
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            val manager = getSystemService(NotificationManager::class.java)
+            val ongoing = NotificationChannel(TASK_TIMER_CHANNEL, "Активный таймер", NotificationManager.IMPORTANCE_LOW).apply {
+                setSound(null, null)
+                enableVibration(false)
+            }
+            val soundAlert = NotificationChannel(
+                TASK_TIMER_ALERT_SOUND_CHANNEL, "Сигнал таймера", NotificationManager.IMPORTANCE_HIGH
+            )
+            val silentAlert = NotificationChannel(
+                TASK_TIMER_ALERT_SILENT_CHANNEL, "Тихие сигналы таймера", NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                setSound(null, null)
+                enableVibration(false)
+            }
+            manager.createNotificationChannels(listOf(ongoing, soundAlert, silentAlert))
         }
     }
 

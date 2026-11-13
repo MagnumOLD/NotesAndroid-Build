@@ -101,10 +101,10 @@ internal class TaskTimerStore(context: Context) {
     }
 
     @Synchronized
-    fun importBackup(imported: List<TaskTimeSession>, importedPreferences: TimerPreferences) {
+    fun importBackup(imported: List<TaskTimeSession>, importedPreferences: TimerPreferences?) {
         val merged = (sessions() + imported).distinctBy { it.id }
         saveSessions(merged)
-        savePreferences(importedPreferences)
+        importedPreferences?.let(::savePreferences)
     }
 
     @Synchronized

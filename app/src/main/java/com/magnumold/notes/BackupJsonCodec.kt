@@ -3,7 +3,7 @@ package com.magnumold.notes
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>, val timeSessions: List<TaskTimeSession> = emptyList(), val timerPreferences: TimerPreferences = TimerPreferences())
+internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>, val timeSessions: List<TaskTimeSession> = emptyList(), val timerPreferences: TimerPreferences? = null)
 private fun noteToJson(note: Note): JSONObject {
     val blocks = JSONArray()
     note.blocks.forEach { block ->
@@ -142,14 +142,16 @@ internal fun parseBackupJson(raw: String): BackupData {
             durationMillis = item.optLong("duration").coerceAtLeast(0L)
         )
     }
-    val endMode = runCatching { TimerEndMode.valueOf(timeTracking?.optString("endMode", "SIGNAL_ONLY") ?: "SIGNAL_ONLY") }
-        .getOrDefault(TimerEndMode.SIGNAL_ONLY)
-    val timerPreferences = TimerPreferences(
-        defaultLimitMinutes = timeTracking?.optInt("defaultLimitMinutes", 25) ?: 25,
-        endMode = endMode,
-        breakMinutes = timeTracking?.optInt("breakMinutes", 5) ?: 5,
-        soundEnabled = timeTracking?.optBoolean("soundEnabled", true) ?: true
-    ).normalized()
+    val timerPreferences = timeTracking?.let { timer ->
+        val endMode = runCatching { TimerEndMode.valueOf(timer.optString("endMode", "SIGNAL_ONLY")) }
+            .getOrDefault(TimerEndMode.SIGNAL_ONLY)
+        TimerPreferences(
+            defaultLimitMinutes = timer.optInt("defaultLimitMinutes", 25),
+            endMode = endMode,
+            breakMinutes = timer.optInt("breakMinutes", 5),
+            soundEnabled = timer.optBoolean("soundEnabled", true)
+        ).normalized()
+    }
     return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")),
         parseVaultArray(root.optJSONArray("trash")), sessions, timerPreferences)
 }
