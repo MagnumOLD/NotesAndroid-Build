@@ -1592,7 +1592,7 @@ private fun NotesHome(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            Row(Modifier.fillMaxWidth().height(42.dp).padding(start = AppSpacing.screenHorizontal, end = AppSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(48.dp).padding(start = AppSpacing.screenHorizontal, end = AppSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).fillMaxHeight().horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.lg)) {
                     Text("Все",
@@ -1999,9 +1999,7 @@ private fun DraggedNotesGroup(
             MainCardHeader("Группа", groupTextColor, compressed = true)
         }
         HorizontalDivider(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = AppSpacing.screenHorizontal),
+            modifier = Modifier.align(Alignment.BottomCenter),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
             thickness = CardDimensions.dividerThickness
         )
@@ -2266,7 +2264,6 @@ private fun NoteRow(
             }
         }
         HorizontalDivider(
-            modifier = Modifier.padding(horizontal = AppSpacing.screenHorizontal),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
             thickness = CardDimensions.dividerThickness
         )
