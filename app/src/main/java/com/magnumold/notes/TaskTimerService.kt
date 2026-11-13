@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.app.ServiceCompat
 import android.content.pm.ServiceInfo
 
@@ -192,6 +193,16 @@ class TaskTimerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val serviceIntent = Intent(context, TaskTimerService::class.java).setAction(ACTION_TASK_TIMER_EXPIRED)
         if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(serviceIntent)
+        else context.startService(serviceIntent)
+    }
+}
+
+class TaskTimerBootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent?) {
+        if (intent?.action != Intent.ACTION_BOOT_COMPLETED) return
+        if (TaskTimerStore(context).activeTimer() == null) return
+        val serviceIntent = Intent(context, TaskTimerService::class.java)
+        if (Build.VERSION.SDK_INT >= 26) ContextCompat.startForegroundService(context, serviceIntent)
         else context.startService(serviceIntent)
     }
 }

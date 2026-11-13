@@ -18,6 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -132,6 +133,13 @@ internal fun TaskTimerControls(taskId: Long, modifier: Modifier = Modifier) {
                     }
                 }
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Звуковой сигнал", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Switch(checked = settings.soundEnabled, onCheckedChange = { enabled ->
+                    settings = settings.copy(soundEnabled = enabled)
+                    store.savePreferences(settings)
+                })
+            }
             if (settings.endMode == TimerEndMode.BREAK) {
                 OutlinedTextField(
                     value = settings.breakMinutes.toString(),
@@ -142,7 +150,7 @@ internal fun TaskTimerControls(taskId: Long, modifier: Modifier = Modifier) {
                     label = { Text("Перерыв, мин") },
                     singleLine = true
                 )
-                TextButton(onClick = { settings = settings.normalized(); store.savePreferences(settings) }) {
+                TextButton(onClick = { settings = settings.copy(defaultLimitMinutes = limitText.toIntOrNull()?.coerceIn(1, 240) ?: 25).normalized(); store.savePreferences(settings) }) {
                     Text("Сохранить настройки")
                 }
             } else {
