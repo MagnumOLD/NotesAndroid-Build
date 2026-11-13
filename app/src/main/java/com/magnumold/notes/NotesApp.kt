@@ -39,6 +39,9 @@ internal fun NotesApp(
             val themeSettings = remember(activity) {
                 ThemeSettingsStore(activity.getSharedPreferences("notes_settings", Context.MODE_PRIVATE))
             }
+            val backupFileStore = remember(activity) {
+                BackupFileStore(activity.contentResolver)
+            }
             val themeState = remember(themeSettings, savedThemeMode, initialThemeColorSets) {
                 AppThemeState(
                     initialMode = savedThemeMode,
@@ -84,9 +87,7 @@ internal fun NotesApp(
             ) { uri ->
                 if (uri != null) {
                     try {
-                        activity.contentResolver.openOutputStream(uri)?.use { output ->
-                            output.write(createBackupJson(snapshot.notes, snapshot.collections, snapshot.archived, snapshot.trash).toByteArray(Charsets.UTF_8))
-                        } ?: error("Не удалось открыть файл")
+                        backupFileStore.writeBackup(uri, snapshot)
                         Toast.makeText(activity, "Резервная копия сохранена", Toast.LENGTH_SHORT).show()
                     } catch (_: Exception) {
                         Toast.makeText(activity, "Не удалось сохранить резервную копию", Toast.LENGTH_LONG).show()
@@ -98,8 +99,7 @@ internal fun NotesApp(
             ) { uri ->
                 if (uri != null) {
                     try {
-                        val json = activity.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-                            ?: error("Не удалось прочитать файл")
+                        val json = backupFileStore.readBackup(uri)
                         val importedCount = recordsViewModel.importBackup(json)
                         Toast.makeText(activity, "Импортировано заметок: $importedCount", Toast.LENGTH_LONG).show()
                     } catch (_: Exception) {
