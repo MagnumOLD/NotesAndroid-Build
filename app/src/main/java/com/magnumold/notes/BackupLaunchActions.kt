@@ -6,8 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 
 internal data class BackupLaunchActions(
-    val export: () -> Unit,
-    val import: () -> Unit
+    val exportBackup: () -> Unit,
+    val importBackup: () -> Unit
 )
 
 /**
@@ -47,7 +47,7 @@ internal fun rememberBackupActions(
         }
     }
     return BackupLaunchActions(
-        export = { exportLauncher.launch("Notes-backup.json") },
-        import = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) }
+        exportBackup = { exportLauncher.launch("Notes-backup.json") },
+        importBackup = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) }
     )
 }

@@ -98,8 +98,8 @@ internal fun NotesApp(
                         noteColorOpacity = activeNoteColorOpacity,
                         onNoteColorsChange = { themeState.replaceNoteColors(it) },
                         onNoteColorOpacityChange = { opacity -> themeState.setNoteColorOpacity(opacity) },
-                        onExport = backupActions.export,
-                        onImport = backupActions.import,
+                        onExport = backupActions.exportBackup,
+                        onImport = backupActions.importBackup,
                         onOpenArchive = { navigation.vaultScreen = "archive" },
                         onOpenTrash = { navigation.vaultScreen = "trash" },
                         onBack = { navigation.settingsVisible = false }

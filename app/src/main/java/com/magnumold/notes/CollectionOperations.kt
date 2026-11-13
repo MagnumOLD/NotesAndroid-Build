@@ -1,7 +1,7 @@
 package com.magnumold.notes
 
 /**
- * Pure snapshot transformations for collection and active-list operations.
+ * Pure snapshot transformations for collection operations.
  * These functions keep list mutation rules out of the Compose coordinator.
  */
 internal object CollectionOperations {
@@ -51,5 +51,4 @@ internal object CollectionOperations {
             })
         }
     }
-
 }
