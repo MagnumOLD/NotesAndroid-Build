@@ -34,3 +34,11 @@
 - Принудительная остановка приложения в системных настройках запрещает Android выполнять его фоновые задачи до следующего ручного запуска.
 - Для точного сигнала требуется разрешение Android на точные будильники; без него используется менее точный системный механизм.
 - Учёт времени пока хранится отдельно от JSON-резервной копии. Экспорт и импорт истории добавим до выдачи тестовой сборки.
+
+
+## Build identity
+
+- Branch: `prototype/time-management`
+- Application ID: `com.magnumold.notes.prototype`
+- Package label: `Заметки — прототип`
+- The prototype APK is installed alongside the stable application and uses a separate app data directory.
