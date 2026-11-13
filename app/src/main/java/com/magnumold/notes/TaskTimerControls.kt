@@ -64,7 +64,7 @@ internal fun TaskTimerControls(taskId: Long, modifier: Modifier = Modifier) {
         shape = MaterialTheme.shapes.medium) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Время", style = MaterialTheme.typography.titleSmall)
-            Text("Затрачено: ${formatTrackedTime(totalMillis)}",
+            val activeElapsed = active?.takeIf { it.taskId == taskId && it.breakUntilMillis == null }\n                ?.let { (System.currentTimeMillis() - it.startedAtMillis).coerceAtLeast(0L) } ?: 0L\n            Text("Затрачено: ${formatTrackedTime(totalMillis + activeElapsed)}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium)
 
