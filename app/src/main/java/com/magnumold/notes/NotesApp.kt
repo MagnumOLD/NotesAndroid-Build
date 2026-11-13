@@ -61,9 +61,10 @@ internal fun NotesApp(
             }
             val notes = snapshot.notes
             val collections = snapshot.collections
-            var activeCollectionId by remember { mutableStateOf<Long?>(null) }
-            var selectedId by remember { mutableStateOf<Long?>(null) }
-            val activeNotes = if (activeCollectionId == null) notes.toList()
+            val navigation = remember { AppNavigationState() }
+            val activeCollectionId = navigation.activeCollectionId
+            val selectedId = navigation.selectedId
+            val activeNotes = if (navigation.activeCollectionId == null) notes.toList()
                 else collections.firstOrNull { it.id == activeCollectionId }?.notes.orEmpty()
             fun updateActiveNotes(updated: List<Note>) {
                 val collectionId = activeCollectionId
@@ -74,11 +75,11 @@ internal fun NotesApp(
                     })
                 }
             }
-            var autoFocusNewNote by remember { mutableStateOf(false) }
-            var search by remember { mutableStateOf("") }
-            var searchVisible by remember { mutableStateOf(false) }
-            var settingsVisible by remember { mutableStateOf(false) }
-            var vaultScreen by remember { mutableStateOf<String?>(null) }
+            val autoFocusNewNote = navigation.autoFocusNewNote
+            val search = navigation.search
+            val searchVisible = navigation.searchVisible
+            val settingsVisible = navigation.settingsVisible
+            val vaultScreen = navigation.vaultScreen
             val archived = snapshot.archived
             val trash = snapshot.trash
 
@@ -108,8 +109,8 @@ internal fun NotesApp(
                 }
             }
 
-            BackHandler(enabled = settingsVisible && vaultScreen != null) { vaultScreen = null }
-            BackHandler(enabled = settingsVisible && vaultScreen == null) { settingsVisible = false }
+            BackHandler(enabled = settingsVisible && vaultScreen != null) { navigation.vaultScreen = null }
+            BackHandler(enabled = settingsVisible && navigation.vaultScreen == null) { navigation.settingsVisible = false }
 
             AppThemeEffects(
                 activity = activity,
@@ -126,11 +127,11 @@ internal fun NotesApp(
                 val selected = activeNotes.firstOrNull { it.id == selectedId }
                 if (settingsVisible && selected == null && vaultScreen != null) {
                     VaultScreen(
-                        title = if (vaultScreen == "archive") "Архив" else "Корзина",
-                        entries = if (vaultScreen == "archive") archived else trash,
-                        isTrash = vaultScreen == "trash",
-                        onBack = { vaultScreen = null },
-                        onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = vaultScreen == "archive") },
+                        title = if (navigation.vaultScreen == "archive") "Архив" else "Корзина",
+                        entries = if (navigation.vaultScreen == "archive") archived else trash,
+                        isTrash = navigation.vaultScreen == "trash",
+                        onBack = { navigation.vaultScreen = null },
+                        onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = navigation.vaultScreen == "archive") },
                         onMoveToTrash = { entry -> recordsViewModel.moveArchivedToTrash(entry) },
                         onDeleteForever = { entry -> recordsViewModel.deleteFromTrash(entry) },
                         onEmptyTrash = { recordsViewModel.emptyTrash() },
@@ -149,24 +150,24 @@ internal fun NotesApp(
                         onNoteColorOpacityChange = { opacity -> themeState.setNoteColorOpacity(opacity) },
                         onExport = { exportLauncher.launch("Notes-backup.json") },
                         onImport = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) },
-                        onOpenArchive = { vaultScreen = "archive" },
-                        onOpenTrash = { vaultScreen = "trash" },
-                        onBack = { settingsVisible = false }
+                        onOpenArchive = { navigation.vaultScreen = "archive" },
+                        onOpenTrash = { navigation.vaultScreen = "trash" },
+                        onBack = { navigation.settingsVisible = false }
                     )
                 } else if (selected == null) {
                     NotesHome(
-                        notes = activeNotes, search = search, searchVisible = searchVisible,
+                        notes = activeNotes, navigation.search = search, navigation.searchVisible = searchVisible,
                         noteColors = displayedNoteColors,
                         themeColors = activeThemeColors,
-                        collections = collections, activeCollectionId = activeCollectionId,
-                        onSelectCollection = { activeCollectionId = it; selectedId = null },
-                        onCreateCollection = { name -> val id = newRecordId(); recordsViewModel.updateSnapshot { it.copy(collections = it.collections + NoteCollection(id, name)) }; activeCollectionId = id },
+                        collections = collections, navigation.activeCollectionId = activeCollectionId,
+                        onSelectCollection = { navigation.activeCollectionId = it; navigation.selectedId = null },
+                        onCreateCollection = { name -> val id = newRecordId(); recordsViewModel.updateSnapshot { it.copy(collections = it.collections + NoteCollection(id, name)) }; navigation.activeCollectionId = id },
                         onRenameCollection = { id, name ->
                             recordsViewModel.updateSnapshot { current -> current.copy(collections = current.collections.map { if (it.id == id) it.copy(name = name) else it }) }
                         },
                         onDeleteCollection = { id ->
                             val collection = collections.firstOrNull { it.id == id }
-                            if (collection != null) { recordsViewModel.updateSnapshot { current -> current.copy(notes = collection.notes + current.notes, collections = current.collections.filterNot { it.id == id }) }; if (activeCollectionId == id) activeCollectionId = null }
+                            if (collection != null) { recordsViewModel.updateSnapshot { current -> current.copy(notes = collection.notes + current.notes, collections = current.collections.filterNot { it.id == id }) }; if (navigation.activeCollectionId == id) navigation.activeCollectionId = null }
                         },
                         onMoveCollection = { id, delta ->
                             recordsViewModel.updateSnapshot { current ->
@@ -189,11 +190,11 @@ internal fun NotesApp(
                                 }
                             }
                         },
-                        onSearch = { search = it },
-                        onToggleSearch = { searchVisible = !searchVisible; if (!searchVisible) search = "" },
+                        onSearch = { navigation.search = it },
+                        onToggleSearch = { navigation.searchVisible = !searchVisible; if (!searchVisible) navigation.search = "" },
                         dark = dark,
-                        onOpenSettings = { settingsVisible = true },
-                        onOpen = { autoFocusNewNote = false; selectedId = it },
+                        onOpenSettings = { navigation.settingsVisible = true },
+                        onOpen = { navigation.autoFocusNewNote = false; navigation.selectedId = it },
                         onArchiveSelected = { ids ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = false)
                         },
@@ -218,8 +219,8 @@ internal fun NotesApp(
                             val now = System.currentTimeMillis()
                             val id = newRecordId()
                             updateActiveNotes(listOf(Note(id, "", listOf(NoteBlock()), now, created = now, type = type)) + activeNotes)
-                            autoFocusNewNote = true
-                            selectedId = id
+                            navigation.autoFocusNewNote = true
+                            navigation.selectedId = id
                         }
                     )
                 } else {
@@ -232,8 +233,8 @@ internal fun NotesApp(
                         autoFocus = autoFocusNewNote,
                         onBack = {
                             if (!selected.hasContent()) updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
-                            selectedId = null
-                            autoFocusNewNote = false
+                            navigation.selectedId = null
+                            navigation.autoFocusNewNote = false
                         },
                         onChange = { changed ->
                             val index = activeNotes.indexOfFirst { it.id == changed.id }
@@ -241,8 +242,8 @@ internal fun NotesApp(
                         },
                         onDelete = { promoteChildren ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
-                            selectedId = null
-                            autoFocusNewNote = false
+                            navigation.selectedId = null
+                            navigation.autoFocusNewNote = false
                         },
                         onShare = { activity.shareNote(selected) }
                     )
