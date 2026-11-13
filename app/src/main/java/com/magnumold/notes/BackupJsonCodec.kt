@@ -3,7 +3,7 @@ package com.magnumold.notes
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>)
+internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>, val timeSessions: List<TaskTimeSession> = emptyList(), val timerPreferences: TimerPreferences = TimerPreferences())
 private fun noteToJson(note: Note): JSONObject {
     val blocks = JSONArray()
     note.blocks.forEach { block ->
@@ -101,22 +101,57 @@ internal fun parseCollectionsArray(array: JSONArray): List<NoteCollection> =
         )
     }
 
-internal fun createBackupJson(items: List<Note>, collections: List<NoteCollection>, archived: List<VaultNote>, trash: List<VaultNote>): String {
+internal fun createBackupJson(items: List<Note>, collections: List<NoteCollection>, archived: List<VaultNote>, trash: List<VaultNote>, timeSessions: List<TaskTimeSession> = emptyList(), timerPreferences: TimerPreferences = TimerPreferences()): String {
     val collectionArray = JSONArray()
     collections.forEach { collection ->
         collectionArray.put(JSONObject().put("id", collection.id).put("name", collection.name).put("notes", notesToJson(collection.notes)))
     }
-    return JSONObject().put("format", "notes_backup").put("version", 6).put("exportedAt", System.currentTimeMillis())
+    val sessionArray = JSONArray()
+    timeSessions.forEach { session ->
+        sessionArray.put(JSONObject().put("id", session.id).put("taskId", session.taskId)
+            .put("startedAt", session.startedAtMillis).put("endedAt", session.endedAtMillis)
+            .put("duration", session.durationMillis))
+    }
+    val normalizedTimerSettings = timerPreferences.normalized()
+    val timerJson = JSONObject()
+        .put("sessions", sessionArray)
+        .put("defaultLimitMinutes", normalizedTimerSettings.defaultLimitMinutes)
+        .put("endMode", normalizedTimerSettings.endMode.name)
+        .put("breakMinutes", normalizedTimerSettings.breakMinutes)
+        .put("soundEnabled", normalizedTimerSettings.soundEnabled)
+    return JSONObject().put("format", "notes_backup").put("version", 7).put("exportedAt", System.currentTimeMillis())
         .put("notes", notesToJson(items)).put("collections", collectionArray)
-        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash)).toString(2)
+        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash))
+        .put("timeTracking", timerJson).toString(2)
 }
 internal fun parseBackupJson(raw: String): BackupData {
     val root = JSONObject(raw)
     require(root.optString("format") == "notes_backup") { "Это не резервная копия блокнота" }
-    require(root.optInt("version") in 1..6) { "Неподдерживаемая версия файла" }
+    require(root.optInt("version") in 1..7) { "Неподдерживаемая версия файла" }
     val notes = parseNotesArray(root.optJSONArray("notes") ?: error("В файле нет списка заметок"))
     val collections = parseCollectionsArray(root.optJSONArray("collections") ?: JSONArray())
-    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")))
+    val timeTracking = root.optJSONObject("timeTracking")
+    val sessionsJson = timeTracking?.optJSONArray("sessions") ?: JSONArray()
+    val sessions = (0 until sessionsJson.length()).mapNotNull { index ->
+        val item = sessionsJson.optJSONObject(index) ?: return@mapNotNull null
+        TaskTimeSession(
+            id = item.optString("id").ifBlank { java.util.UUID.randomUUID().toString() },
+            taskId = item.optLong("taskId"),
+            startedAtMillis = item.optLong("startedAt"),
+            endedAtMillis = item.optLong("endedAt"),
+            durationMillis = item.optLong("duration").coerceAtLeast(0L)
+        )
+    }
+    val endMode = runCatching { TimerEndMode.valueOf(timeTracking?.optString("endMode", "SIGNAL_ONLY") ?: "SIGNAL_ONLY") }
+        .getOrDefault(TimerEndMode.SIGNAL_ONLY)
+    val timerPreferences = TimerPreferences(
+        defaultLimitMinutes = timeTracking?.optInt("defaultLimitMinutes", 25) ?: 25,
+        endMode = endMode,
+        breakMinutes = timeTracking?.optInt("breakMinutes", 5) ?: 5,
+        soundEnabled = timeTracking?.optBoolean("soundEnabled", true) ?: true
+    ).normalized()
+    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")),
+        parseVaultArray(root.optJSONArray("trash")), sessions, timerPreferences)
 }
 
 private fun Note.sameRecordContent(other: Note): Boolean =

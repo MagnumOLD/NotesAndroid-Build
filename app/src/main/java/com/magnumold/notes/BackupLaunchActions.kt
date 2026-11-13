@@ -21,12 +21,13 @@ internal fun rememberBackupActions(
     recordsViewModel: NotesViewModel,
     backupFileStore: BackupFileStore
 ): BackupLaunchActions {
+    val timerStore = androidx.compose.runtime.remember(activity) { TaskTimerStore(activity) }
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
         if (uri != null) {
             try {
-                backupFileStore.writeBackup(uri, snapshot)
+                backupFileStore.writeBackup(uri, snapshot, timerStore)
                 Toast.makeText(activity, "Резервная копия сохранена", Toast.LENGTH_SHORT).show()
             } catch (_: Exception) {
                 Toast.makeText(activity, "Не удалось сохранить резервную копию", Toast.LENGTH_LONG).show()
@@ -39,7 +40,9 @@ internal fun rememberBackupActions(
         if (uri != null) {
             try {
                 val json = backupFileStore.readBackup(uri)
+                val importedBackup = parseBackupJson(json)
                 val importedCount = recordsViewModel.importBackup(json)
+                timerStore.importBackup(importedBackup.timeSessions, importedBackup.timerPreferences)
                 Toast.makeText(activity, "Импортировано заметок: $importedCount", Toast.LENGTH_LONG).show()
             } catch (_: Exception) {
                 Toast.makeText(activity, "Не удалось импортировать файл: неверный формат", Toast.LENGTH_LONG).show()

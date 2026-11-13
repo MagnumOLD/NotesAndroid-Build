@@ -96,16 +96,26 @@ internal class TaskTimerStore(context: Context) {
             endedAtMillis = endedAtMillis,
             durationMillis = TaskTimerMath.elapsed(active.startedAtMillis, endedAtMillis)
         )
-        val all = sessions().toMutableList().apply { add(session) }
+        saveSessions(sessions() + session)
+        return session
+    }
+
+    @Synchronized
+    fun importBackup(imported: List<TaskTimeSession>, importedPreferences: TimerPreferences) {
+        val merged = (sessions() + imported).distinctBy { it.id }
+        saveSessions(merged)
+        savePreferences(importedPreferences)
+    }
+
+    @Synchronized
+    private fun saveSessions(items: List<TaskTimeSession>) {
         val array = JSONArray()
-        all.forEach { item ->
-            array.put(JSONObject()
-                .put("id", item.id).put("taskId", item.taskId)
+        items.forEach { item ->
+            array.put(JSONObject().put("id", item.id).put("taskId", item.taskId)
                 .put("startedAt", item.startedAtMillis).put("endedAt", item.endedAtMillis)
                 .put("duration", item.durationMillis))
         }
         prefs.edit().putString("sessions", array.toString()).apply()
-        return session
     }
 
     @Synchronized
