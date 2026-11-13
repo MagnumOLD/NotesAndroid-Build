@@ -15,6 +15,7 @@ class RecordChildrenUpdateTest {
     )
 
     private fun parent(
+        type: RecordType = RecordType.TASK,
         status: RecordStatus = RecordStatus.IN_PROGRESS,
         children: List<Note> = emptyList(),
         previousStatus: RecordStatus? = null
@@ -23,7 +24,7 @@ class RecordChildrenUpdateTest {
         title = "parent",
         blocks = listOf(NoteBlock("parent")),
         updated = 100,
-        type = RecordType.TASK,
+        type = type,
         status = status,
         children = children,
         statusBeforeAutoCompletion = previousStatus
@@ -80,5 +81,19 @@ class RecordChildrenUpdateTest {
         assertEquals(RecordStatus.IN_PROGRESS, result.status)
         assertNull(result.statusBeforeAutoCompletion)
         assertEquals(emptyList<Note>(), result.children)
+    }
+
+    @Test
+    fun purchaseParentCompletesWhenEveryGoodIsChecked() {
+        val result = withUpdatedRecordChildren(
+            parent(
+                type = RecordType.PURCHASE,
+                children = listOf(child(1, RecordStatus.WAITING), child(2, RecordStatus.WAITING))
+            ),
+            listOf(child(1, RecordStatus.COMPLETED), child(2, RecordStatus.COMPLETED))
+        )
+
+        assertEquals(RecordStatus.COMPLETED, result.status)
+        assertEquals(RecordStatus.IN_PROGRESS, result.statusBeforeAutoCompletion)
     }
 }
