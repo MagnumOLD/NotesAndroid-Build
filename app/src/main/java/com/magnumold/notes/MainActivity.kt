@@ -118,6 +118,12 @@ import kotlin.math.roundToInt
  * Единая шкала отступов интерфейса.
  * Геометрия интерактивных элементов и системные touch-targets задаются отдельно.
  */
+/** Shared geometry for every primary circular add button. */
+private object PrimaryAddButtonDimensions {
+    val diameter = 56.dp
+    val verticalOffset = (-65).dp
+}
+
 private object AppSpacing {
     val xxs = 4.dp
     val xs = 8.dp
@@ -1549,8 +1555,8 @@ private fun NotesHome(
                 Box {
                     Box(
                         modifier = Modifier
-                            .offset(y = (-65).dp)
-                            .size(56.dp)
+                            .offset(y = PrimaryAddButtonDimensions.verticalOffset)
+                            .size(PrimaryAddButtonDimensions.diameter)
                             .shadow(6.dp, androidx.compose.foundation.shape.CircleShape)
                             .clip(androidx.compose.foundation.shape.CircleShape)
                             .background(themeColors.addButton)
@@ -2708,12 +2714,13 @@ private fun NoteEditor(
         },
         floatingActionButton = {
             if (note.type == RecordType.TASK && !isTaskListItem) {
-                Box(modifier = Modifier.offset(y = (-30).dp)) {
+                Box(modifier = Modifier.offset(y = PrimaryAddButtonDimensions.verticalOffset)) {
                     FloatingActionButton(
+                        modifier = Modifier.size(PrimaryAddButtonDimensions.diameter),
                         onClick = { createChild(RecordType.TASK) },
                         containerColor = addButtonColor,
                         contentColor = noteTextColor(addButtonColor),
-                        shape = RoundedCornerShape(50)
+                        shape = androidx.compose.foundation.shape.CircleShape
                     ) {
                         AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить задачу", modifier = Modifier.size(28.dp))
                     }
@@ -3342,12 +3349,13 @@ private fun PurchaseEditor(
         },
         floatingActionButton = {
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
-                Box(modifier = Modifier.offset(y = (-30).dp)) {
+                Box(modifier = Modifier.offset(y = PrimaryAddButtonDimensions.verticalOffset)) {
                     FloatingActionButton(
+                        modifier = Modifier.size(PrimaryAddButtonDimensions.diameter),
                         onClick = { createChild(RecordType.PURCHASE) },
                         containerColor = addButtonColor,
                         contentColor = noteTextColor(addButtonColor),
-                        shape = RoundedCornerShape(50)
+                        shape = androidx.compose.foundation.shape.CircleShape
                     ) {
                         AppIcon(NoteIcon.AddBlock, contentDescription = "Добавить товар", modifier = Modifier.size(28.dp))
                     }
