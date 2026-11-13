@@ -3644,15 +3644,14 @@ private fun PurchaseEditor(
                 }
                 itemsIndexed(displayedChildRows, key = { _, row -> row.key }) { index, row ->
                     val group = row.notes.size > 1
-                    Column(
+                    NestedRecordCard(
+                        selected = group || row.notes.any { it.id in selectedChildIds },
+                        dark = dark,
+                        selectionColor = selectionColor,
+                        showDivider = index != displayedChildRows.lastIndex,
                         modifier = Modifier.fillMaxWidth()
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = AppSpacing.screenHorizontal)
-                                .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
-                        ) {
                         if (group) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
@@ -3717,10 +3716,6 @@ private fun PurchaseEditor(
                                 Spacer(Modifier.width(14.dp))
                                 DragHandleIcon(color = dragHandleColor)
                             }
-                        }
-                        }
-                        if (index != displayedChildRows.lastIndex) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), thickness = 0.6.dp)
                         }
                     }
                 }
