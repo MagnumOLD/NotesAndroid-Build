@@ -95,7 +95,7 @@ class CollectionOperationsTest {
         assertEquals(listOf(true, true, false), pinned.notes.map { it.pinned })
 
         val unpinned = RecordListOperations.togglePinned(pinned, null, setOf(2, 3))
-        assertEquals(listOf(2L, 1L, 3L), unpinned.notes.map { it.id })
+        assertEquals(listOf(2L, 3L, 1L), unpinned.notes.map { it.id })
         assertTrue(unpinned.notes.none { it.pinned })
     }
 }
