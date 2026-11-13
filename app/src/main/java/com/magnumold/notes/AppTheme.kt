@@ -28,6 +28,7 @@ internal data class ThemeColorSets(
     val custom: CustomThemeColors = CustomThemeColors()
 )
 internal val defaultCustomThemeColors = CustomThemeColors()
+internal data class NoteColorOpacities(val light: Float = 0.5f, val dark: Float = 0.5f, val custom: Float = 0.5f)
 internal fun Color.toArgbInt(): Int = android.graphics.Color.argb(
     (alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt()
 )

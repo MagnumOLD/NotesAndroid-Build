@@ -39,21 +39,20 @@ internal fun NotesApp(
             val themeSettings = remember(activity) {
                 ThemeSettingsStore(activity.getSharedPreferences("notes_settings", Context.MODE_PRIVATE))
             }
-            var themeMode by remember { mutableStateOf(savedThemeMode) }
-            var themeColorSets by remember { mutableStateOf(initialThemeColorSets) }
-            val activeThemeColors = themeColorsForMode(themeColorSets, themeMode)
-            val dark = when (themeMode) {
-                "dark" -> true
-                "custom" -> noteTextColor(activeThemeColors.background) == Color.White
-                else -> false
+            val themeState = remember(themeSettings, savedThemeMode, initialThemeColorSets) {
+                AppThemeState(
+                    initialMode = savedThemeMode,
+                    initialColorSets = initialThemeColorSets,
+                    initialNoteColors = themeSettings.loadNoteColors(),
+                    initialNoteColorOpacities = themeSettings.loadNoteColorOpacities()
+                )
             }
-            var noteColors by remember { mutableStateOf(themeSettings.loadNoteColors()) }
-            var noteColorOpacities by remember { mutableStateOf(themeSettings.loadNoteColorOpacities()) }
-            val activeNoteColorOpacity = when (themeMode) {
-                "light" -> noteColorOpacities.light
-                "dark" -> noteColorOpacities.dark
-                else -> noteColorOpacities.custom
-            }
+            val themeMode = themeState.mode
+            val themeColorSets = themeState.colorSets
+            val activeThemeColors = themeState.activeColors
+            val dark = themeState.isDark
+            val noteColors = themeState.noteColors
+            val activeNoteColorOpacity = themeState.activeNoteColorOpacity
             val displayedNoteColors = remember(noteColors, activeNoteColorOpacity) {
                 noteColors.map { it.copy(alpha = activeNoteColorOpacity) }
             }
@@ -131,7 +130,7 @@ internal fun NotesApp(
             }
             LaunchedEffect(themeColorSets) { themeSettings.saveThemeColorSets(themeColorSets) }
             LaunchedEffect(noteColors) { themeSettings.saveNoteColors(noteColors) }
-            LaunchedEffect(noteColorOpacities) { themeSettings.saveNoteColorOpacities(noteColorOpacities) }
+            LaunchedEffect(themeState.noteColorOpacities) { themeSettings.saveNoteColorOpacities(themeState.noteColorOpacities) }
 
             NotesTheme(dark, activeThemeColors, themeMode == "custom") {
                 val selected = activeNotes.firstOrNull { it.id == selectedId }
@@ -150,27 +149,14 @@ internal fun NotesApp(
                 } else if (settingsVisible && selected == null) {
                     SettingsScreen(
                         themeMode = themeMode,
-                        onThemeModeChange = { themeMode = it },
+                        onThemeModeChange = { themeState.setMode(it) },
                         themeColors = activeThemeColors,
-                        onThemeColorChange = { key, color -> themeColorSets = updateThemeColorSets(themeColorSets, themeMode, key, color) },
-                        onResetThemeColors = {
-                            val defaults = when (themeMode) { "light" -> ThemeColorSets().light; "dark" -> ThemeColorSets().dark; else -> defaultCustomThemeColors }
-                            themeColorSets = when (themeMode) {
-                                "light" -> themeColorSets.copy(light = defaults)
-                                "dark" -> themeColorSets.copy(dark = defaults)
-                                else -> themeColorSets.copy(custom = defaults)
-                            }
-                        },
+                        onThemeColorChange = { key, color -> themeState.updateThemeColor(key, color) },
+                        onResetThemeColors = { themeState.resetThemeColors() },
                         noteColors = noteColors,
                         noteColorOpacity = activeNoteColorOpacity,
-                        onNoteColorsChange = { noteColors = it },
-                        onNoteColorOpacityChange = { opacity ->
-                            noteColorOpacities = when (themeMode) {
-                                "light" -> noteColorOpacities.copy(light = opacity)
-                                "dark" -> noteColorOpacities.copy(dark = opacity)
-                                else -> noteColorOpacities.copy(custom = opacity)
-                            }
-                        },
+                        onNoteColorsChange = { themeState.setNoteColors(it) },
+                        onNoteColorOpacityChange = { opacity -> themeState.setNoteColorOpacity(opacity) },
                         onExport = { exportLauncher.launch("Notes-backup.json") },
                         onImport = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) },
                         onOpenArchive = { vaultScreen = "archive" },
