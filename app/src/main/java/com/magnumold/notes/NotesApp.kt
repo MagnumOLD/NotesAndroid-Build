@@ -149,13 +149,13 @@ internal fun NotesApp(
                 } else if (settingsVisible && selected == null) {
                     SettingsScreen(
                         themeMode = themeMode,
-                        onThemeModeChange = { themeState.setMode(it) },
+                        onThemeModeChange = { themeState.changeMode(it) },
                         themeColors = activeThemeColors,
                         onThemeColorChange = { key, color -> themeState.updateThemeColor(key, color) },
                         onResetThemeColors = { themeState.resetThemeColors() },
                         noteColors = noteColors,
                         noteColorOpacity = activeNoteColorOpacity,
-                        onNoteColorsChange = { themeState.setNoteColors(it) },
+                        onNoteColorsChange = { themeState.replaceNoteColors(it) },
                         onNoteColorOpacityChange = { opacity -> themeState.setNoteColorOpacity(opacity) },
                         onExport = { exportLauncher.launch("Notes-backup.json") },
                         onImport = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) },

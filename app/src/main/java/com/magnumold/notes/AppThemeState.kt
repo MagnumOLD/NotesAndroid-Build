@@ -47,7 +47,7 @@ internal class AppThemeState(
             else -> noteColorOpacities.custom
         }
 
-    fun setMode(value: String) {
+    fun changeMode(value: String) {
         if (value in listOf("light", "dark", "custom")) mode = value
     }
 
@@ -68,7 +68,7 @@ internal class AppThemeState(
         }
     }
 
-    fun setNoteColors(colors: List<Color>) {
+    fun replaceNoteColors(colors: List<Color>) {
         noteColors = colors
     }
 
