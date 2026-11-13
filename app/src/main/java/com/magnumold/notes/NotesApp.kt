@@ -113,24 +113,22 @@ internal fun NotesApp(
                         onSelectCollection = { navigation.activeCollectionId = it; navigation.selectedId = null },
                         onCreateCollection = { name ->
                             val id = newRecordId()
-                            recordsViewModel.updateSnapshot { CollectionOperations.create(it, id, name) }
+                            recordsViewModel.createCollection(id, name)
                             navigation.activeCollectionId = id
                         },
                         onRenameCollection = { id, name ->
-                            recordsViewModel.updateSnapshot { CollectionOperations.rename(it, id, name) }
+                            recordsViewModel.renameCollection(id, name)
                         },
                         onDeleteCollection = { id ->
-                            recordsViewModel.updateSnapshot { CollectionOperations.delete(it, id) }
+                            recordsViewModel.deleteCollection(id)
                             if (navigation.activeCollectionId == id) navigation.activeCollectionId = null
                         },
                         onMoveCollection = { id, delta ->
-                            recordsViewModel.updateSnapshot { CollectionOperations.move(it, id, delta) }
+                            recordsViewModel.moveCollection(id, delta)
                         },
                         onTransferSelected = { ids, targetId ->
                             if (targetId != activeCollectionId) {
-                                recordsViewModel.updateSnapshot {
-                                    CollectionOperations.transfer(it, activeCollectionId, targetId, ids)
-                                }
+                                recordsViewModel.transferRecords(activeCollectionId, targetId, ids)
                             }
                         },
                         onSearch = { navigation.search = it },
@@ -145,24 +143,18 @@ internal fun NotesApp(
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = true)
                         },
                         onMoveSelected = { ids, afterId ->
-                            recordsViewModel.updateSnapshot {
-                                RecordListOperations.reorder(it, activeCollectionId, ids, afterId)
-                            }
+                            recordsViewModel.reorderActiveRecords(activeCollectionId, ids, afterId)
                         },
                         onTogglePinned = { ids ->
-                            recordsViewModel.updateSnapshot {
-                                RecordListOperations.togglePinned(it, activeCollectionId, ids)
-                            }
+                            recordsViewModel.toggleActiveRecordsPinned(activeCollectionId, ids)
                         },
                         onChangeNoteColor = { noteId, colorIndex ->
-                            recordsViewModel.updateSnapshot {
-                                RecordListOperations.changeColor(it, activeCollectionId, noteId, colorIndex)
-                            }
+                            recordsViewModel.changeActiveRecordColor(activeCollectionId, noteId, colorIndex)
                         },
                         onCreate = { type ->
                             val now = System.currentTimeMillis()
                             val id = newRecordId()
-                            recordsViewModel.updateSnapshot { RecordListOperations.create(it, activeCollectionId, Note(id, "", listOf(NoteBlock()), now, created = now, type = type)) }
+                            recordsViewModel.createActiveRecord(activeCollectionId, Note(id, "", listOf(NoteBlock()), now, created = now, type = type))
                             navigation.autoFocusNewNote = true
                             navigation.selectedId = id
                         }
@@ -176,13 +168,13 @@ internal fun NotesApp(
                         selectionColor = activeThemeColors.selection,
                         autoFocus = autoFocusNewNote,
                         onBack = {
-                            if (!selected.hasContent()) recordsViewModel.updateSnapshot { RecordListOperations.remove(it, activeCollectionId, selected.id) }
+                            if (!selected.hasContent()) recordsViewModel.removeActiveRecord(activeCollectionId, selected.id)
                             navigation.selectedId = null
                             navigation.autoFocusNewNote = false
                         },
                         onChange = { changed ->
                             val index = activeNotes.indexOfFirst { it.id == changed.id }
-                            if (index >= 0) recordsViewModel.updateSnapshot { RecordListOperations.update(it, activeCollectionId, changed.copy(updated = System.currentTimeMillis())) }
+                            if (index >= 0) recordsViewModel.updateActiveRecord(activeCollectionId, changed.copy(updated = System.currentTimeMillis()))
                         },
                         onDelete = { promoteChildren ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)

@@ -41,6 +41,51 @@ internal class NotesViewModel(
         _snapshot.update(transform)
     }
 
+
+    fun createCollection(id: Long, name: String) {
+        updateSnapshot { CollectionOperations.create(it, id, name) }
+    }
+
+    fun renameCollection(id: Long, name: String) {
+        updateSnapshot { CollectionOperations.rename(it, id, name) }
+    }
+
+    fun deleteCollection(id: Long) {
+        updateSnapshot { CollectionOperations.delete(it, id) }
+    }
+
+    fun moveCollection(id: Long, delta: Int) {
+        updateSnapshot { CollectionOperations.move(it, id, delta) }
+    }
+
+    fun transferRecords(sourceId: Long?, targetId: Long?, ids: Set<Long>) {
+        updateSnapshot { CollectionOperations.transfer(it, sourceId, targetId, ids) }
+    }
+
+    fun createActiveRecord(collectionId: Long?, note: Note) {
+        updateSnapshot { RecordListOperations.create(it, collectionId, note) }
+    }
+
+    fun updateActiveRecord(collectionId: Long?, note: Note) {
+        updateSnapshot { RecordListOperations.update(it, collectionId, note) }
+    }
+
+    fun removeActiveRecord(collectionId: Long?, noteId: Long) {
+        updateSnapshot { RecordListOperations.remove(it, collectionId, noteId) }
+    }
+
+    fun reorderActiveRecords(collectionId: Long?, ids: Set<Long>, afterId: Long?) {
+        updateSnapshot { RecordListOperations.reorder(it, collectionId, ids, afterId) }
+    }
+
+    fun toggleActiveRecordsPinned(collectionId: Long?, ids: Set<Long>) {
+        updateSnapshot { RecordListOperations.togglePinned(it, collectionId, ids) }
+    }
+
+    fun changeActiveRecordColor(collectionId: Long?, noteId: Long, colorIndex: Int) {
+        updateSnapshot { RecordListOperations.changeColor(it, collectionId, noteId, colorIndex) }
+    }
+
     fun importBackup(json: String): Int {
         val imported = parseBackupJson(json)
         var importedCount = 0
