@@ -154,27 +154,31 @@ jobs:
           script: |
             set -e
             bash -o pipefail -c 'gradle --no-daemon --stacktrace connectedDebugAndroidTest 2>&1 | tee gradle-instrumentation-tests.log'
-            python3 - <<'PY'
-            import glob
-            import sys
-            import xml.etree.ElementTree as ET
 
-            reports = glob.glob("app/build/outputs/androidTest-results/connected/debug/TEST-*.xml")
-            if not reports:
-                print("No Android instrumentation test reports were produced.", file=sys.stderr)
-                sys.exit(1)
+      - name: Verify instrumentation test results
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
 
-            total = failures = errors = 0
-            for report in reports:
-                suite = ET.parse(report).getroot()
-                total += int(suite.attrib.get("tests", "0"))
-                failures += int(suite.attrib.get("failures", "0"))
-                errors += int(suite.attrib.get("errors", "0"))
+          reports = glob.glob("app/build/outputs/androidTest-results/connected/debug/TEST-*.xml")
+          if not reports:
+              print("No Android instrumentation test reports were produced.", file=sys.stderr)
+              sys.exit(1)
 
-            print(f"Instrumentation results: {total} tests, {failures} failures, {errors} errors")
-            if total == 0 or failures or errors:
-                sys.exit(1)
-            PY
+          total = failures = errors = 0
+          for report in reports:
+              suite = ET.parse(report).getroot()
+              total += int(suite.attrib.get("tests", "0"))
+              failures += int(suite.attrib.get("failures", "0"))
+              errors += int(suite.attrib.get("errors", "0"))
+
+          print(f"Instrumentation results: {total} tests, {failures} failures, {errors} errors")
+          if total == 0 or failures or errors:
+              sys.exit(1)
+          PY
 
       - name: Upload instrumentation diagnostics
         if: always()
