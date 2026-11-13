@@ -83,31 +83,12 @@ internal fun NotesApp(
             val archived = snapshot.archived
             val trash = snapshot.trash
 
-            val exportLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.CreateDocument("application/json")
-            ) { uri ->
-                if (uri != null) {
-                    try {
-                        backupFileStore.writeBackup(uri, snapshot)
-                        Toast.makeText(activity, "Резервная копия сохранена", Toast.LENGTH_SHORT).show()
-                    } catch (_: Exception) {
-                        Toast.makeText(activity, "Не удалось сохранить резервную копию", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-            val importLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.OpenDocument()
-            ) { uri ->
-                if (uri != null) {
-                    try {
-                        val json = backupFileStore.readBackup(uri)
-                        val importedCount = recordsViewModel.importBackup(json)
-                        Toast.makeText(activity, "Импортировано заметок: $importedCount", Toast.LENGTH_LONG).show()
-                    } catch (_: Exception) {
-                        Toast.makeText(activity, "Не удалось импортировать файл: неверный формат", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
+            val backupActions = rememberBackupActions(
+                activity = activity,
+                snapshot = snapshot,
+                recordsViewModel = recordsViewModel,
+                backupFileStore = backupFileStore
+            )
 
             BackHandler(enabled = settingsVisible && vaultScreen != null) { navigation.vaultScreen = null }
             BackHandler(enabled = settingsVisible && navigation.vaultScreen == null) { navigation.settingsVisible = false }
@@ -148,8 +129,8 @@ internal fun NotesApp(
                         noteColorOpacity = activeNoteColorOpacity,
                         onNoteColorsChange = { themeState.replaceNoteColors(it) },
                         onNoteColorOpacityChange = { opacity -> themeState.setNoteColorOpacity(opacity) },
-                        onExport = { exportLauncher.launch("Notes-backup.json") },
-                        onImport = { importLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) },
+                        onExport = backupActions.export,
+                        onImport = backupActions.import,
                         onOpenArchive = { navigation.vaultScreen = "archive" },
                         onOpenTrash = { navigation.vaultScreen = "trash" },
                         onBack = { navigation.settingsVisible = false }
@@ -243,85 +224,4 @@ internal fun NotesApp(
                     )
                 }
             }
-}
-
-@Composable
-internal fun NotesTheme(dark: Boolean, themeColors: CustomThemeColors, customBackground: Boolean, content: @Composable () -> Unit) {
-    val foreground = if (customBackground) noteTextColor(themeColors.background) else if (dark) Color.White else Color.Black
-    val appBackground = if (customBackground) themeColors.background else if (dark) Color.Black else Color.White
-    val outline = if (dark) Color(0xFF38383A) else Color(0xFFD1D1D6)
-    val scheme = if (dark) darkColorScheme(
-        primary = themeColors.addButton, onPrimary = noteTextColor(themeColors.addButton),
-        background = appBackground, onBackground = foreground,
-        surface = appBackground, onSurface = foreground,
-        surfaceVariant = themeColors.topBar, onSurfaceVariant = Color(0xFF8E8E93), outline = outline
-    ) else lightColorScheme(
-        primary = themeColors.addButton, onPrimary = noteTextColor(themeColors.addButton),
-        background = appBackground, onBackground = foreground,
-        surface = appBackground, onSurface = foreground,
-        surfaceVariant = themeColors.topBar, onSurfaceVariant = Color(0xFF8E8E93), outline = outline
-    )
-    MaterialTheme(colorScheme = scheme, content = content)
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun VaultScreen(
-    title: String,
-    entries: List<VaultNote>,
-    isTrash: Boolean,
-    onBack: () -> Unit,
-    onRestore: (VaultNote) -> Unit,
-    onMoveToTrash: (VaultNote) -> Unit,
-    onDeleteForever: (VaultNote) -> Unit,
-    onEmptyTrash: () -> Unit,
-    themeColors: CustomThemeColors
-) {
-    var confirmEmpty by remember { mutableStateOf(false) }
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Surface(color = themeColors.topBar, contentColor = noteTextColor(themeColors.topBar)) {
-                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                    if (isTrash && entries.isNotEmpty()) TextButton(onClick = { confirmEmpty = true }) { Text("Очистить") }
-                }
-            }
-        }
-    ) { padding ->
-        if (entries.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(if (isTrash) "Корзина пуста" else "Архив пуст", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(vertical = AppSpacing.xs)) {
-                items(entries, key = { it.note.id }) { entry ->
-                    val preview = entry.note.blocks.asSequence().mapNotNull { block ->
-                        block.text.lineSequence().firstOrNull { it.isNotBlank() }
-                    }.firstOrNull() ?: "Пустая заметка"
-                    Column(Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.xs)) {
-                        Text(preview, fontSize = 16.sp, maxLines = 2)
-                        Text(if (entry.collectionId == null) "Основной блокнот" else "Подборка",
-                            fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            if (!isTrash) TextButton(onClick = { onMoveToTrash(entry) }) { Text("Удалить") }
-                            if (isTrash) TextButton(onClick = { onDeleteForever(entry) }) { Text("Удалить навсегда") }
-                            TextButton(onClick = { onRestore(entry) }) { Text("Восстановить") }
-                        }
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                }
-            }
-        }
-    }
-    if (confirmEmpty) AlertDialog(
-        onDismissRequest = { confirmEmpty = false },
-        title = { Text("Очистить корзину?") },
-        text = { Text("Все заметки будут удалены без возможности восстановления.") },
-        confirmButton = { TextButton(onClick = { onEmptyTrash(); confirmEmpty = false }) { Text("Очистить") } },
-        dismissButton = { TextButton(onClick = { confirmEmpty = false }) { Text("Отмена") } }
-    )
 }
