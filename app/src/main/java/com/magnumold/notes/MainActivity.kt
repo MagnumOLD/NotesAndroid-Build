@@ -570,7 +570,7 @@ class MainActivity : ComponentActivity() {
                         themeColors = activeThemeColors,
                         collections = collections.toList(), activeCollectionId = activeCollectionId,
                         onSelectCollection = { activeCollectionId = it; selectedId = null },
-                        onCreateCollection = { name -> val id = System.currentTimeMillis(); collections.add(NoteCollection(id, name)); activeCollectionId = id },
+                        onCreateCollection = { name -> val id = newRecordId(); collections.add(NoteCollection(id, name)); activeCollectionId = id },
                         onRenameCollection = { id, name ->
                             val index = collections.indexOfFirst { it.id == id }
                             if (index >= 0) collections[index] = collections[index].copy(name = name)
@@ -625,8 +625,9 @@ class MainActivity : ComponentActivity() {
                             if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = this[index].copy(colorIndex = colorIndex) })
                         },
                         onCreate = { type ->
-                            val id = System.currentTimeMillis()
-                            updateActiveNotes(listOf(Note(id, "", listOf(NoteBlock()), id, created = id, type = type)) + activeNotes)
+                            val now = System.currentTimeMillis()
+                            val id = newRecordId()
+                            updateActiveNotes(listOf(Note(id, "", listOf(NoteBlock()), now, created = now, type = type)) + activeNotes)
                             autoFocusNewNote = true
                             selectedId = id
                         }
