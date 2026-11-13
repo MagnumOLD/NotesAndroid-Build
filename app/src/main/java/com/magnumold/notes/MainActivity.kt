@@ -224,34 +224,33 @@ private fun Note.recordStatus(now: Long = System.currentTimeMillis()): RecordSta
     if (deadlineResumeOverride) status
     else RecordStatusRules.applyDeadline(status, dateMode, dateAt, now)
 
-private fun withUpdatedTaskChildren(parent: Note, children: List<Note>): Note {
+internal fun withUpdatedRecordChildren(parent: Note, children: List<Note>): Note {
     val wasAllCompleted = parent.children.isNotEmpty() &&
         parent.children.all { it.recordStatus() == RecordStatus.COMPLETED }
     val isAllCompleted = children.isNotEmpty() &&
         children.all { it.recordStatus() == RecordStatus.COMPLETED }
     return when {
-        isAllCompleted && !wasAllCompleted -> parent.copy(children = children,
-            status = RecordStatus.COMPLETED, statusBeforeAutoCompletion = parent.status)
+        isAllCompleted && !wasAllCompleted -> parent.copy(
+            children = children,
+            status = RecordStatus.COMPLETED,
+            statusBeforeAutoCompletion = parent.status
+        )
         wasAllCompleted && !isAllCompleted && parent.statusBeforeAutoCompletion != null ->
-            parent.copy(children = children, status = parent.statusBeforeAutoCompletion,
-                statusBeforeAutoCompletion = null)
+            parent.copy(
+                children = children,
+                status = parent.statusBeforeAutoCompletion,
+                statusBeforeAutoCompletion = null
+            )
         else -> parent.copy(children = children)
     }
 }
 
-private fun withUpdatedPurchaseChildren(parent: Note, children: List<Note>): Note {
-    val wasAllCompleted = parent.children.isNotEmpty() &&
-        parent.children.all { it.recordStatus() == RecordStatus.COMPLETED }
-    val isAllCompleted = children.isNotEmpty() &&
-        children.all { it.recordStatus() == RecordStatus.COMPLETED }
-    return when {
-        isAllCompleted && !wasAllCompleted -> parent.copy(children = children,
-            status = RecordStatus.COMPLETED, statusBeforeAutoCompletion = parent.status)
-        wasAllCompleted && !isAllCompleted && parent.statusBeforeAutoCompletion != null ->
-            parent.copy(children = children, status = parent.statusBeforeAutoCompletion,
-                statusBeforeAutoCompletion = null)
-        else -> parent.copy(children = children)
-    }
+private fun newRecordId(): Long {
+    var id: Long
+    do {
+        id = java.util.UUID.randomUUID().mostSignificantBits and Long.MAX_VALUE
+    } while (id == 0L)
+    return id
 }
 
 private fun formatRecordDate(timestamp: Long): String =
@@ -2571,9 +2570,10 @@ private fun NoteEditor(
 
     fun createChild(type: RecordType) {
         selectedChildIds = emptySet()
-        val id = System.currentTimeMillis()
-        val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
-        onChange(withUpdatedTaskChildren(note, listOf(child) + note.children))
+        val now = System.currentTimeMillis()
+        val id = newRecordId()
+        val child = Note(id, "", listOf(NoteBlock()), now, created = now, type = type)
+        onChange(withUpdatedRecordChildren(note, listOf(child) + note.children))
         selectedChildId = id
         autoFocusChildId = id
     }
@@ -2606,7 +2606,7 @@ private fun NoteEditor(
                 autoFocusChildId = null
             },
             onChange = { changed ->
-                onChange(withUpdatedTaskChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
+                onChange(withUpdatedRecordChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
             },
             onDelete = { promoteChildren ->
                 val index = note.children.indexOfFirst { it.id == selectedChild.id }
@@ -2615,7 +2615,7 @@ private fun NoteEditor(
                     updated.removeAt(index)
                     if (promoteChildren) updated.addAll(index, selectedChild.children)
                 }
-                onChange(withUpdatedTaskChildren(note, updated))
+                onChange(withUpdatedRecordChildren(note, updated))
                 selectedChildId = null
                 autoFocusChildId = null
             },
@@ -2641,7 +2641,7 @@ private fun NoteEditor(
                 reordered.map { it.id }.toSet() == currentChildren.map { it.id }.toSet()
             ) {
                 latestTaskOnChange.value.invoke(
-                    withUpdatedTaskChildren(latestTaskNote.value, reordered)
+                    withUpdatedRecordChildren(latestTaskNote.value, reordered)
                 )
             }
         }
@@ -2881,7 +2881,7 @@ private fun NoteEditor(
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 // Keep the first purchase row from becoming LazyColumn's viewport anchor
-                // while adjacent purchases exchange positions.
+                // while adjacent tasks exchange positions.
                 item(key = "task_reorder_viewport_anchor") {
                     Spacer(Modifier.height(1.dp))
                 }
@@ -3035,7 +3035,7 @@ private fun NoteEditor(
             }
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 if (note.children.isEmpty()) {
-                    item(key = "empty_nested_purchases") {
+                    item(key = "empty_nested_tasks") {
                         Text(
                             "Пока нет задач",
                             modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
@@ -3097,7 +3097,7 @@ private fun NoteEditor(
                                                     val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
                                                     val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
                                                     latestTaskOnChange.value(
-                                                        withUpdatedTaskChildren(latestTaskNote.value,
+                                                        withUpdatedRecordChildren(latestTaskNote.value,
                                                             latestTaskChildren.value.map { if (it.id == child.id) changed else it })
                                                     )
                                                 }
@@ -3209,9 +3209,10 @@ private fun PurchaseEditor(
 
     fun createChild(type: RecordType) {
         selectedChildIds = emptySet()
-        val id = System.currentTimeMillis()
-        val child = Note(id, "", listOf(NoteBlock()), id, created = id, type = type)
-        onChange(withUpdatedPurchaseChildren(note, listOf(child) + note.children))
+        val now = System.currentTimeMillis()
+        val id = newRecordId()
+        val child = Note(id, "", listOf(NoteBlock()), now, created = now, type = type)
+        onChange(withUpdatedRecordChildren(note, listOf(child) + note.children))
         selectedChildId = id
         autoFocusChildId = id
     }
@@ -3244,7 +3245,7 @@ private fun PurchaseEditor(
                 autoFocusChildId = null
             },
             onChange = { changed ->
-                onChange(withUpdatedPurchaseChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
+                onChange(withUpdatedRecordChildren(note, note.children.map { if (it.id == changed.id) changed else it }))
             },
             onDelete = { promoteChildren ->
                 val index = note.children.indexOfFirst { it.id == selectedChild.id }
@@ -3253,7 +3254,7 @@ private fun PurchaseEditor(
                     updated.removeAt(index)
                     if (promoteChildren) updated.addAll(index, selectedChild.children)
                 }
-                onChange(withUpdatedPurchaseChildren(note, updated))
+                onChange(withUpdatedRecordChildren(note, updated))
                 selectedChildId = null
                 autoFocusChildId = null
             },
@@ -3279,7 +3280,7 @@ private fun PurchaseEditor(
                 reordered.map { it.id }.toSet() == currentChildren.map { it.id }.toSet()
             ) {
                 latestPurchaseOnChange.value.invoke(
-                    withUpdatedPurchaseChildren(latestPurchaseNote.value, reordered)
+                    withUpdatedRecordChildren(latestPurchaseNote.value, reordered)
                 )
             }
         }
@@ -3519,7 +3520,7 @@ private fun PurchaseEditor(
         ) {
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
                 // Keep the first task row from becoming LazyColumn's viewport anchor
-                // while adjacent tasks exchange positions.
+                // while adjacent purchases exchange positions.
                 item(key = "purchase_reorder_viewport_anchor") {
                     Spacer(Modifier.height(1.dp))
                 }
@@ -3642,7 +3643,7 @@ private fun PurchaseEditor(
             }
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
                 if (note.children.isEmpty()) {
-                    item(key = "empty_nested_tasks") {
+                    item(key = "empty_nested_purchases") {
                         Text(
                             "Пока нет товаров",
                             modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
@@ -3716,7 +3717,7 @@ private fun PurchaseEditor(
                                             deadlineResumeOverride = false
                                         )
                                         latestPurchaseOnChange.value(
-                                            withUpdatedPurchaseChildren(latestPurchaseNote.value,
+                                            withUpdatedRecordChildren(latestPurchaseNote.value,
                                                 latestPurchaseChildren.value.map { if (it.id == child.id) changed else it })
                                         )
                                     },
