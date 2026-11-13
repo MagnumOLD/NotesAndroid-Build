@@ -155,6 +155,8 @@ private object CardDimensions {
     // Keep the 40dp hit target centered on the handle, whose right edge now
     // aligns directly with the card metadata/date guide.
     val handleHitTargetRightInset = AppSpacing.screenHorizontal - 12.dp
+    // Nested glyphs end at the row edge; center the 40.dp hit target on the 16.dp glyph.
+    val nestedHandleHitTargetRightOverhang = 12.dp
 }
 
 internal data class NoteBlock(val text: String = "", val checked: Boolean = false, val isChecklist: Boolean = false, val id: String = java.util.UUID.randomUUID().toString())
@@ -2731,7 +2733,7 @@ private fun NoteEditor(
                             pass = PointerEventPass.Initial
                         )
                         val handleWidth = 40.dp.toPx()
-                        if (down.position.x < size.width - handleWidth ||
+                        if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx()) ||
                             childReorderSession != null
                         ) return@awaitEachGesture
 
@@ -3002,7 +3004,6 @@ private fun NoteEditor(
                                     color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(10.dp))
                                 DragHandleIcon(color = MaterialTheme.colorScheme.onSurface, compressed = true)
-                                Spacer(Modifier.width(10.dp))
                             }
                         } else {
                             val child = row.notes.first()
@@ -3067,7 +3068,6 @@ private fun NoteEditor(
                                 )
                                 Spacer(Modifier.width(22.dp))
                                 DragHandleIcon(color = dragHandleColor)
-                                Spacer(Modifier.width(10.dp))
                             }
                         }
                         if (index != displayedChildRows.lastIndex) {
@@ -3367,7 +3367,7 @@ private fun PurchaseEditor(
                             pass = PointerEventPass.Initial
                         )
                         val handleWidth = 40.dp.toPx()
-                        if (down.position.x < size.width - handleWidth ||
+                        if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx()) ||
                             childReorderSession != null
                         ) return@awaitEachGesture
 
@@ -3660,7 +3660,6 @@ private fun PurchaseEditor(
                                 )
                                 Spacer(Modifier.width(14.dp))
                                 DragHandleIcon(color = dragHandleColor)
-                                Spacer(Modifier.width(10.dp))
                             }
                         }
                         if (index != displayedChildRows.lastIndex) {
