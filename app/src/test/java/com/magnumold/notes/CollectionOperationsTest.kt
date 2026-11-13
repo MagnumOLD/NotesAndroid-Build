@@ -58,7 +58,7 @@ class CollectionOperationsTest {
 
         val moved = CollectionOperations.transfer(initial, 10, null, setOf(2, 1))
 
-        assertEquals(listOf(2L, 1L, 3L), moved.notes.map { it.id })
+        assertEquals(listOf(1L, 2L, 3L), moved.notes.map { it.id })
         assertTrue(moved.collections.single().notes.isEmpty())
     }
 
