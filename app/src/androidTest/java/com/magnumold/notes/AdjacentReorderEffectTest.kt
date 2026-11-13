@@ -22,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +38,7 @@ class AdjacentReorderEffectTest {
         Note(id, "", listOf(NoteBlock("note $id")), id, pinned = pinned)
 
     @Test
-    fun firstTwoRowsSwapAndCanReverseAfterPlacementAnimation() {
+    fun firstTwoRowsSwapAndCanReverseAfterLayoutAcknowledgement() {
         val rows = listOf(
             DragRow(listOf(note(1)), "1"),
             DragRow(listOf(note(2)), "2"),
@@ -50,8 +49,6 @@ class AdjacentReorderEffectTest {
         )
         var pointerY by mutableFloatStateOf(0f)
         var dragging by mutableStateOf(true)
-        var animationStartedAt = 0L
-        var lastAnimationDuration = 0L
 
         composeRule.setContent {
             val density = LocalDensity.current
@@ -60,23 +57,14 @@ class AdjacentReorderEffectTest {
 
             AdjacentReorderEffect(
                 isDragging = dragging,
-                dragRows = currentRows,
-                draggingIds = setOf(1L),
+                orderedKeys = currentRows.map { it.key },
                 reorderSession = session,
                 pointerY = pointerY,
                 grabOffsetPx = with(density) { 44.dp.toPx() },
                 releaseRequested = false,
                 listState = listState,
                 density = density,
-                onSessionChange = {
-                    if (it.phase == ReorderPhase.Animating) {
-                        animationStartedAt = SystemClock.elapsedRealtimeNanos()
-                    } else if (it.phase == ReorderPhase.Tracking && animationStartedAt != 0L) {
-                        lastAnimationDuration = SystemClock.elapsedRealtimeNanos() - animationStartedAt
-                        animationStartedAt = 0L
-                    }
-                    session = it
-                },
+                onSessionChange = { session = it },
                 onFinishDrag = { dragging = false }
             )
 
@@ -99,17 +87,11 @@ class AdjacentReorderEffectTest {
                 session?.keys == listOf("2", "1", "3")
         }
         composeRule.runOnUiThread {
-            assertTrue("The next swap unlocked before the 220ms placement tween finished",
-                lastAnimationDuration >= 220_000_000L)
             pointerY = with(composeRule.density) { 44.dp.toPx() }
         }
         composeRule.waitUntil(3_000) {
             session?.phase == ReorderPhase.Tracking &&
                 session?.keys == listOf("1", "2", "3")
-        }
-        composeRule.runOnUiThread {
-            assertTrue("The reversed swap unlocked before the placement tween finished",
-                lastAnimationDuration >= 220_000_000L)
         }
         composeRule.runOnUiThread { dragging = false }
     }
@@ -136,8 +118,7 @@ class AdjacentReorderEffectTest {
 
             AdjacentReorderEffect(
                 isDragging = dragging,
-                dragRows = currentRows,
-                draggingIds = setOf(2L, 3L),
+                orderedKeys = currentRows.map { it.key },
                 reorderSession = session,
                 pointerY = pointerY,
                 grabOffsetPx = with(density) { 60.dp.toPx() },
