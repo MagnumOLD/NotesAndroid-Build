@@ -161,32 +161,25 @@ internal fun NotesApp(
                         themeColors = activeThemeColors,
                         collections = collections, activeCollectionId = activeCollectionId,
                         onSelectCollection = { navigation.activeCollectionId = it; navigation.selectedId = null },
-                        onCreateCollection = { name -> val id = newRecordId(); recordsViewModel.updateSnapshot { it.copy(collections = it.collections + NoteCollection(id, name)) }; navigation.activeCollectionId = id },
+                        onCreateCollection = { name ->
+                            val id = newRecordId()
+                            recordsViewModel.updateSnapshot { CollectionOperations.create(it, id, name) }
+                            navigation.activeCollectionId = id
+                        },
                         onRenameCollection = { id, name ->
-                            recordsViewModel.updateSnapshot { current -> current.copy(collections = current.collections.map { if (it.id == id) it.copy(name = name) else it }) }
+                            recordsViewModel.updateSnapshot { CollectionOperations.rename(it, id, name) }
                         },
                         onDeleteCollection = { id ->
-                            val collection = collections.firstOrNull { it.id == id }
-                            if (collection != null) { recordsViewModel.updateSnapshot { current -> current.copy(notes = collection.notes + current.notes, collections = current.collections.filterNot { it.id == id }) }; if (navigation.activeCollectionId == id) navigation.activeCollectionId = null }
+                            recordsViewModel.updateSnapshot { CollectionOperations.delete(it, id) }
+                            if (navigation.activeCollectionId == id) navigation.activeCollectionId = null
                         },
                         onMoveCollection = { id, delta ->
-                            recordsViewModel.updateSnapshot { current ->
-                                val from = current.collections.indexOfFirst { it.id == id }
-                                if (from < 0 || current.collections.isEmpty()) current else {
-                                    val to = (from + delta).coerceIn(0, current.collections.lastIndex)
-                                    if (from == to) current else current.copy(collections = current.collections.toMutableList().apply { add(to, removeAt(from)) })
-                                }
-                            }
+                            recordsViewModel.updateSnapshot { CollectionOperations.move(it, id, delta) }
                         },
                         onTransferSelected = { ids, targetId ->
                             if (targetId != activeCollectionId) {
-                                val moving = activeNotes.filter { it.id in ids }
-                                updateActiveNotes(activeNotes.filterNot { it.id in ids })
-                                recordsViewModel.updateSnapshot { current ->
-                                    if (targetId == null) current.copy(notes = moving + current.notes)
-                                    else current.copy(collections = current.collections.map { collection ->
-                                        if (collection.id == targetId) collection.copy(notes = moving + collection.notes) else collection
-                                    })
+                                recordsViewModel.updateSnapshot {
+                                    CollectionOperations.transfer(it, activeCollectionId, targetId, ids)
                                 }
                             }
                         },
@@ -202,18 +195,19 @@ internal fun NotesApp(
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = true)
                         },
                         onMoveSelected = { ids, afterId ->
-                            val reordered = NoteReorderModel.moveSelected(activeNotes, ids, afterId)
-                            if (reordered != activeNotes) updateActiveNotes(reordered)
+                            recordsViewModel.updateSnapshot {
+                                CollectionOperations.reorder(it, activeCollectionId, ids, afterId)
+                            }
                         },
                         onTogglePinned = { ids ->
-                            val current = activeNotes.toMutableList()
-                            val allPinned = current.filter { it.id in ids }.all { it.pinned }
-                            val updated = current.map { if (it.id in ids) it.copy(pinned = !allPinned) else it }
-                            updateActiveNotes(updated.sortedByDescending { it.pinned })
+                            recordsViewModel.updateSnapshot {
+                                CollectionOperations.togglePinned(it, activeCollectionId, ids)
+                            }
                         },
                         onChangeNoteColor = { noteId, colorIndex ->
-                            val index = activeNotes.indexOfFirst { it.id == noteId }
-                            if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = this[index].copy(colorIndex = colorIndex) })
+                            recordsViewModel.updateSnapshot {
+                                CollectionOperations.changeColor(it, activeCollectionId, noteId, colorIndex)
+                            }
                         },
                         onCreate = { type ->
                             val now = System.currentTimeMillis()
