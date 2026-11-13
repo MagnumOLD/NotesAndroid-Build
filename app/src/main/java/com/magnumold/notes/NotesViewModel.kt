@@ -37,10 +37,9 @@ internal class NotesViewModel(
         }
     }
 
-    fun updateSnapshot(transform: (PersistenceSnapshot) -> PersistenceSnapshot) {
+    private fun updateSnapshot(transform: (PersistenceSnapshot) -> PersistenceSnapshot) {
         _snapshot.update(transform)
     }
-
 
     fun createCollection(id: Long, name: String) {
         updateSnapshot { CollectionOperations.create(it, id, name) }
@@ -50,8 +49,10 @@ internal class NotesViewModel(
         updateSnapshot { CollectionOperations.rename(it, id, name) }
     }
 
-    fun deleteCollection(id: Long) {
+    fun deleteCollection(id: Long): Boolean {
+        if (_snapshot.value.collections.none { it.id == id }) return false
         updateSnapshot { CollectionOperations.delete(it, id) }
+        return true
     }
 
     fun moveCollection(id: Long, delta: Int) {

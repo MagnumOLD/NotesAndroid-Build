@@ -12,12 +12,17 @@ import androidx.compose.runtime.setValue
 @Stable
 internal class AppNavigationState {
     var activeCollectionId by mutableStateOf<Long?>(null)
+        private set
     var selectedId by mutableStateOf<Long?>(null)
+        private set
     var autoFocusNewNote by mutableStateOf(false)
+        private set
     var search by mutableStateOf("")
+        private set
     var searchVisible by mutableStateOf(false)
     var settingsVisible by mutableStateOf(false)
     var vaultScreen by mutableStateOf<String?>(null)
+        private set
     fun selectCollection(id: Long?) {
         activeCollectionId = id
         selectedId = null

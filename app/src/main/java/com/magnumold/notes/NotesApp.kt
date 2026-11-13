@@ -114,14 +114,15 @@ internal fun NotesApp(
                         onCreateCollection = { name ->
                             val id = newRecordId()
                             recordsViewModel.createCollection(id, name)
-                            navigation.activeCollectionId = id
+                            navigation.selectCollection(id)
                         },
                         onRenameCollection = { id, name ->
                             recordsViewModel.renameCollection(id, name)
                         },
                         onDeleteCollection = { id ->
-                            recordsViewModel.deleteCollection(id)
-                            if (navigation.activeCollectionId == id) navigation.selectCollection(null)
+                            if (recordsViewModel.deleteCollection(id) && navigation.activeCollectionId == id) {
+                                navigation.selectCollection(null)
+                            }
                         },
                         onMoveCollection = { id, delta ->
                             recordsViewModel.moveCollection(id, delta)
