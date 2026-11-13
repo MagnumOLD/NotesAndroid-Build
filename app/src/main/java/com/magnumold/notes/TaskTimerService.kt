@@ -50,7 +50,7 @@ class TaskTimerService : Service() {
             ACTION_TASK_TIMER_STOP -> {
                 store.finishActive(System.currentTimeMillis())
                 cancelAlarm()
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                removeForeground()
                 stopSelf()
                 return START_NOT_STICKY
             }
@@ -91,7 +91,7 @@ class TaskTimerService : Service() {
             if (now >= active.breakUntilMillis) {
                 store.clearActive()
                 showAlert("Перерыв завершён", "Можно вернуться к задаче")
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                removeForeground()
                 stopSelf()
             }
             return
@@ -105,7 +105,7 @@ class TaskTimerService : Service() {
             TimerEndMode.STOP -> {
                 store.finishActive(now)
                 showAlert("Время вышло", "Рабочая сессия остановлена")
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                removeForeground()
                 stopSelf()
             }
             TimerEndMode.BREAK -> {
@@ -177,7 +177,7 @@ class TaskTimerService : Service() {
     }
 
     private fun removeForeground() {
-        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
+        if (Build.VERSION.SDK_INT >= 24) removeForeground() else stopForeground(true)
     }
 
     private fun createChannel() {
