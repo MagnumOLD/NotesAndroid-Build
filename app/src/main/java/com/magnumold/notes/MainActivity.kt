@@ -1959,6 +1959,45 @@ private fun mainCardBackground(
     else -> lerp(color, Color(0xFF808080), if (dark) 0.07f else 0.14f)
 }
 
+/**
+ * Shared outer structure for task and purchase child cards.
+ * The background and divider span the viewport; only card content follows
+ * the same 20.dp guide used by the main list.
+ */
+@Composable
+private fun NestedRecordCard(
+    selected: Boolean,
+    dark: Boolean,
+    selectionColor: Color,
+    showDivider: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val background = mainCardBackground(
+        color = MaterialTheme.colorScheme.background,
+        selected = selected,
+        isBaseColor = true,
+        dark = dark,
+        selectionColor = selectionColor
+    )
+    Column(
+        modifier = modifier.fillMaxWidth().background(background)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .padding(horizontal = AppSpacing.screenHorizontal)
+        ) {
+            content()
+        }
+        if (showDivider) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
+                thickness = CardDimensions.dividerThickness
+            )
+        }
+    }
+}
+
 @Composable
 private fun DraggedNotesGroup(
     notes: List<Note>,
@@ -2998,15 +3037,14 @@ private fun NoteEditor(
                 }
                 itemsIndexed(displayedChildRows, key = { _, row -> row.key }) { index, row ->
                     val group = row.notes.size > 1
-                    Column(
+                    NestedRecordCard(
+                        selected = group || row.notes.any { it.id in selectedChildIds },
+                        dark = dark,
+                        selectionColor = selectionColor,
+                        showDivider = index != displayedChildRows.lastIndex,
                         modifier = Modifier.fillMaxWidth()
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = AppSpacing.screenHorizontal)
-                                .background(if (group || row.notes.any { it.id in selectedChildIds }) selectionColor else Color.Transparent)
-                        ) {
                         if (group) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
@@ -3083,10 +3121,6 @@ private fun NoteEditor(
                                 Spacer(Modifier.width(22.dp))
                                 DragHandleIcon(color = dragHandleColor)
                             }
-                        }
-                        }
-                        if (index != displayedChildRows.lastIndex) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f), thickness = 0.6.dp)
                         }
                     }
                 }
@@ -3630,7 +3664,6 @@ private fun PurchaseEditor(
                                     color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(10.dp))
                                 DragHandleIcon(color = MaterialTheme.colorScheme.onSurface, compressed = true)
-                                Spacer(Modifier.width(10.dp))
                             }
                         } else {
                             val child = row.notes.first()
