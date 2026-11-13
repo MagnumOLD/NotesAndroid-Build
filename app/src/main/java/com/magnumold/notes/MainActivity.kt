@@ -152,8 +152,9 @@ private object CardDimensions {
     val handleTouchTargetSize = 40.dp
     val handleHitTargetTopOffset =
         AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f
-    // The visible handle's right edge follows the shared 20dp content guide.
-    val handleHitTargetRightInset = AppSpacing.screenHorizontal - 2.dp
+    // Keep the 40dp hit target centered on the handle, whose right edge now
+    // aligns directly with the card metadata/date guide.
+    val handleHitTargetRightInset = AppSpacing.screenHorizontal - 12.dp
 }
 
 internal data class NoteBlock(val text: String = "", val checked: Boolean = false, val isChecklist: Boolean = false, val id: String = java.util.UUID.randomUUID().toString())
@@ -1887,7 +1888,8 @@ private fun MainCardHeader(
     textColor: Color,
     pinned: Boolean = false,
     onClick: (() -> Unit)? = null,
-    onLongPress: (() -> Unit)? = null
+    onLongPress: (() -> Unit)? = null,
+    compressed: Boolean = false
 ) {
     val latestOnClick by rememberUpdatedState(onClick)
     val latestOnLongPress by rememberUpdatedState(onLongPress)
@@ -1926,9 +1928,9 @@ private fun MainCardHeader(
         Spacer(Modifier.width(20.dp))
         DragHandleIcon(
             modifier = Modifier.padding(top = 6.6.dp),
-            color = textColor
+            color = textColor,
+            compressed = compressed
         )
-        Spacer(Modifier.width(10.dp))
     }
 }
 
@@ -1986,7 +1988,7 @@ private fun DraggedNotesGroup(
                 top = AppSpacing.md
             )
         ) {
-            MainCardHeader("Группа", groupTextColor)
+            MainCardHeader("Группа", groupTextColor, compressed = true)
         }
         HorizontalDivider(
             modifier = Modifier.align(Alignment.BottomCenter),
