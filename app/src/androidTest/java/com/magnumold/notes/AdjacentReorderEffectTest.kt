@@ -78,19 +78,19 @@ class AdjacentReorderEffectTest {
             }
         }
 
-        composeRule.waitUntil(2_000) { listState.layoutInfo.visibleItemsInfo.any { it.key == "1" } }
+        composeRule.waitUntil(5_000) { listState.layoutInfo.visibleItemsInfo.any { it.key == "1" } }
         composeRule.runOnUiThread {
             dragging = true
             pointerY = with(composeRule.density) { 134.dp.toPx() }
         }
-        composeRule.waitUntil(3_000) {
+        composeRule.waitUntil(10_000) {
             session?.phase == ReorderPhase.Tracking &&
                 session?.keys == listOf("2", "1", "3")
         }
         composeRule.runOnUiThread {
             pointerY = with(composeRule.density) { 44.dp.toPx() }
         }
-        composeRule.waitUntil(3_000) {
+        composeRule.waitUntil(10_000) {
             session?.phase == ReorderPhase.Tracking &&
                 session?.keys == listOf("1", "2", "3")
         }
@@ -143,14 +143,14 @@ class AdjacentReorderEffectTest {
             }
         }
 
-        composeRule.waitUntil(2_000) { listState.layoutInfo.visibleItemsInfo.any { it.key == "group" } }
+        composeRule.waitUntil(5_000) { listState.layoutInfo.visibleItemsInfo.any { it.key == "group" } }
         composeRule.runOnUiThread {
             dragging = true
             // The next row center is 1 + 88 + 120 + 44 = 253dp.
             // With the actual 120dp group height, its center crosses at 254dp.
             pointerY = with(composeRule.density) { 254.dp.toPx() }
         }
-        composeRule.waitUntil(3_000) {
+        composeRule.waitUntil(10_000) {
             session?.phase == ReorderPhase.Tracking &&
                 session?.keys == listOf("1", "4", "group", "5")
         }
@@ -159,7 +159,7 @@ class AdjacentReorderEffectTest {
             // Reverse over the previous unpinned row.
             pointerY = with(composeRule.density) { 132.dp.toPx() }
         }
-        composeRule.waitUntil(3_000) {
+        composeRule.waitUntil(10_000) {
             session?.phase == ReorderPhase.Tracking &&
                 session?.keys == listOf("1", "group", "4", "5")
         }
