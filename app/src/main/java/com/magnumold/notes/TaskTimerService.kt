@@ -69,7 +69,7 @@ class TaskTimerService : Service() {
             this, TASK_TIMER_NOTIFICATION_ID, buildNotification(active),
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
         )
-        scheduleAlarm(active.deadlineMillis)
+        scheduleAlarm(active.breakUntilMillis ?: active.deadlineMillis)
         handler.removeCallbacks(refresh)
         handler.post(refresh)
         return START_STICKY

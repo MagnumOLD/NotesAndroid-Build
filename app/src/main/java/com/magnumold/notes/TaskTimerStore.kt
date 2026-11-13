@@ -69,6 +69,26 @@ internal class TaskTimerStore(context: Context) {
     fun finishActive(endedAtMillis: Long): TaskTimeSession? {
         val active = activeTimer() ?: return null
         if (active.breakUntilMillis != null) { clearActive(); return null }
+        val session = appendSession(active, endedAtMillis)
+        clearActive()
+        return session
+    }
+
+    @Synchronized
+    fun finishActiveForBreak(endedAtMillis: Long, breakUntilMillis: Long): TaskTimeSession? {
+        val active = activeTimer() ?: return null
+        if (active.breakUntilMillis != null) return null
+        val session = appendSession(active, endedAtMillis)
+        prefs.edit()
+            .putLong("started_at", 0L)
+            .putLong("deadline_at", breakUntilMillis)
+            .putLong("break_until", breakUntilMillis)
+            .putBoolean("alerted", false)
+            .apply()
+        return session
+    }
+
+    private fun appendSession(active: ActiveTaskTimer, endedAtMillis: Long): TaskTimeSession {
         val session = TaskTimeSession(
             id = UUID.randomUUID().toString(),
             taskId = active.taskId,
@@ -85,7 +105,6 @@ internal class TaskTimerStore(context: Context) {
                 .put("duration", item.durationMillis))
         }
         prefs.edit().putString("sessions", array.toString()).apply()
-        clearActive()
         return session
     }
 
