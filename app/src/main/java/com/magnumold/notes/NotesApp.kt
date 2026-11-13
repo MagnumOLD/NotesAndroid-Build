@@ -59,8 +59,8 @@ internal fun NotesApp(
                 backupFileStore = backupFileStore
             )
 
-            BackHandler(enabled = settingsVisible && vaultScreen != null) { navigation.vaultScreen = null }
-            BackHandler(enabled = settingsVisible && navigation.vaultScreen == null) { navigation.settingsVisible = false }
+            BackHandler(enabled = settingsVisible && vaultScreen != null) { navigation.closeVault() }
+            BackHandler(enabled = settingsVisible && navigation.vaultScreen == null) { navigation.closeSettings() }
 
             AppThemeEffects(
                 activity = activity,
@@ -80,7 +80,7 @@ internal fun NotesApp(
                         title = if (navigation.vaultScreen == "archive") "Архив" else "Корзина",
                         entries = if (navigation.vaultScreen == "archive") archived else trash,
                         isTrash = navigation.vaultScreen == "trash",
-                        onBack = { navigation.vaultScreen = null },
+                        onBack = { navigation.closeVault() },
                         onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = navigation.vaultScreen == "archive") },
                         onMoveToTrash = { entry -> recordsViewModel.moveArchivedToTrash(entry) },
                         onDeleteForever = { entry -> recordsViewModel.deleteFromTrash(entry) },
@@ -100,9 +100,9 @@ internal fun NotesApp(
                         onNoteColorOpacityChange = { opacity -> themeState.setNoteColorOpacity(opacity) },
                         onExport = backupActions.exportBackup,
                         onImport = backupActions.importBackup,
-                        onOpenArchive = { navigation.vaultScreen = "archive" },
-                        onOpenTrash = { navigation.vaultScreen = "trash" },
-                        onBack = { navigation.settingsVisible = false }
+                        onOpenArchive = { navigation.openVault("archive") },
+                        onOpenTrash = { navigation.openVault("trash") },
+                        onBack = { navigation.closeSettings() }
                     )
                 } else if (selected == null) {
                     NotesHome(
@@ -110,7 +110,7 @@ internal fun NotesApp(
                         noteColors = displayedNoteColors,
                         themeColors = activeThemeColors,
                         collections = collections, activeCollectionId = activeCollectionId,
-                        onSelectCollection = { navigation.activeCollectionId = it; navigation.selectedId = null },
+                        onSelectCollection = { navigation.selectCollection(it) },
                         onCreateCollection = { name ->
                             val id = newRecordId()
                             recordsViewModel.createCollection(id, name)
@@ -121,7 +121,7 @@ internal fun NotesApp(
                         },
                         onDeleteCollection = { id ->
                             recordsViewModel.deleteCollection(id)
-                            if (navigation.activeCollectionId == id) navigation.activeCollectionId = null
+                            if (navigation.activeCollectionId == id) navigation.selectCollection(null)
                         },
                         onMoveCollection = { id, delta ->
                             recordsViewModel.moveCollection(id, delta)
@@ -131,11 +131,11 @@ internal fun NotesApp(
                                 recordsViewModel.transferRecords(activeCollectionId, targetId, ids)
                             }
                         },
-                        onSearch = { navigation.search = it },
-                        onToggleSearch = { navigation.searchVisible = !searchVisible; if (!searchVisible) navigation.search = "" },
+                        onSearch = { navigation.updateSearch(it) },
+                        onToggleSearch = { navigation.toggleSearch() },
                         dark = dark,
-                        onOpenSettings = { navigation.settingsVisible = true },
-                        onOpen = { navigation.autoFocusNewNote = false; navigation.selectedId = it },
+                        onOpenSettings = { navigation.openSettings() },
+                        onOpen = { navigation.openRecord(it) },
                         onArchiveSelected = { ids ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = false)
                         },
@@ -155,8 +155,7 @@ internal fun NotesApp(
                             val now = System.currentTimeMillis()
                             val id = newRecordId()
                             recordsViewModel.createActiveRecord(activeCollectionId, Note(id, "", listOf(NoteBlock()), now, created = now, type = type))
-                            navigation.autoFocusNewNote = true
-                            navigation.selectedId = id
+                            navigation.openNewRecord(id)
                         }
                     )
                 } else {
@@ -169,8 +168,7 @@ internal fun NotesApp(
                         autoFocus = autoFocusNewNote,
                         onBack = {
                             if (!selected.hasContent()) recordsViewModel.removeActiveRecord(activeCollectionId, selected.id)
-                            navigation.selectedId = null
-                            navigation.autoFocusNewNote = false
+                            navigation.closeEditor()
                         },
                         onChange = { changed ->
                             val index = activeNotes.indexOfFirst { it.id == changed.id }
@@ -178,8 +176,7 @@ internal fun NotesApp(
                         },
                         onDelete = { promoteChildren ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
-                            navigation.selectedId = null
-                            navigation.autoFocusNewNote = false
+                            navigation.closeEditor()
                         },
                         onShare = { activity.shareNote(selected) }
                     )
