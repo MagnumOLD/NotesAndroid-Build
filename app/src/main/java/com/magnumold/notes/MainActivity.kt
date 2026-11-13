@@ -1961,11 +1961,6 @@ private fun mainCardBackground(
 }
 
 /**
- * Shared outer structure for task and purchase child cards.
- * The background and divider span the viewport; only card content follows
- * the same 20.dp guide used by the main list.
- */
-/**
  * Shared card surface for main-list cards, grouped placeholders and nested rows.
  * Owns the full-width background and divider; each card supplies its content layout.
  */
