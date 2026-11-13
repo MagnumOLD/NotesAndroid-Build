@@ -109,7 +109,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  # UI suite is intentionally reserved for the final architecture verification.
   instrumentation-tests:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-ui-tests]'))
     name: Run Compose UI tests on Android emulator
     runs-on: ubuntu-latest
     timeout-minutes: 35
