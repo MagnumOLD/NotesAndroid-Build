@@ -177,7 +177,7 @@ class TaskTimerService : Service() {
     }
 
     private fun removeForeground() {
-        if (Build.VERSION.SDK_INT >= 24) removeForeground() else stopForeground(true)
+        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
     }
 
     private fun createChannel() {
