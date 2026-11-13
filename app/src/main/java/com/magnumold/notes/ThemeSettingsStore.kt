@@ -28,7 +28,7 @@ internal class ThemeSettingsStore(private val preferences: SharedPreferences) {
         )
     }
     fun loadThemeColorSets(): ThemeColorSets {
-        val raw = prefs.getString("theme_colors_v2", null)
+        val raw = preferences.getString("theme_colors_v2", null)
         if (!raw.isNullOrBlank()) return try {
             val json = JSONObject(raw)
             val defaults = ThemeColorSets()
@@ -44,7 +44,7 @@ internal class ThemeSettingsStore(private val preferences: SharedPreferences) {
                 themeColorsFromJson(json.optJSONObject("custom") ?: JSONObject(), defaultCustomThemeColors)
             )
         } catch (_: Exception) { ThemeColorSets() }
-        val legacy = prefs.getString("custom_theme_colors", null)
+        val legacy = preferences.getString("custom_theme_colors", null)
         val custom = try {
             if (legacy.isNullOrBlank()) defaultCustomThemeColors
             else themeColorsFromJson(JSONObject(legacy), defaultCustomThemeColors)
