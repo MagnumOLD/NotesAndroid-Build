@@ -11,7 +11,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.app.ServiceCompat
@@ -30,7 +29,7 @@ class TaskTimerService : Service() {
         override fun run() {
             val active = store.activeTimer()
             if (active == null) {
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                removeForeground()
                 stopSelf()
                 return
             }
@@ -46,6 +45,7 @@ class TaskTimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        var processExpiry = false
         when (intent?.action) {
             ACTION_TASK_TIMER_STOP -> {
                 store.finishActive(System.currentTimeMillis())
@@ -54,7 +54,7 @@ class TaskTimerService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
-            ACTION_TASK_TIMER_EXPIRED -> handleExpiry()
+            ACTION_TASK_TIMER_EXPIRED -> processExpiry = true
             ACTION_TASK_TIMER_START -> {
                 val taskId = intent.getLongExtra("task_id", 0L)
                 val limit = intent.getIntExtra("limit_minutes", store.preferences().defaultLimitMinutes)
@@ -70,7 +70,14 @@ class TaskTimerService : Service() {
             this, TASK_TIMER_NOTIFICATION_ID, buildNotification(active),
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
         )
-        scheduleAlarm(active.breakUntilMillis ?: active.deadlineMillis)
+        if (processExpiry) handleExpiry()
+        val current = store.activeTimer()
+        if (current == null) {
+            removeForeground()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        if (!current.alerted) scheduleAlarm(current.breakUntilMillis ?: current.deadlineMillis)
         handler.removeCallbacks(refresh)
         handler.post(refresh)
         return START_STICKY
@@ -167,6 +174,10 @@ class TaskTimerService : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
         if (settings.soundEnabled) builder.setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
         getSystemService(NotificationManager::class.java).notify(TASK_TIMER_NOTIFICATION_ID + 1, builder.build())
+    }
+
+    private fun removeForeground() {
+        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true)
     }
 
     private fun createChannel() {
