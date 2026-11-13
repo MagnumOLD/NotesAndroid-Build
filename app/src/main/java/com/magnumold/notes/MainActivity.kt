@@ -5,6 +5,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -68,8 +70,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.debounce
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
@@ -394,8 +395,9 @@ class MainActivity : ComponentActivity() {
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
+        val recordsViewModel = ViewModelProvider(this, NotesViewModelFactory(repository))[NotesViewModel::class.java]
         setContent {
-            val initialPersistence = remember { repository.loadSnapshot() }
+            val snapshot by recordsViewModel.snapshot.collectAsStateWithLifecycle()
             var themeMode by remember { mutableStateOf(savedThemeMode) }
             var themeColorSets by remember { mutableStateOf(initialThemeColorSets) }
             val activeThemeColors = themeColorsForMode(themeColorSets, themeMode)
@@ -414,18 +416,19 @@ class MainActivity : ComponentActivity() {
             val displayedNoteColors = remember(noteColors, activeNoteColorOpacity) {
                 noteColors.map { it.copy(alpha = activeNoteColorOpacity) }
             }
-            val notes = remember { mutableStateListOf<Note>().apply { addAll(initialPersistence.notes) } }
-            val collections = remember { mutableStateListOf<NoteCollection>().apply { addAll(initialPersistence.collections) } }
+            val notes = snapshot.notes
+            val collections = snapshot.collections
             var activeCollectionId by remember { mutableStateOf<Long?>(null) }
             var selectedId by remember { mutableStateOf<Long?>(null) }
             val activeNotes = if (activeCollectionId == null) notes.toList()
                 else collections.firstOrNull { it.id == activeCollectionId }?.notes.orEmpty()
             fun updateActiveNotes(updated: List<Note>) {
-                if (activeCollectionId == null) {
-                    notes.clear(); notes.addAll(updated)
-                } else {
-                    val index = collections.indexOfFirst { it.id == activeCollectionId }
-                    if (index >= 0) collections[index] = collections[index].copy(notes = updated)
+                val collectionId = activeCollectionId
+                recordsViewModel.updateSnapshot { current ->
+                    if (collectionId == null) current.copy(notes = updated)
+                    else current.copy(collections = current.collections.map { collection ->
+                        if (collection.id == collectionId) collection.copy(notes = updated) else collection
+                    })
                 }
             }
             var autoFocusNewNote by remember { mutableStateOf(false) }
@@ -433,8 +436,8 @@ class MainActivity : ComponentActivity() {
             var searchVisible by remember { mutableStateOf(false) }
             var settingsVisible by remember { mutableStateOf(false) }
             var vaultScreen by remember { mutableStateOf<String?>(null) }
-            val archived = remember { mutableStateListOf<VaultNote>().apply { addAll(initialPersistence.archived) } }
-            val trash = remember { mutableStateListOf<VaultNote>().apply { addAll(initialPersistence.trash) } }
+            val archived = snapshot.archived
+            val trash = snapshot.trash
 
             val exportLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/json")
@@ -442,7 +445,7 @@ class MainActivity : ComponentActivity() {
                 if (uri != null) {
                     try {
                         contentResolver.openOutputStream(uri)?.use { output ->
-                            output.write(createBackupJson(notes.toList(), collections.toList(), archived.toList(), trash.toList()).toByteArray(Charsets.UTF_8))
+                            output.write(createBackupJson(snapshot.notes, snapshot.collections, snapshot.archived, snapshot.trash).toByteArray(Charsets.UTF_8))
                         } ?: error("Не удалось открыть файл")
                         Toast.makeText(this, "Резервная копия сохранена", Toast.LENGTH_SHORT).show()
                     } catch (_: Exception) {
@@ -457,16 +460,8 @@ class MainActivity : ComponentActivity() {
                     try {
                         val json = contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
                             ?: error("Не удалось прочитать файл")
-                        val imported = parseBackupJson(json)
-                        val beforeCount = notes.size + collections.sumOf { it.notes.size } + archived.size + trash.size
-                        val merged = mergeImportedNotes(notes.toList(), imported.notes)
-                        notes.clear(); notes.addAll(merged)
-                        val mergedCollections = mergeImportedCollections(collections.toList(), imported.collections)
-                        collections.clear(); collections.addAll(mergedCollections)
-                        archived.addAll(mergeImportedVault(archived.toList(), imported.archived))
-                        trash.addAll(mergeImportedVault(trash.toList(), imported.trash))
-                        val afterCount = notes.size + collections.sumOf { it.notes.size } + archived.size + trash.size
-                        Toast.makeText(this, "Импортировано заметок: ${afterCount - beforeCount}", Toast.LENGTH_LONG).show()
+                        val importedCount = recordsViewModel.importBackup(json)
+                        Toast.makeText(this, "Импортировано заметок: $importedCount", Toast.LENGTH_LONG).show()
                     } catch (_: Exception) {
                         Toast.makeText(this, "Не удалось импортировать файл: неверный формат", Toast.LENGTH_LONG).show()
                     }
@@ -489,18 +484,6 @@ class MainActivity : ComponentActivity() {
                     flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                 }
             }
-            LaunchedEffect(Unit) {
-                snapshotFlow {
-                    PersistenceSnapshot(
-                        notes = notes.toList(),
-                        collections = collections.toList(),
-                        archived = archived.toList(),
-                        trash = trash.toList()
-                    )
-                }.debounce(300).collect { snapshot ->
-                    repository.saveSnapshot(snapshot)
-                }
-            }
             LaunchedEffect(themeMode, dark) {
                 getPreferences(Context.MODE_PRIVATE).edit().putString("theme_mode", themeMode)
                     .putBoolean("dark_v2", dark).apply()
@@ -514,23 +497,13 @@ class MainActivity : ComponentActivity() {
                 if (settingsVisible && selected == null && vaultScreen != null) {
                     VaultScreen(
                         title = if (vaultScreen == "archive") "Архив" else "Корзина",
-                        entries = if (vaultScreen == "archive") archived.toList() else trash.toList(),
+                        entries = if (vaultScreen == "archive") archived else trash,
                         isTrash = vaultScreen == "trash",
                         onBack = { vaultScreen = null },
-                        onRestore = { entry ->
-                            if (vaultScreen == "archive") archived.removeAll { it.note.id == entry.note.id } else trash.removeAll { it.note.id == entry.note.id }
-                            val targetCollection = entry.collectionId?.let { id -> collections.indexOfFirst { it.id == id } } ?: -1
-                            if (targetCollection >= 0) {
-                                val current = collections[targetCollection].notes.toMutableList()
-                                current.add(entry.position.coerceIn(0, current.size), entry.note)
-                                collections[targetCollection] = collections[targetCollection].copy(notes = current)
-                            } else {
-                                notes.add(entry.position.coerceIn(0, notes.size), entry.note)
-                            }
-                        },
-                        onMoveToTrash = { entry -> archived.removeAll { it.note.id == entry.note.id }; trash.add(0, entry) },
-                        onDeleteForever = { entry -> trash.removeAll { it.note.id == entry.note.id } },
-                        onEmptyTrash = { trash.clear() },
+                        onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = vaultScreen == "archive") },
+                        onMoveToTrash = { entry -> recordsViewModel.moveArchivedToTrash(entry) },
+                        onDeleteForever = { entry -> recordsViewModel.deleteFromTrash(entry) },
+                        onEmptyTrash = { recordsViewModel.emptyTrash() }
                         themeColors = activeThemeColors
                     )
                 } else if (settingsVisible && selected == null) {
@@ -568,30 +541,34 @@ class MainActivity : ComponentActivity() {
                         notes = activeNotes, search = search, searchVisible = searchVisible,
                         noteColors = displayedNoteColors,
                         themeColors = activeThemeColors,
-                        collections = collections.toList(), activeCollectionId = activeCollectionId,
+                        collections = collections, activeCollectionId = activeCollectionId,
                         onSelectCollection = { activeCollectionId = it; selectedId = null },
-                        onCreateCollection = { name -> val id = newRecordId(); collections.add(NoteCollection(id, name)); activeCollectionId = id },
+                        onCreateCollection = { name -> val id = newRecordId(); recordsViewModel.updateSnapshot { it.copy(collections = it.collections + NoteCollection(id, name)) }; activeCollectionId = id },
                         onRenameCollection = { id, name ->
-                            val index = collections.indexOfFirst { it.id == id }
-                            if (index >= 0) collections[index] = collections[index].copy(name = name)
+                            recordsViewModel.updateSnapshot { current -> current.copy(collections = current.collections.map { if (it.id == id) it.copy(name = name) else it }) }
                         },
                         onDeleteCollection = { id ->
                             val collection = collections.firstOrNull { it.id == id }
-                            if (collection != null) { notes.addAll(0, collection.notes); collections.removeAll { it.id == id }; if (activeCollectionId == id) activeCollectionId = null }
+                            if (collection != null) { recordsViewModel.updateSnapshot { current -> current.copy(notes = collection.notes + current.notes, collections = current.collections.filterNot { it.id == id }) }; if (activeCollectionId == id) activeCollectionId = null }
                         },
                         onMoveCollection = { id, delta ->
-                            val from = collections.indexOfFirst { it.id == id }
-                            val to = (from + delta).coerceIn(0, collections.lastIndex)
-                            if (from >= 0 && from != to) { val item = collections.removeAt(from); collections.add(to, item) }
+                            recordsViewModel.updateSnapshot { current ->
+                                val from = current.collections.indexOfFirst { it.id == id }
+                                if (from < 0 || current.collections.isEmpty()) current else {
+                                    val to = (from + delta).coerceIn(0, current.collections.lastIndex)
+                                    if (from == to) current else current.copy(collections = current.collections.toMutableList().apply { add(to, removeAt(from)) })
+                                }
+                            }
                         },
                         onTransferSelected = { ids, targetId ->
                             if (targetId != activeCollectionId) {
                                 val moving = activeNotes.filter { it.id in ids }
                                 updateActiveNotes(activeNotes.filterNot { it.id in ids })
-                                if (targetId == null) notes.addAll(0, moving)
-                                else {
-                                    val targetIndex = collections.indexOfFirst { it.id == targetId }
-                                    if (targetIndex >= 0) collections[targetIndex] = collections[targetIndex].copy(notes = moving + collections[targetIndex].notes)
+                                recordsViewModel.updateSnapshot { current ->
+                                    if (targetId == null) current.copy(notes = moving + current.notes)
+                                    else current.copy(collections = current.collections.map { collection ->
+                                        if (collection.id == targetId) collection.copy(notes = moving + collection.notes) else collection
+                                    })
                                 }
                             }
                         },
@@ -601,14 +578,10 @@ class MainActivity : ComponentActivity() {
                         onOpenSettings = { settingsVisible = true },
                         onOpen = { autoFocusNewNote = false; selectedId = it },
                         onArchiveSelected = { ids ->
-                            val moving = activeNotes.filter { it.id in ids }
-                            moving.forEach { note -> archived.add(0, VaultNote(note, activeCollectionId, activeNotes.indexOfFirst { it.id == note.id }, System.currentTimeMillis())) }
-                            updateActiveNotes(activeNotes.filterNot { it.id in ids })
+                            recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = false)
                         },
                         onDeleteSelected = { ids ->
-                            val moving = activeNotes.filter { it.id in ids }
-                            moving.forEach { note -> trash.add(0, VaultNote(note, activeCollectionId, activeNotes.indexOfFirst { it.id == note.id }, System.currentTimeMillis())) }
-                            updateActiveNotes(activeNotes.filterNot { it.id in ids })
+                            recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = true)
                         },
                         onMoveSelected = { ids, afterId ->
                             val reordered = NoteReorderModel.moveSelected(activeNotes, ids, afterId)
@@ -650,8 +623,7 @@ class MainActivity : ComponentActivity() {
                             if (index >= 0) updateActiveNotes(activeNotes.toMutableList().apply { this[index] = changed.copy(updated = System.currentTimeMillis()) })
                         },
                         onDelete = { promoteChildren ->
-                            trash.add(0, VaultNote(selected, activeCollectionId, activeNotes.indexOfFirst { it.id == selected.id }.coerceAtLeast(0), System.currentTimeMillis()))
-                            updateActiveNotes(activeNotes.filterNot { it.id == selected.id })
+                            recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
                             selectedId = null
                             autoFocusNewNote = false
                         },
