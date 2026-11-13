@@ -163,6 +163,7 @@ private object CardDimensions {
     val handleHitTargetRightInset = AppSpacing.screenHorizontal - 12.dp
     // Nested glyphs end at the row edge; center the 40.dp hit target on the 16.dp glyph.
     val nestedHandleHitTargetRightOverhang = 12.dp
+    val nestedGroupMinHeight = 72.dp
 }
 
 internal data class NoteBlock(val text: String = "", val checked: Boolean = false, val isChecklist: Boolean = false, val id: String = java.util.UUID.randomUUID().toString())
@@ -1964,6 +1965,28 @@ private fun mainCardBackground(
  * The background and divider span the viewport; only card content follows
  * the same 20.dp guide used by the main list.
  */
+/**
+ * Shared card surface for main-list cards, grouped placeholders and nested rows.
+ * Owns the full-width background and divider; each card supplies its content layout.
+ */
+@Composable
+private fun RecordCardSurface(
+    background: Color,
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(modifier = modifier.fillMaxWidth().background(background)) {
+        content()
+        if (showDivider) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
+                thickness = CardDimensions.dividerThickness
+            )
+        }
+    }
+}
+
 @Composable
 private fun NestedRecordCard(
     selected: Boolean,
@@ -1980,20 +2003,16 @@ private fun NestedRecordCard(
         dark = dark,
         selectionColor = selectionColor
     )
-    Column(
-        modifier = modifier.fillMaxWidth().background(background)
+    RecordCardSurface(
+        background = background,
+        modifier = modifier,
+        showDivider = showDivider
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = AppSpacing.screenHorizontal)
         ) {
             content()
-        }
-        if (showDivider) {
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
-                thickness = CardDimensions.dividerThickness
-            )
         }
     }
 }
@@ -2023,25 +2042,24 @@ private fun DraggedNotesGroup(
         dark = dark,
         selectionColor = customSelectionColor
     )
-    Box(
-        modifier = modifier
-            .height(rowHeight)
-            .background(selectedBackground)
+    RecordCardSurface(
+        background = selectedBackground,
+        modifier = modifier.height(rowHeight)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(
-                start = AppSpacing.screenHorizontal,
-                end = AppSpacing.screenHorizontal,
-                top = AppSpacing.md
-            )
+        Box(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            contentAlignment = Alignment.TopStart
         ) {
-            MainCardHeader("Группа", groupTextColor, compressed = true)
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(
+                    start = AppSpacing.screenHorizontal,
+                    end = AppSpacing.screenHorizontal,
+                    top = AppSpacing.md
+                )
+            ) {
+                MainCardHeader("Группа", groupTextColor, compressed = true)
+            }
         }
-        HorizontalDivider(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
-            thickness = CardDimensions.dividerThickness
-        )
     }
 }
 
@@ -2193,9 +2211,9 @@ private fun NoteRow(
     )
     val metadata = if (note.type == RecordType.NOTE) "Заметка" else recordStatusCompactText(note.recordStatus(statusNow))
 
-    Column(
-        Modifier.fillMaxWidth()
-            .background(selectedBackground)
+    RecordCardSurface(
+        background = selectedBackground,
+        modifier = Modifier.fillMaxWidth()
             .onSizeChanged { onMeasuredHeight(it.height) }
     ) {
         Box(
@@ -2302,10 +2320,6 @@ private fun NoteRow(
                 }
             }
         }
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
-            thickness = CardDimensions.dividerThickness
-        )
     }
 }
 
@@ -3046,16 +3060,16 @@ private fun NoteEditor(
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
                         if (group) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
-                                    .background(Color.Transparent)
-                                    .padding(start = AppSpacing.sm, end = 0.dp, top = AppSpacing.md, bottom = AppSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                                    .heightIn(min = CardDimensions.nestedGroupMinHeight),
+                                contentAlignment = Alignment.CenterStart
                             ) {
-                                Text("Группа", modifier = Modifier.weight(1f),
-                                    color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                Spacer(Modifier.width(10.dp))
-                                DragHandleIcon(color = MaterialTheme.colorScheme.onSurface, compressed = true)
+                                MainCardHeader(
+                                    text = "Группа",
+                                    textColor = MaterialTheme.colorScheme.onSurface,
+                                    compressed = true
+                                )
                             }
                         } else {
                             val child = row.notes.first()
@@ -3653,16 +3667,16 @@ private fun PurchaseEditor(
                             .animateItemPlacement(animationSpec = tween(durationMillis = NOTE_REORDER_ANIMATION_DURATION_MILLIS))
                     ) {
                         if (group) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
-                                    .background(Color.Transparent)
-                                    .padding(start = AppSpacing.sm, end = 0.dp, top = AppSpacing.md, bottom = AppSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                                    .heightIn(min = CardDimensions.nestedGroupMinHeight),
+                                contentAlignment = Alignment.CenterStart
                             ) {
-                                Text("Группа", modifier = Modifier.weight(1f),
-                                    color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                Spacer(Modifier.width(10.dp))
-                                DragHandleIcon(color = MaterialTheme.colorScheme.onSurface, compressed = true)
+                                MainCardHeader(
+                                    text = "Группа",
+                                    textColor = MaterialTheme.colorScheme.onSurface,
+                                    compressed = true
+                                )
                             }
                         } else {
                             val child = row.notes.first()
