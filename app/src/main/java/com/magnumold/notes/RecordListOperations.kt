@@ -44,7 +44,7 @@ internal object RecordListOperations {
     ): PersistenceSnapshot {
         val current = activeNotes(snapshot, collectionId)
         val reordered = NoteReorderModel.moveSelected(current, ids, afterId)
-        return if (reordered == current) snapshot else replaceActiveNotes(snapshot, collectionId, reordered)
+        return if (reordered == current) snapshot else replace(snapshot, collectionId, reordered)
     }
 
     fun togglePinned(
@@ -55,7 +55,7 @@ internal object RecordListOperations {
         val current = activeNotes(snapshot, collectionId)
         val allPinned = current.filter { it.id in ids }.all { it.pinned }
         val updated = current.map { if (it.id in ids) it.copy(pinned = !allPinned) else it }
-        return replaceActiveNotes(snapshot, collectionId, updated.sortedByDescending { it.pinned })
+        return replace(snapshot, collectionId, updated.sortedByDescending { it.pinned })
     }
 
     fun changeColor(
@@ -67,7 +67,7 @@ internal object RecordListOperations {
         val current = activeNotes(snapshot, collectionId)
         val index = current.indexOfFirst { it.id == noteId }
         if (index < 0) return snapshot
-        return replaceActiveNotes(snapshot, collectionId, current.toMutableList().apply {
+        return replace(snapshot, collectionId, current.toMutableList().apply {
             this[index] = this[index].copy(colorIndex = colorIndex)
         })
     }

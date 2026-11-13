@@ -52,17 +52,4 @@ internal object CollectionOperations {
         }
     }
 
-    fun activeNotes(snapshot: PersistenceSnapshot, collectionId: Long?): List<Note> =
-        if (collectionId == null) snapshot.notes
-        else snapshot.collections.firstOrNull { it.id == collectionId }?.notes.orEmpty()
-
-    fun replaceActiveNotes(
-        snapshot: PersistenceSnapshot,
-        collectionId: Long?,
-        notes: List<Note>
-    ): PersistenceSnapshot =
-        if (collectionId == null) snapshot.copy(notes = notes)
-        else snapshot.copy(collections = snapshot.collections.map { collection ->
-            if (collection.id == collectionId) collection.copy(notes = notes) else collection
-        })
 }
