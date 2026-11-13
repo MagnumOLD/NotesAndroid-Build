@@ -1999,7 +1999,9 @@ private fun DraggedNotesGroup(
             MainCardHeader("Группа", groupTextColor, compressed = true)
         }
         HorizontalDivider(
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = AppSpacing.screenHorizontal),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
             thickness = CardDimensions.dividerThickness
         )
@@ -2264,6 +2266,7 @@ private fun NoteRow(
             }
         }
         HorizontalDivider(
+            modifier = Modifier.padding(horizontal = AppSpacing.screenHorizontal),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
             thickness = CardDimensions.dividerThickness
         )
