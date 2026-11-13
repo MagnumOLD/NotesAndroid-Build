@@ -135,17 +135,46 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
-          profile: pixel_2
+          profile: pixel_5
+          emulator-boot-timeout: 600
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: |
-            set -o pipefail
-            gradle --no-daemon --stacktrace connectedDebugAndroidTest 2>&1 | tee gradle-instrumentation-tests.log
+            set -e
+            bash -o pipefail -c 'gradle --no-daemon --stacktrace connectedDebugAndroidTest 2>&1 | tee gradle-instrumentation-tests.log'
+            python3 - <<'PY'
+            import glob
+            import sys
+            import xml.etree.ElementTree as ET
+
+            reports = glob.glob("app/build/outputs/androidTest-results/connected/debug/TEST-*.xml")
+            if not reports:
+                print("No Android instrumentation test reports were produced.", file=sys.stderr)
+                sys.exit(1)
+
+            total = failures = errors = 0
+            for report in reports:
+                suite = ET.parse(report).getroot()
+                total += int(suite.attrib.get("tests", "0"))
+                failures += int(suite.attrib.get("failures", "0"))
+                errors += int(suite.attrib.get("errors", "0"))
+
+            print(f"Instrumentation results: {total} tests, {failures} failures, {errors} errors")
+            if total == 0 or failures or errors:
+                sys.exit(1)
+            PY
 
       - name: Upload instrumentation diagnostics
         if: always()
