@@ -104,15 +104,45 @@ internal object TimeTrackingEngine {
         return saved + active
     }
 
-    /** Parent duration is derived only from its children; no parent stopwatch exists. */
+    /**
+     * Parent duration is the wall-clock time covered by any child work interval.
+     * Overlapping or adjacent intervals are merged, so simultaneous child work
+     * contributes only once to the parent's actual elapsed work time.
+     */
     fun parentDurationMillis(state: TimeTrackingState, parentTaskId: Long, nowMillis: Long): Long {
-        val saved = state.sessions.asSequence()
-            .filter { it.parentTaskId == parentTaskId }
-            .sumOf { it.durationMillis }
-        val active = state.activeSessions.values.asSequence()
-            .filter { it.parentTaskId == parentTaskId }
-            .sumOf { (nowMillis - it.startedAtMillis).coerceAtLeast(0L) }
-        return saved + active
+        val intervals = buildList {
+            state.sessions.asSequence()
+                .filter { it.parentTaskId == parentTaskId }
+                .forEach { session ->
+                    if (session.endedAtMillis > session.startedAtMillis) {
+                        add(session.startedAtMillis to session.endedAtMillis)
+                    }
+                }
+            state.activeSessions.values.asSequence()
+                .filter { it.parentTaskId == parentTaskId }
+                .forEach { active ->
+                    val end = nowMillis.coerceAtLeast(active.startedAtMillis)
+                    if (end > active.startedAtMillis) {
+                        add(active.startedAtMillis to end)
+                    }
+                }
+        }.sortedBy { it.first }
+
+        if (intervals.isEmpty()) return 0L
+
+        var mergedStart = intervals.first().first
+        var mergedEnd = intervals.first().second
+        var total = 0L
+        intervals.drop(1).forEach { (start, end) ->
+            if (start <= mergedEnd) {
+                mergedEnd = maxOf(mergedEnd, end)
+            } else {
+                total += mergedEnd - mergedStart
+                mergedStart = start
+                mergedEnd = end
+            }
+        }
+        return total + (mergedEnd - mergedStart)
     }
 
     fun replaceSession(state: TimeTrackingState, edited: WorkSession): TimeTrackingState {
