@@ -108,9 +108,7 @@ internal fun ParentRecordHeader(
                     singleLine = true,
                     textStyle = TextStyle(
                         color = foreground,
-                        fontSize = AppTypography.editorTitle,
-                        lineHeight = AppTypography.bodyLineHeight,
-                        fontWeight = FontWeight.Medium,
+                        style = AppTypography.editorTitleStyle(),
                         textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None
                     ),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(foreground),
@@ -130,9 +128,7 @@ internal fun ParentRecordHeader(
                                 Text(
                                     placeholder,
                                     color = foreground.copy(alpha = 0.48f),
-                                    fontSize = AppTypography.editorTitle,
-                                    lineHeight = AppTypography.bodyLineHeight,
-                                    fontWeight = FontWeight.Medium
+                                    style = AppTypography.editorTitleStyle()
                                 )
                             }
                             innerTextField()
