@@ -326,16 +326,38 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
         )
         Text("Изменение по задачам", style = MaterialTheme.typography.titleSmall)
         val taskIds = (stats.taskTotalsMillis.keys + previous.taskTotalsMillis.keys).toSet()
-        taskIds.forEach { id ->
-            val title = state.sessions.firstOrNull { it.taskId == id }?.let {
-                if (it.subtaskTitle == null) it.taskTitle else "${it.taskTitle} / ${it.subtaskTitle}"
-            } ?: state.activeSessions[id]?.let {
-                if (it.subtaskTitle == null) it.taskTitle else "${it.taskTitle} / ${it.subtaskTitle}"
-            } ?: "Задача"
-            val current = stats.taskTotalsMillis[id] ?: 0L
-            val old = previous.taskTotalsMillis[id] ?: 0L
-            val difference = current - old
-            Text("$title — ${formatSessionDuration(current)} ( ${if (difference >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(difference))} )")
+        data class BreakdownRow(
+            val id: Long,
+            val parentId: Long?,
+            val parentTitle: String,
+            val title: String
+        )
+        val rows = taskIds.map { id ->
+            val saved = state.sessions.firstOrNull { it.taskId == id }
+            val active = state.activeSessions[id]
+            val parentId = saved?.parentTaskId ?: active?.parentTaskId
+            val parentTitle = saved?.taskTitle ?: active?.taskTitle ?: "Задача"
+            val subtaskTitle = saved?.subtaskTitle ?: active?.subtaskTitle
+            BreakdownRow(id, parentId, parentTitle, subtaskTitle ?: parentTitle)
+        }
+        rows.groupBy { it.parentId ?: it.id }.values.forEach { group ->
+            val parentTitle = group.first().parentTitle
+            val currentGroup = group.sumOf { stats.taskTotalsMillis[it.id] ?: 0L }
+            val previousGroup = group.sumOf { previous.taskTotalsMillis[it.id] ?: 0L }
+            val groupDelta = currentGroup - previousGroup
+            Text(
+                "$parentTitle — ${formatSessionDuration(currentGroup)} ( ${if (groupDelta >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(groupDelta))} )",
+                style = MaterialTheme.typography.titleSmall
+            )
+            group.forEach { row ->
+                val current = stats.taskTotalsMillis[row.id] ?: 0L
+                val old = previous.taskTotalsMillis[row.id] ?: 0L
+                val difference = current - old
+                Text(
+                    "  ${row.title} — ${formatSessionDuration(current)} ( ${if (difference >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(difference))} )",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         Text("Изменение по дням", style = MaterialTheme.typography.titleSmall)
         val chartData = dailyTotals.filter { (day, _) ->
