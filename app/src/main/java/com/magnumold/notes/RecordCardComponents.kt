@@ -423,7 +423,7 @@ internal fun NoteRow(
             .onSizeChanged { onMeasuredHeight(it.height) }
     ) {
         Box(
-            Modifier.fillMaxWidth().heightIn(min = CardDimensions.sideRailMinHeight)
+            Modifier.fillMaxWidth().heightIn(min = CardDimensions.contentHeight)
                 .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
                     if (colorSwipeEnabled) {
                         var horizontalDistance = 0f
