@@ -171,6 +171,20 @@ internal fun NestedRecordCard(
 }
 
 @Composable
+internal fun NestedRecordRow(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = modifier.fillMaxWidth()
+            .padding(vertical = CardDimensions.nestedRowVerticalInset)
+            .heightIn(min = CardDimensions.nestedRowContentMinHeight),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
+
+@Composable
 internal fun DraggedNotesGroup(
     notes: List<Note>,
     dark: Boolean,
@@ -230,7 +244,7 @@ internal fun DragHandleIcon(
     )
     Canvas(
         modifier = modifier
-            .size(width = 16.dp, height = (spacing + 0.8f).dp)
+            .size(width = CardDimensions.handleVisualWidth, height = (spacing + 0.8f).dp)
             .pointerInput(compressed) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
