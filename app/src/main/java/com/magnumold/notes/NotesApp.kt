@@ -4,9 +4,7 @@ import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
@@ -24,9 +22,7 @@ internal fun NotesApp(
             val backupFileStore = remember(activity, timeTrackingRepository) {
                 BackupFileStore(activity.contentResolver) { timeTrackingRepository.load() }
             }
-            var timeTrackingState by remember(timeTrackingRepository) {
-                mutableStateOf(timeTrackingRepository.load())
-            }
+            val timeTrackingState by timeTrackingRepository.state.collectAsStateWithLifecycle()
             val themeState = remember(themeSettings, savedThemeMode, initialThemeColorSets) {
                 AppThemeState(
                     initialMode = savedThemeMode,
@@ -177,7 +173,6 @@ internal fun NotesApp(
                         timeTrackingState = timeTrackingState,
                         onTimeTrackingStateChange = { updated ->
                             timeTrackingRepository.save(updated)
-                            timeTrackingState = updated
                         },
                         onBack = {
                             if (!selected.hasContent()) recordsViewModel.removeActiveRecord(activeCollectionId, selected.id)
@@ -194,7 +189,6 @@ internal fun NotesApp(
                             )
                             if (updatedTimeState != timeTrackingState) {
                                 timeTrackingRepository.save(updatedTimeState)
-                                timeTrackingState = updatedTimeState
                             }
                             val index = activeNotes.indexOfFirst { it.id == changed.id }
                             if (index >= 0) recordsViewModel.updateActiveRecord(activeCollectionId, changed.copy(updated = now))
