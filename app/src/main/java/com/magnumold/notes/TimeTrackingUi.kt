@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -27,12 +28,12 @@ internal fun TimeTrackingSection(
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth()
-                .appPageHorizontalInsets()
-                .padding(top = AppSpacing.xxs, bottom = AppSpacing.xs),
+                .appPageHorizontalInsets(),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
+                    .height(AppLayoutContract.timeTrackingHeaderRowHeight),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
