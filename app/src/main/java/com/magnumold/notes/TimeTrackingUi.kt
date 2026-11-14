@@ -3,6 +3,8 @@ package com.magnumold.notes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
@@ -17,6 +19,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun TimeTrackingSection(
     title: String,
+    headerAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -26,14 +29,21 @@ internal fun TimeTrackingSection(
                 .padding(top = AppSpacing.xxs, bottom = AppSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
         ) {
-            Text(
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
                 title,
                 style = AppTypography.sectionLabelStyle().copy(
                     lineHeight = AppTypography.sectionLabelLineHeight,
                     fontWeight = FontWeight.Medium
                 ),
                 color = MaterialTheme.colorScheme.onSurface
-            )
+                )
+                headerAction?.invoke()
+            }
             content()
         }
         HorizontalDivider(
