@@ -75,7 +75,7 @@ internal fun TimeTrackingAnalyticsScreen(
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), thickness = CardDimensions.dividerThickness)
         if (tab == 0) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Рабочие сессии", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text("Рабочие сессии", style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium)
                 if (manualTaskId != null) {
                     TextButton(onClick = { adding = true }) { Text("Добавить") }
                 }
@@ -92,16 +92,16 @@ internal fun TimeTrackingAnalyticsScreen(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
                         ) {
-                                Text(session.subtaskTitle ?: session.taskTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                Text(session.subtaskTitle ?: session.taskTitle, style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
                                 if (session.subtaskTitle != null) {
                                     Text(session.taskTitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Text(
                                     "${formatSessionDate(session.startedAtMillis)} — ${formatSessionDate(session.endedAtMillis)}",
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = AppTypography.smallBodyStyle()
                                 )
-                                Text("Длительность: ${formatSessionDuration(session.durationMillis)}", style = MaterialTheme.typography.bodySmall)
-                                Text("Завершение: ${session.endReason.toRussianLabel()}", style = MaterialTheme.typography.bodySmall)
+                                Text("Длительность: ${formatSessionDuration(session.durationMillis)}", style = AppTypography.smallBodyStyle())
+                                Text("Завершение: ${session.endReason.toRussianLabel()}", style = AppTypography.smallBodyStyle())
                                 Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                                     TextButton(onClick = { editing = session }) { Text("Изменить") }
                                     TextButton(onClick = {
@@ -325,7 +325,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 label = { Text("По дату включительно") },
                 singleLine = true
             )
-            Text("Сравнить с другим периодом (необязательно)", style = MaterialTheme.typography.titleSmall)
+            Text("Сравнить с другим периодом (необязательно)", style = AppTypography.compactTitleStyle())
             OutlinedTextField(
                 value = compareStart,
                 onValueChange = { compareStart = it },
@@ -341,14 +341,14 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 singleLine = true
             )
         }
-        Text("Фактическое время", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        Text(formatSessionDuration(stats.totalMillis), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        Text("Фактическое время", style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
+        Text(formatSessionDuration(stats.totalMillis), style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium)
         Text("Рабочих сессий: ${stats.sessionCount}")
         Text(
             "По сравнению с предыдущим периодом: ${if (delta >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(delta))}",
             color = if (delta >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
-        Text("Изменение по задачам", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text("Изменение по задачам", style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
         val taskIds = (stats.taskTotalsMillis.keys + previous.taskTotalsMillis.keys).toSet()
         data class BreakdownRow(
             val id: Long,
@@ -371,7 +371,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
             val groupDelta = currentGroup - previousGroup
             Text(
                 "$parentTitle — ${formatSessionDuration(currentGroup)} ( ${if (groupDelta >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(groupDelta))} )",
-                style = MaterialTheme.typography.titleSmall
+                style = AppTypography.compactTitleStyle()
             )
             group.forEach { row ->
                 val current = stats.taskTotalsMillis[row.id] ?: 0L
@@ -383,7 +383,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 )
             }
         }
-        Text("Изменение по дням", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text("Изменение по дням", style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
         val chartData = dailyTotals.filter { (day, _) ->
             val dayStart = parseSessionDay(day) ?: 0L
             dayStart < range.second && dayStart + 86_400_000L > range.first
@@ -406,8 +406,8 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(chartData.first().first, style = MaterialTheme.typography.labelSmall)
-                Text(chartData.last().first, style = MaterialTheme.typography.labelSmall)
+                Text(chartData.first().first, style = AppTypography.smallLabelStyle())
+                Text(chartData.last().first, style = AppTypography.smallLabelStyle())
             }
         }
     }
