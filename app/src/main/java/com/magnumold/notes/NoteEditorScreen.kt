@@ -1,6 +1,11 @@
 package com.magnumold.notes
 
+import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -47,6 +52,10 @@ import kotlin.math.abs
 internal fun NoteEditor(
     note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, selectionColor: Color, autoFocus: Boolean,
     isTaskListItem: Boolean = false,
+    parentTaskId: Long? = null,
+    parentTaskTitle: String? = null,
+    timeTrackingState: TimeTrackingState = TimeTrackingState(),
+    onTimeTrackingStateChange: (TimeTrackingState) -> Unit = {},
     onBack: () -> Unit, onChange: (Note) -> Unit, onDelete: (Boolean) -> Unit, onShare: () -> Unit
 ) {
     val initialText = remember(note.id) { note.blocks.toPlainText() }
@@ -59,11 +68,29 @@ internal fun NoteEditor(
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
+    var timeAnalyticsVisible by remember(note.id) { mutableStateOf(false) }
+    var manualSessionDialogVisible by remember(note.id) { mutableStateOf(false) }
+    var subtaskMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
     var pendingDateMode by remember(note.id) { mutableStateOf(note.dateMode ?: RecordDateMode.DATE) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = note.dateAt)
+    val ringtonePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val pickedUri = result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        val soundUri = pickedUri?.toString()
+        val soundEnabled = pickedUri != null
+        onTimeTrackingStateChange(
+            timeTrackingState.copy(
+                soundUri = soundUri,
+                soundEnabled = soundEnabled,
+                protectionTimer = timeTrackingState.protectionTimer?.copy(
+                    soundUri = soundUri,
+                    soundEnabled = soundEnabled
+                )
+            )
+        )
+    }
     LaunchedEffect(note.id, note.dateAt) {
         datePickerState.selectedDateMillis = note.dateAt
     }
@@ -117,6 +144,11 @@ internal fun NoteEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
             addButtonColor = addButtonColor, selectionColor = selectionColor,
             autoFocus = selectedChild.id == autoFocusChildId, isTaskListItem = true,
+            parentTaskId = note.id,
+            parentTaskTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" },
+            timeTrackingState = timeTrackingState,
+            onTimeTrackingStateChange = onTimeTrackingStateChange,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
@@ -142,7 +174,22 @@ internal fun NoteEditor(
         )
         return
     }
- 
+
+    if (timeAnalyticsVisible) {
+        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+        TimeTrackingAnalyticsScreen(
+            state = timeTrackingState,
+            onStateChange = onTimeTrackingStateChange,
+            onBack = { timeAnalyticsVisible = false },
+            manualTaskId = if (isTaskListItem) note.id else null,
+            manualParentTaskId = parentTaskId,
+            manualTaskTitle = if (isTaskListItem) parentTaskTitle ?: "Задача" else currentTitle,
+            manualSubtaskTitle = if (isTaskListItem) currentTitle else null
+        )
+        return
+    }
+
     fun resetChildDrag() {
         childReorderSession = null
         childDragBaseRows = emptyMap()
@@ -210,7 +257,7 @@ internal fun NoteEditor(
         publish(changed)
     }
 
-    Scaffold(
+    AppPageScaffold(
         modifier = Modifier.fillMaxSize().imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -224,17 +271,38 @@ internal fun NoteEditor(
                     selectedCount = selectedChildIds.size,
                     onClearSelection = { selectedChildIds = emptySet() },
                     onDelete = { onDelete(false) },
+                    onOpenStatistics = { timeAnalyticsVisible = true },
                     onShare = onShare,
                     onChange = onChange
                 )
             } else {
-                TopAppBar(
-                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
-                    navigationIcon = {},
+                AppEditorTopBar(
+                    title = if (isTaskListItem) "Подзадача" else "Заметка",
                     actions = {
                         if (isTaskListItem) {
-                            IconButton(onClick = { taskDetailsExpanded = !taskDetailsExpanded }) {
-                                Icon(Icons.Outlined.MoreVert, contentDescription = if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус")
+                            Box {
+                                IconButton(onClick = { subtaskMenuExpanded = true }) {
+                                    Icon(Icons.Outlined.MoreVert, contentDescription = "Действия")
+                                }
+                                DropdownMenu(
+                                    expanded = subtaskMenuExpanded,
+                                    onDismissRequest = { subtaskMenuExpanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            taskDetailsExpanded = !taskDetailsExpanded
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("История и статистика") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            timeAnalyticsVisible = true
+                                        }
+                                    )
+                                }
                             }
                         }
                         if (!isTaskListItem && note.type != RecordType.NOTE) {
@@ -269,13 +337,7 @@ internal fun NoteEditor(
                         IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
                         if (!isTaskListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarColor,
-                        scrolledContainerColor = topBarColor,
-                        navigationIconContentColor = noteTextColor(topBarColor),
-                        titleContentColor = noteTextColor(topBarColor),
-                        actionIconContentColor = noteTextColor(topBarColor)
-                    )
+                    backgroundColor = topBarColor
                 )
             }
         },
@@ -305,7 +367,7 @@ internal fun NoteEditor(
                             requireUnconsumed = false,
                             pass = PointerEventPass.Initial
                         )
-                        val handleWidth = 40.dp.toPx()
+                        val handleWidth = AppRowDimensions.controlTouchTarget.toPx()
                         if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx() + AppSpacing.screenHorizontal.toPx()) ||
                             childReorderSession != null
                         ) return@awaitEachGesture
@@ -314,7 +376,7 @@ internal fun NoteEditor(
                             down.position.y >= it.offset &&
                                 down.position.y < it.offset + it.size
                         } ?: return@awaitEachGesture
-                        val handleHeight = 40.dp.toPx()
+                        val handleHeight = AppRowDimensions.controlTouchTarget.toPx()
                         val handleTop = item.offset + (item.size - handleHeight) / 2f
                         if (down.position.y < handleTop || down.position.y > handleTop + handleHeight) {
                             return@awaitEachGesture
@@ -395,8 +457,8 @@ internal fun NoteEditor(
                         }
                     }
                 },
-            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else 4.dp),
-            contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
+            verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
+            contentPadding = AppPageLayout.editorListContentPadding
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 // Keep the first purchase row from becoming LazyColumn's viewport anchor
@@ -405,35 +467,122 @@ internal fun NoteEditor(
                     Spacer(Modifier.height(1.dp))
                 }
             }
+            if (note.type == RecordType.TASK) {
+                if (isTaskListItem) {
+                    item(key = "work_time_controls") {
+                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+                        WorkTimeControls(
+                            taskId = note.id,
+                            state = timeTrackingState,
+                            status = note.recordStatus(),
+                            onStatusChange = { nextStatus ->
+                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                                    nextStatus != RecordStatus.MISSED
+                                onChange(note.copy(
+                                    status = nextStatus,
+                                    deadlineResumeOverride = resumingMissed
+                                ))
+                            },
+                            onAddManualSession = { manualSessionDialogVisible = true }
+                        )
+                    }
+                }
+                if (isTaskListItem) {
+                    item(key = "protection_timer") {
+                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+                        ProtectionTimerControls(
+                            taskId = note.id,
+                            taskTitle = parentTaskTitle ?: "Задача",
+                            subtaskTitle = currentTitle,
+                            parentTaskId = parentTaskId,
+                            state = timeTrackingState,
+                            onStateChange = onTimeTrackingStateChange,
+                            onChooseSound = {
+                                val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Выберите сигнал")
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                                    putExtra(
+                                        RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                        timeTrackingState.soundUri?.let(Uri::parse)
+                                            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                                    )
+                                }
+                                ringtonePicker.launch(intent)
+                            }
+                        )
+                    }
+                }
+            }
+            if (note.type == RecordType.TASK && !isTaskListItem) {
+                item(key = "parent_work_time_summary") {
+                    ParentWorkTimeSummary(
+                        parentTaskId = note.id,
+                        state = timeTrackingState,
+                    )
+                }
+            }
             if (note.type != RecordType.NOTE &&
                 (note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal),
-                        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                        modifier = Modifier.fillMaxWidth()
+                            .appPageHorizontalInsets(),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                     ) {
                         if (note.titleEnabled && isTaskListItem) {
-                            OutlinedTextField(
+                            BasicTextField(
                                 value = note.titleText,
                                 onValueChange = { onChange(note.copy(titleText = it)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Название") },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.taskTitleMinHeight),
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                                textStyle = AppTypography.screenTitleStyle().copy(color = MaterialTheme.colorScheme.onSurface),
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                                decorationBox = { inner ->
+                                    Box(contentAlignment = Alignment.CenterStart) {
+                                        if (note.titleText.isEmpty()) {
+                                            Text(
+                                                "Название",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                                                style = AppTypography.screenTitleStyle()
+                                            )
+                                        }
+                                        inner()
+                                    }
+                                }
                             )
                         }
                         if (note.descriptionEnabled) {
-                            OutlinedTextField(
+                            BasicTextField(
                                 value = note.descriptionText,
                                 onValueChange = { onChange(note.copy(descriptionText = it)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Описание") },
-                                minLines = 2
+                                modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.descriptionMinHeight),
+                                textStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface),
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                                decorationBox = { inner ->
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.descriptionMinHeight),
+                                        contentAlignment = Alignment.TopStart
+                                    ) {
+                                        if (note.descriptionText.isEmpty()) {
+                                            Text(
+                                                "Описание",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                                                style = AppTypography.bodyStyle()
+                                            )
+                                        }
+                                        inner()
+                                    }
+                                }
                             )
                         }
                         if (isTaskListItem && taskDetailsExpanded) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                                 Spacer(Modifier.weight(1f))
                                 Box {
                                     TextButton(onClick = { dateModeMenuExpanded = true }) {
@@ -475,31 +624,20 @@ internal fun NoteEditor(
                 if (isTaskListItem && taskDetailsExpanded) {
                     item(key = "record_status") {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.xs),
+                            modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                             Spacer(Modifier.weight(1f))
-                            Box {
-                                TextButton(onClick = { statusMenuExpanded = true }) {
-                                    Text(recordStatusText(note.recordStatus()))
+                            Text(
+                                recordStatusText(note.recordStatus()),
+                                color = when (note.recordStatus()) {
+                                    RecordStatus.IN_PROGRESS -> Color(0xFF4CAF50)
+                                    RecordStatus.PAUSED -> Color(0xFFFF9800)
+                                    RecordStatus.COMPLETED -> Color(0xFF2196F3)
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 }
-                                DropdownMenu(
-                                    expanded = statusMenuExpanded,
-                                    onDismissRequest = { statusMenuExpanded = false }
-                                ) {
-                                    RecordStatus.values().forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(recordStatusText(status)) },
-                                            onClick = {
-                                                statusMenuExpanded = false
-                                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
-                                            }
-                                        )
-                                    }
-                                }
-                            }
+                            )
                         }
                     }
                 }
@@ -513,11 +651,7 @@ internal fun NoteEditor(
                         keyboardController?.show()
                     }
                 }
-                val editorTextStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp
-                )
+                val editorTextStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface)
                 BasicTextField(
                     value = fieldValue,
                     onValueChange = {
@@ -525,9 +659,9 @@ internal fun NoteEditor(
                         updateText(it.text)
                     },
                     modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = AppSpacing.screenHorizontal)
+                        .appPageHorizontalInsets()
                         .focusRequester(bodyFocusRequester)
-                        .heightIn(min = 160.dp)
+                        .heightIn(min = AppEditorDimensions.bodyMinHeight)
                         .onFocusChanged { state ->
                             if (!state.isFocused && editingBlockId == editorBlockId) editingBlockId = null
                         },
@@ -535,7 +669,7 @@ internal fun NoteEditor(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
                         Box(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.bodyMinHeight),
                             contentAlignment = Alignment.TopStart
                         ) {
                             if (fieldValue.text.isEmpty()) {
@@ -557,9 +691,9 @@ internal fun NoteEditor(
                     item(key = "empty_nested_tasks") {
                         Text(
                             "Пока нет задач",
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
+                            modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp
+                            style = AppTypography.sectionLabelStyle()
                         )
                     }
                 }
@@ -576,7 +710,7 @@ internal fun NoteEditor(
                         if (group) {
                             Box(
                                 modifier = Modifier.fillMaxWidth()
-                                    .heightIn(min = CardDimensions.nestedGroupMinHeight),
+                                    .heightIn(min = CardDimensions.nestedRowMinHeight),
                                 contentAlignment = Alignment.CenterStart
                             ) {
                                 MainCardHeader(
@@ -592,39 +726,9 @@ internal fun NoteEditor(
                             val childSelected = child.id in selectedChildIds
                             val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             val dragHandleColor = childTextColor
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .background(Color.Transparent)
-                                    .padding(vertical = AppSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
-                                Box {
-                                    Box(Modifier.size(40.dp).clickable { childStatusMenuExpanded = true },
-                                        contentAlignment = Alignment.Center) {
-                                        TaskStatusMarker(childStatus)
-                                    }
-                                    DropdownMenu(
-                                        expanded = childStatusMenuExpanded,
-                                        onDismissRequest = { childStatusMenuExpanded = false }
-                                    ) {
-                                        RecordStatus.values().forEach { status ->
-                                            DropdownMenuItem(
-                                                text = { Text(recordStatusText(status)) },
-                                                onClick = {
-                                                    childStatusMenuExpanded = false
-                                                    val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                    val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
-                                                    latestTaskOnChange.value(
-                                                        withUpdatedRecordChildren(latestTaskNote.value,
-                                                            latestTaskChildren.value.map { if (it.id == child.id) changed else it })
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                                Spacer(Modifier.width(4.dp))
+                            NestedRecordRow {
+                                TaskStatusMarker(status = childStatus)
+                                Spacer(Modifier.width(AppRowDimensions.taskStatusToTextGap))
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
@@ -641,12 +745,11 @@ internal fun NoteEditor(
                                         )
                                     },
                                     color = childTextColor,
-                                    fontSize = 16.sp,
-                                    lineHeight = 24.sp,
+                                    style = AppTypography.cardPreviewStyle(),
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
-                                Spacer(Modifier.width(22.dp))
+                                Spacer(Modifier.width(AppRowDimensions.taskTextToHandleGap))
                                 DragHandleIcon(color = dragHandleColor)
                             }
                         }
@@ -678,5 +781,22 @@ internal fun NoteEditor(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+    if (manualSessionDialogVisible && isTaskListItem) {
+        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+        AddWorkSessionDialog(
+            taskId = note.id,
+            parentTaskId = parentTaskId,
+            taskTitle = parentTaskTitle ?: "Задача",
+            subtaskTitle = currentTitle,
+            onDismiss = { manualSessionDialogVisible = false },
+            onSave = { session ->
+                onTimeTrackingStateChange(
+                    TimeTrackingEngine.addManualSession(timeTrackingState, session)
+                )
+                manualSessionDialogVisible = false
+            }
+        )
     }
 }

@@ -1,15 +1,74 @@
 package com.magnumold.notes
 
+import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
 
 class MainActivity : ComponentActivity() {
+    private lateinit var recordsViewModel: NotesViewModel
+    private lateinit var timeTrackingRepository: TimeTrackingRepository
+    private var lastExternalTaskStatusUpdate: Long = 0L
+    private val taskStatusReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (::recordsViewModel.isInitialized &&
+                intent?.action == ProtectionTimerContract.ACTION_TASK_STATUS_CHANGED
+            ) {
+                recordsViewModel.refreshFromRepository()
+                lastExternalTaskStatusUpdate = getPreferences(Context.MODE_PRIVATE)
+                    .getLong("external_task_status_update", lastExternalTaskStatusUpdate)
+                if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(ProtectionTimerContract.ACTION_TASK_STATUS_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(taskStatusReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(taskStatusReceiver, filter)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::recordsViewModel.isInitialized) {
+            val marker = getPreferences(Context.MODE_PRIVATE)
+                .getLong("external_task_status_update", lastExternalTaskStatusUpdate)
+            if (marker > lastExternalTaskStatusUpdate) {
+                recordsViewModel.refreshFromRepository()
+                lastExternalTaskStatusUpdate = marker
+            }
+        }
+        if (::timeTrackingRepository.isInitialized) {
+            timeTrackingRepository.reload()
+            timeTrackingRepository.load().protectionTimer?.let {
+                ProtectionTimerScheduler(this).schedule(it)
+            }
+        }
+    }
+
+    override fun onStop() {
+        unregisterReceiver(taskStatusReceiver)
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_PERMISSION_REQUEST)
+        }
         val initialDark = getPreferences(Context.MODE_PRIVATE).getBoolean("dark_v2", true)
         val savedThemeMode = getPreferences(Context.MODE_PRIVATE).getString("theme_mode", null)
             ?.takeIf { it in listOf("light", "dark", "custom") } ?: if (initialDark) "dark" else "light"
@@ -22,11 +81,18 @@ class MainActivity : ComponentActivity() {
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
-        val recordsViewModel = ViewModelProvider(this, NotesViewModelFactory(repository))[NotesViewModel::class.java]
+        lastExternalTaskStatusUpdate = getPreferences(Context.MODE_PRIVATE)
+            .getLong("external_task_status_update", 0L)
+        timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
+        recordsViewModel = ViewModelProvider(
+            this,
+            NotesViewModelFactory(repository, timeTrackingRepository)
+        )[NotesViewModel::class.java]
         setContent {
             NotesApp(
                 activity = this@MainActivity,
                 recordsViewModel = recordsViewModel,
+                timeTrackingRepository = timeTrackingRepository,
                 savedThemeMode = savedThemeMode,
                 initialThemeColorSets = initialThemeColorSets
             )
@@ -39,4 +105,7 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent.createChooser(intent, "Поделиться заметкой"))
     }
 
+    private companion object {
+        const val NOTIFICATION_PERMISSION_REQUEST = 7433
+    }
 }

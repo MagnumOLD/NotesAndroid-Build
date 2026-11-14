@@ -60,14 +60,6 @@ internal fun NotesHome(
     var renameCollectionName by remember { mutableStateOf("") }
     var deleteCollectionId by remember { mutableStateOf<Long?>(null) }
     var createMenuExpanded by remember { mutableStateOf(false) }
-    var deadlineClock by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(60_000L)
-            deadlineClock = System.currentTimeMillis()
-        }
-    }
-
     var draggingIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var dragBaseRows by remember { mutableStateOf<Map<String, DragRow>>(emptyMap()) }
     var reorderSession by remember { mutableStateOf<ReorderSession?>(null) }
@@ -145,18 +137,18 @@ internal fun NotesHome(
         onFinishDrag = { finishDrag() }
     )
 
-    Scaffold(
+    AppPageScaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(color = homeBarColor, contentColor = homeContentColor) {
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.statusBars)
-                        .height(64.dp)
+                        .height(AppPageLayout.toolbarHeight)
                         .padding(start = AppSpacing.screenHorizontal, end = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically                ) {
                     if (selectionMode) {
-                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                        Text("${selectedNoteIds.size} выбрано", style = AppTypography.screenTitleStyle())
                         Spacer(Modifier.weight(1f))
                         val allSelectedPinned = notes.filter { it.id in selectedNoteIds }.all { it.pinned }
                         IconButton(onClick = { onTogglePinned(selectedNoteIds) }) {
@@ -182,7 +174,7 @@ internal fun NotesHome(
                         }
                         IconButton(onClick = { showDeleteConfirmation = true }) { AppIcon(NoteIcon.Trash, contentDescription = "Удалить выбранные заметки") }
                     } else {
-                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                        Text("Заметки", style = AppTypography.screenTitleStyle())
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onToggleSearch) {
                             AppIcon(if (searchVisible) NoteIcon.Close else NoteIcon.Search, contentDescription = "Поиск")
@@ -236,18 +228,18 @@ internal fun NotesHome(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            Row(Modifier.fillMaxWidth().height(48.dp).padding(start = AppSpacing.screenHorizontal, end = AppSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(AppCollectionRowDimensions.height).padding(start = AppSpacing.screenHorizontal, end = AppSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).fillMaxHeight().horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.lg)) {
                     Text("Все",
                         color = if (activeCollectionId == null) themeColors.collectionText else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp, fontWeight = if (activeCollectionId == null) FontWeight.SemiBold else FontWeight.Normal,
+                        style = AppTypography.sectionLabelStyle(), fontWeight = if (activeCollectionId == null) FontWeight.SemiBold else FontWeight.Normal,
                         modifier = Modifier.pointerInput(activeCollectionId) { detectTapGestures(onTap = { onSelectCollection(null); selectedNoteIds = emptySet() }) })
                     collections.forEach { collection ->
                         Box {
                             Text(collection.name,
                                 color = if (activeCollectionId == collection.id) themeColors.collectionText else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp, fontWeight = if (activeCollectionId == collection.id) FontWeight.SemiBold else FontWeight.Normal,
+                                style = AppTypography.sectionLabelStyle(), fontWeight = if (activeCollectionId == collection.id) FontWeight.SemiBold else FontWeight.Normal,
                                 maxLines = 1,
                                 modifier = Modifier.pointerInput(collection.id, activeCollectionId) {
                                     detectTapGestures(onTap = { onSelectCollection(collection.id); selectedNoteIds = emptySet() },
@@ -334,7 +326,7 @@ internal fun NotesHome(
                                 // Hit-test the handle in viewport coordinates. This listener
                                 // remains attached while the keyed row changes its list position.
                                 val handleRight = size.width - CardDimensions.handleHitTargetRightInset.toPx()
-                                val handleLeft = handleRight - 40.dp.toPx()
+                                val handleLeft = handleRight - CardDimensions.handleTouchTargetSize.toPx()
                                 if (down.position.x < handleLeft ||
                                     down.position.x > handleRight
                                 ) return@awaitEachGesture
@@ -461,7 +453,6 @@ internal fun NotesHome(
                                     NoteRow(
                                         note = note, dark = dark, noteColors = noteColors,
                                         customSelectionColor = selectedNoteBackground, pinned = note.pinned, selected = isSelected,
-                                        statusNow = deadlineClock,
                                         onClick = {
                                             if (selectionMode) selectedNoteIds = if (isSelected) selectedNoteIds - note.id else selectedNoteIds + note.id
                                             else onOpen(note.id)
@@ -484,7 +475,7 @@ internal fun NotesHome(
                                     Box(
                                         Modifier.align(Alignment.TopEnd)
                                             .padding(top = CardDimensions.handleHitTargetTopOffset, end = CardDimensions.handleHitTargetRightInset)
-                                            // Keep the touch target centered on the first title line.
+                                            // Match the top control slot in the right-side card rail.
                                             .size(CardDimensions.handleTouchTargetSize)
                                             .zIndex(2f)
 

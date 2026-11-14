@@ -190,22 +190,20 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = themeColors.topBar, contentColor = noteTextColor(themeColors.topBar)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
-                        .height(64.dp).padding(start = AppSpacing.toolbarControlInset, end = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            AppPageTopBar(
+                backgroundColor = themeColors.topBar,
+                navigationIcon = {
                     IconButton(onClick = { if (personalizationVisible) personalizationVisible = false else onBack() }) {
                         AppIcon(NoteIcon.Back, contentDescription = "Назад")
                     }
+                },
+                title = {
                     Text(
                         if (personalizationVisible) "Персонализация" else "Настройки",
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 18.sp
+                        style = AppTypography.screenTitleStyle()
                     )
                 }
-            }
+            )
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
@@ -317,7 +315,7 @@ private fun CompactOpacitySlider(value: Float, onValueChange: (Float) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Прозрачность", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text("Прозрачность", style = AppTypography.sectionLabelStyle(), color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(AppSpacing.sm))
         Canvas(
             modifier = Modifier.weight(1f).height(28.dp)
@@ -358,7 +356,7 @@ private fun CompactOpacitySlider(value: Float, onValueChange: (Float) -> Unit) {
         Spacer(Modifier.width(AppSpacing.xs))
         Text(
             "${(value.coerceIn(0f, 1f) * 100f).roundToInt()}%",
-            fontSize = 12.sp,
+            style = AppTypography.metadataStyle(),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -378,21 +376,19 @@ private fun ThemeColorEditorScreen(
         catch (_: Exception) { null }
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
-        Surface(color = topBarColor, contentColor = noteTextColor(topBarColor)) {
-            Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                Text(title, fontWeight = FontWeight.Medium, fontSize = 18.sp)
-            }
-        }
+        AppPageTopBar(
+            backgroundColor = topBarColor,
+            navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+            title = { Text(title, style = AppTypography.screenTitleStyle()) }
+        )
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.screenVertical),
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
-                    Text(title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(title, style = AppTypography.sectionHeadingStyle())
+                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
             Text("Палитра", fontWeight = FontWeight.Medium)
@@ -445,22 +441,20 @@ private fun NoteColorEditorScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = topBarColor, contentColor = noteTextColor(topBarColor)) {
-                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text("Изменение цвета", fontWeight = FontWeight.Medium, fontSize = 18.sp)
-                }
-            }
+            AppPageTopBar(
+                backgroundColor = topBarColor,
+                navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+                title = { Text("Изменение цвета", style = AppTypography.screenTitleStyle()) }
+            )
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.screenVertical),
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
-                    Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], style = AppTypography.sectionHeadingStyle())
+                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
             Text("Палитра", fontWeight = FontWeight.Medium)

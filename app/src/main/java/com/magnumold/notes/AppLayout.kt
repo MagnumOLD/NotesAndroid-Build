@@ -1,54 +1,360 @@
 package com.magnumold.notes
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+/**
+ * Canonical layout contract derived from the approved NotesHome screen.
+ *
+ * Keep these values as the single source of truth for shared geometry.
+ * Screen-specific components may expose semantic aliases, but must not
+ * redefine the underlying measurements independently.
+ *
+ * NotesHome intentionally remains unchanged while this contract is introduced:
+ * its current literal dimensions match these values exactly.
+ */
+internal object AppLayoutContract {
+    // Base spacing scale.
+    val space2xs = 4.dp
+    val spaceXs = 8.dp
+    val spaceSm = 12.dp
+    val spaceMd = 16.dp
+    val spaceLg = 20.dp
+    val spaceXl = 24.dp
+    val space2xl = 32.dp
+
+    // Main page guides and toolbar geometry.
+    val pageHorizontalInset = spaceLg
+    val pageVerticalInset = spaceMd
+    val toolbarLeadingInset = pageHorizontalInset
+    val toolbarActionInset = space2xs
+    val toolbarHeight = 64.dp
+
+    // Main list geometry from the approved NotesHome layout.
+    val collectionRowHeight = 48.dp
+    val mainCardMinHeight = 88.dp
+    val mainCardVerticalInset = spaceMd
+    val mainCardTextSize = 16.sp
+    val pageTitleSize = 18.sp
+    val collectionLabelSize = 14.sp
+
+    // Typography roles shared by all features.
+    val editorTitleSize = 18.sp
+    val sectionHeadingSize = 17.sp
+    val bodyTextSize = 16.sp
+    val cardPreviewLineHeight = 22.sp
+    val helperTextSize = 13.sp
+    val bodyLineHeight = 24.sp
+    val sectionLabelSize = collectionLabelSize
+    val sectionLabelLineHeight = 24.sp
+    val metadataTextSize = 12.sp
+
+    // Semantic editor geometry.
+    val editorTitleMinHeight = 48.dp
+    val editorDescriptionMinHeight = 72.dp
+    val editorBodyMinHeight = 160.dp
+
+    // Shared row geometry; gaps remain role-specific.
+    val controlTouchTarget = 40.dp
+    val statusGlyphSlot = 22.dp
+    val taskStatusToTextGap = 9.dp
+    val taskTextToHandleGap = 22.dp
+    val purchaseTextToCheckboxGap = 12.dp
+    val purchaseCheckboxToHandleGap = 14.dp
+    val nestedRowVerticalInset = spaceMd
+    // Padding is outside the height constraint, so 56.dp content + 16.dp
+    // top/bottom insets gives the same 88.dp outer minimum as the home note card.
+    val nestedRowContentMinHeight = mainCardMinHeight - nestedRowVerticalInset * 2f
+    val nestedRowMinHeight = nestedRowContentMinHeight + nestedRowVerticalInset * 2f
+
+    // Main-card geometry.
+    val mainCardDividerThickness = 1.dp
+    val mainCardHeaderFirstLineHeight = 22.dp
+    val dragHandleVisualWidth = 16.dp
+    val nestedGroupMinHeight = nestedRowMinHeight
+
+    // Primary add control geometry.
+    val primaryAddButtonDiameter = 56.dp
+    val primaryAddButtonVerticalOffset = (-65).dp
+}
 
 /** Shared geometry for every primary circular add button. */
 internal object PrimaryAddButtonDimensions {
-    val diameter = 56.dp
-    val verticalOffset = (-65).dp
+    val diameter = AppLayoutContract.primaryAddButtonDiameter
+    val verticalOffset = AppLayoutContract.primaryAddButtonVerticalOffset
 }
 
+/**
+ * Compatibility names for existing screens.
+ * New layout code should prefer AppLayoutContract or semantic dimensions below.
+ */
 internal object AppSpacing {
-    val xxs = 4.dp
-    val xs = 8.dp
-    val sm = 12.dp
-    val md = 16.dp
-    val lg = 20.dp
-    val xl = 24.dp
-    val xxl = 32.dp
+    val xxs = AppLayoutContract.space2xs
+    val xs = AppLayoutContract.spaceXs
+    val sm = AppLayoutContract.spaceSm
+    val md = AppLayoutContract.spaceMd
+    val lg = AppLayoutContract.spaceLg
+    val xl = AppLayoutContract.spaceXl
+    val xxl = AppLayoutContract.space2xl
 
-    val screenHorizontal = lg
-    val screenVertical = md
-    val toolbarControlInset = xxs
+    val screenHorizontal = AppLayoutContract.pageHorizontalInset
+    val screenVertical = AppLayoutContract.pageVerticalInset
+    val toolbarControlInset = AppLayoutContract.toolbarActionInset
     // Material3 ListItem has a 16.dp default content inset; 4.dp outside
     // aligns its visible content with the app's 20.dp page guide.
     val settingsListItemOuterInset = xxs
 }
 
+/**
+ * App-wide typography tokens. Screen-specific hierarchy may differ, but the
+ * underlying sizes and line heights are defined here rather than duplicated.
+ */
+internal object AppTypography {
+    val screenTitle = AppLayoutContract.pageTitleSize
+    val editorTitle = AppLayoutContract.editorTitleSize
+    val sectionHeading = AppLayoutContract.sectionHeadingSize
+    val body = AppLayoutContract.bodyTextSize
+    val cardPreview = AppLayoutContract.mainCardTextSize
+    val cardPreviewLineHeight = AppLayoutContract.cardPreviewLineHeight
+    val helper = AppLayoutContract.helperTextSize
+    val bodyLineHeight = AppLayoutContract.bodyLineHeight
+    val sectionLabel = AppLayoutContract.sectionLabelSize
+    val sectionLabelLineHeight = AppLayoutContract.sectionLabelLineHeight
+    val metadata = AppLayoutContract.metadataTextSize
 
+    // Semantic text styles are aliases of the app-wide Material typography.
+    // This keeps screen code from rebuilding equivalent TextStyle values.
+    @Composable
+    fun screenTitleStyle(): TextStyle = MaterialTheme.typography.titleLarge
+
+    @Composable
+    fun editorTitleStyle(): TextStyle = MaterialTheme.typography.titleLarge
+
+    @Composable
+    fun sectionHeadingStyle(): TextStyle =
+        MaterialTheme.typography.bodyLarge.copy(fontSize = sectionHeading, fontWeight = FontWeight.Medium)
+
+    @Composable
+    fun bodyStyle(): TextStyle = MaterialTheme.typography.bodyLarge
+
+    @Composable
+    fun cardPreviewStyle(): TextStyle =
+        MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight, fontWeight = FontWeight.Medium)
+
+    @Composable
+    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel, lineHeight = sectionLabelLineHeight)
+
+    @Composable
+    fun helperStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = helper)
+
+    @Composable
+    fun compactBodyStyle(): TextStyle = MaterialTheme.typography.bodyMedium
+
+    @Composable
+    fun smallBodyStyle(): TextStyle = MaterialTheme.typography.bodySmall
+
+    @Composable
+    fun compactTitleStyle(): TextStyle = MaterialTheme.typography.titleSmall
+
+    @Composable
+    fun smallLabelStyle(): TextStyle = MaterialTheme.typography.labelSmall
+
+    @Composable
+    fun metadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = metadata)
+}
+
+/** Semantic dimensions for the common page and list structures. */
+internal object AppPageLayout {
+    // Keep editor list rhythm identical in normal and multi-selection states.
+    val editorListItemSpacing = AppSpacing.xxs
+    val editorListContentPadding = PaddingValues(
+        top = AppSpacing.sm,
+        bottom = AppSpacing.lg
+    )
+    val standardListContentPadding = PaddingValues(vertical = AppSpacing.xs)
+    val toolbarHeight = AppLayoutContract.toolbarHeight
+}
+
+/** Semantic minimum sizes used inside record editors; visual values stay unchanged. */
+internal object AppEditorDimensions {
+    val taskTitleMinHeight = AppLayoutContract.editorTitleMinHeight
+    val descriptionMinHeight = AppLayoutContract.editorDescriptionMinHeight
+    val bodyMinHeight = AppLayoutContract.editorBodyMinHeight
+}
+
+internal object AppCollectionRowDimensions {
+    val height = AppLayoutContract.collectionRowHeight
+}
+
+/** Shared row geometry; leading/trailing controls may differ by row semantics. */
+internal object AppRowDimensions {
+    val statusGlyphSlot = AppLayoutContract.statusGlyphSlot
+    val controlTouchTarget = AppLayoutContract.controlTouchTarget
+    val taskStatusToTextGap = AppLayoutContract.taskStatusToTextGap
+    val taskTextToHandleGap = AppLayoutContract.taskTextToHandleGap
+    val purchaseTextToCheckboxGap = AppLayoutContract.purchaseTextToCheckboxGap
+    val purchaseCheckboxTouchTarget = AppLayoutContract.controlTouchTarget
+    val purchaseCheckboxToHandleGap = AppLayoutContract.purchaseCheckboxToHandleGap
+}
+
+@Composable
+internal fun AppToolbarSurface(
+    backgroundColor: Color,
+    startInset: Dp = AppLayoutContract.toolbarLeadingInset,
+    endInset: Dp = AppLayoutContract.toolbarActionInset,
+    content: @Composable RowScope.() -> Unit
+) {
+    Surface(
+        color = backgroundColor,
+        contentColor = noteTextColor(backgroundColor)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .height(AppPageLayout.toolbarHeight)
+                .padding(start = startInset, end = endInset),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
+    }
+}
+
+/**
+ * Shared page frame. Feature screens provide content and actions; this layer
+ * owns the common Scaffold contract without taking ownership of feature state.
+ */
+@Composable
+internal fun AppPageScaffold(
+    modifier: Modifier = Modifier,
+    containerColor: Color,
+    topBar: @Composable () -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit
+) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = containerColor,
+        topBar = topBar,
+        floatingActionButton = floatingActionButton,
+        content = content
+    )
+}
+
+/**
+ * Shared top-bar surface and Material3 behavior for page-level headers.
+ * Feature-specific title fields and actions remain supplied through slots.
+ */
+@Composable
+internal fun AppPageTopBar(
+    backgroundColor: Color,
+    title: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
+    navigationIcon: @Composable () -> Unit = {}
+) {
+    AppToolbarSurface(backgroundColor = backgroundColor) {
+        navigationIcon()
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            title()
+        }
+        actions()
+    }
+}
+
+@Composable
+internal fun AppEditorTopBar(
+    title: String,
+    backgroundColor: Color,
+    actions: @Composable RowScope.() -> Unit
+) {
+    AppPageTopBar(
+        backgroundColor = backgroundColor,
+        title = {
+            Text(
+                title,
+                style = AppTypography.screenTitleStyle()
+            )
+        },
+        actions = actions
+    )
+}
+
+internal fun Modifier.appPageHorizontalInsets(): Modifier =
+    padding(horizontal = AppSpacing.screenHorizontal)
+
+internal fun Modifier.appPageVerticalInsets(): Modifier =
+    padding(vertical = AppSpacing.screenVertical)
+
+internal fun Modifier.appPageContentInsets(): Modifier =
+    padding(
+        horizontal = AppSpacing.screenHorizontal,
+        vertical = AppSpacing.screenVertical
+    )
 
 /**
  * Shared main-list card dimensions.
  * contentHeight is a minimum; long first lines can increase the measured row height.
  */
 internal object CardDimensions {
-    val contentHeight = 88.dp
-    val dividerThickness = 1.dp
+    val contentHeight = AppLayoutContract.mainCardMinHeight
+    val dividerThickness = AppLayoutContract.mainCardDividerThickness
     val rowHeight = contentHeight + dividerThickness
 
-    // Align the visible handle with the first 22dp title line.
+    // Align the visible handle with the first title line.
     // Keep a 40dp touch target centered on that visual position.
-    val headerFirstLineHeight = 22.dp
-    val handleTouchTargetSize = 40.dp
+    val headerFirstLineHeight = AppLayoutContract.mainCardHeaderFirstLineHeight
+    val handleTouchTargetSize = AppLayoutContract.controlTouchTarget
     val handleHitTargetTopOffset =
         AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f
     // Keep the 40dp hit target centered on the handle, whose right edge now
     // aligns directly with the card metadata/date guide.
-    val handleHitTargetRightInset = AppSpacing.screenHorizontal - 12.dp
-    // Nested glyphs end at the row edge; center the 40.dp hit target on the 16.dp glyph.
-    val nestedHandleHitTargetRightOverhang = 12.dp
-    val nestedGroupMinHeight = 72.dp
+    val handleVisualWidth = AppLayoutContract.dragHandleVisualWidth
+    val handleHitTargetRightInset =
+        AppSpacing.screenHorizontal - (handleTouchTargetSize - handleVisualWidth) / 2f
+    // The side rail shares the drag target's visual center while keeping its
+    // controls compact and reserving only the width needed by the rail.
+    val sideRailWidth = 32.dp
+    val sideRailControlSize = 28.dp
+    val sideRailTopInset =
+        handleHitTargetTopOffset + (handleTouchTargetSize - sideRailControlSize) / 2f
+    val sideRailEndInset =
+        handleHitTargetRightInset + (handleTouchTargetSize - sideRailWidth) / 2f
+    val sideRailReservedWidth = sideRailWidth + sideRailEndInset
+    // The nested hit target is centered on the same visible glyph at the row's right edge.
+    val nestedHandleHitTargetRightOverhang =
+        (handleTouchTargetSize - handleVisualWidth) / 2f
+    val nestedRowVerticalInset = AppLayoutContract.nestedRowVerticalInset
+    val nestedRowContentMinHeight = AppLayoutContract.nestedRowContentMinHeight
+    val nestedRowMinHeight = AppLayoutContract.nestedRowMinHeight
+    val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
 }
+
+
 
 
 internal fun formatNoteCreationDate(timestamp: Long): String {

@@ -208,7 +208,7 @@ internal fun PurchaseEditor(
         publish(changed)
     }
 
-    Scaffold(
+    AppPageScaffold(
         modifier = Modifier.fillMaxSize().imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -222,13 +222,13 @@ internal fun PurchaseEditor(
                     selectedCount = selectedChildIds.size,
                     onClearSelection = { selectedChildIds = emptySet() },
                     onDelete = { onDelete(false) },
+                    onOpenStatistics = {},
                     onShare = onShare,
                     onChange = onChange
                 )
             } else {
-                TopAppBar(
-                    title = { Text(if (isPurchaseListItem) "Товар" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
-                    navigationIcon = {},
+                AppEditorTopBar(
+                    title = if (isPurchaseListItem) "Товар" else "Заметка",
                     actions = {
                         if (isPurchaseListItem) {
                             IconButton(onClick = { purchaseDetailsExpanded = !purchaseDetailsExpanded }) {
@@ -267,13 +267,7 @@ internal fun PurchaseEditor(
                         IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
                         if (!isPurchaseListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarColor,
-                        scrolledContainerColor = topBarColor,
-                        navigationIconContentColor = noteTextColor(topBarColor),
-                        titleContentColor = noteTextColor(topBarColor),
-                        actionIconContentColor = noteTextColor(topBarColor)
-                    )
+                    backgroundColor = topBarColor
                 )
             }
         },
@@ -393,8 +387,8 @@ internal fun PurchaseEditor(
                         }
                     }
                 },
-            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else 4.dp),
-            contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
+            verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
+            contentPadding = AppPageLayout.editorListContentPadding
         ) {
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
                 // Keep the first task row from becoming LazyColumn's viewport anchor
@@ -407,7 +401,7 @@ internal fun PurchaseEditor(
                 (note.descriptionEnabled || isPurchaseListItem)) {
                 item(key = "record_options") {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal),
+                        modifier = Modifier.fillMaxWidth().appPageHorizontalInsets(),
                         verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
                     ) {
                         if (note.titleEnabled && isPurchaseListItem) {
@@ -431,7 +425,7 @@ internal fun PurchaseEditor(
                         }
                         if (isPurchaseListItem && purchaseDetailsExpanded) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                                 Spacer(Modifier.weight(1f))
                                 Box {
                                     TextButton(onClick = { dateModeMenuExpanded = true }) {
@@ -480,11 +474,7 @@ internal fun PurchaseEditor(
                         keyboardController?.show()
                     }
                 }
-                val editorTextStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp
-                )
+                val editorTextStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface)
                 BasicTextField(
                     value = fieldValue,
                     onValueChange = {
@@ -492,9 +482,9 @@ internal fun PurchaseEditor(
                         updateText(it.text)
                     },
                     modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = AppSpacing.screenHorizontal)
+                        .appPageHorizontalInsets()
                         .focusRequester(bodyFocusRequester)
-                        .heightIn(min = 160.dp)
+                        .heightIn(min = AppEditorDimensions.bodyMinHeight)
                         .onFocusChanged { state ->
                             if (!state.isFocused && editingBlockId == editorBlockId) editingBlockId = null
                         },
@@ -502,7 +492,7 @@ internal fun PurchaseEditor(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
                         Box(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.bodyMinHeight),
                             contentAlignment = Alignment.TopStart
                         ) {
                             if (fieldValue.text.isEmpty()) {
@@ -524,9 +514,9 @@ internal fun PurchaseEditor(
                     item(key = "empty_nested_purchases") {
                         Text(
                             "Пока нет товаров",
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
+                            modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp
+                            style = AppTypography.sectionLabelStyle()
                         )
                     }
                 }
@@ -543,7 +533,7 @@ internal fun PurchaseEditor(
                         if (group) {
                             Box(
                                 modifier = Modifier.fillMaxWidth()
-                                    .heightIn(min = CardDimensions.nestedGroupMinHeight),
+                                    .heightIn(min = CardDimensions.nestedRowMinHeight),
                                 contentAlignment = Alignment.CenterStart
                             ) {
                                 MainCardHeader(
@@ -559,12 +549,7 @@ internal fun PurchaseEditor(
                             val childSelected = child.id in selectedChildIds
                             val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             val dragHandleColor = childTextColor
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .background(Color.Transparent)
-                                    .padding(vertical = AppSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            NestedRecordRow {
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
@@ -581,12 +566,11 @@ internal fun PurchaseEditor(
                                         )
                                     },
                                     color = childTextColor,
-                                    fontSize = 16.sp,
-                                    lineHeight = 24.sp,
+                                    style = AppTypography.bodyStyle(),
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
-                                Spacer(Modifier.width(12.dp))
+                                Spacer(Modifier.width(AppRowDimensions.purchaseTextToCheckboxGap))
                                 Checkbox(
                                     checked = childStatus == RecordStatus.COMPLETED,
                                     onCheckedChange = { checked ->
@@ -599,9 +583,9 @@ internal fun PurchaseEditor(
                                                 latestPurchaseChildren.value.map { if (it.id == child.id) changed else it })
                                         )
                                     },
-                                    modifier = Modifier.size(40.dp)
+                                    modifier = Modifier.size(AppRowDimensions.purchaseCheckboxTouchTarget)
                                 )
-                                Spacer(Modifier.width(14.dp))
+                                Spacer(Modifier.width(AppRowDimensions.purchaseCheckboxToHandleGap))
                                 DragHandleIcon(color = dragHandleColor)
                             }
                         }

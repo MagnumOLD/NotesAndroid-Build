@@ -65,6 +65,7 @@ internal fun ParentRecordHeader(
     selectedCount: Int,
     onClearSelection: () -> Unit,
     onDelete: () -> Unit,
+    onOpenStatistics: () -> Unit,
     onShare: () -> Unit,
     onChange: (Note) -> Unit
 ) {
@@ -87,13 +88,13 @@ internal fun ParentRecordHeader(
         }
     }
 
-    TopAppBar(
+    AppPageTopBar(
+        backgroundColor = topBarColor,
         title = {
             if (selectedCount > 0) {
                 Text(
                     "$selectedCount выбрано",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = AppTypography.screenTitleStyle(),
                     color = foreground
                 )
             } else {
@@ -104,11 +105,8 @@ internal fun ParentRecordHeader(
                         .focusRequester(focusRequester)
                         .onGloballyPositioned { fieldLaidOut = true },
                     singleLine = true,
-                    textStyle = TextStyle(
+                    textStyle = AppTypography.editorTitleStyle().copy(
                         color = foreground,
-                        fontSize = 18.sp,
-                        lineHeight = 24.sp,
-                        fontWeight = FontWeight.Medium,
                         textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None
                     ),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(foreground),
@@ -128,9 +126,7 @@ internal fun ParentRecordHeader(
                                 Text(
                                     placeholder,
                                     color = foreground.copy(alpha = 0.48f),
-                                    fontSize = 18.sp,
-                                    lineHeight = 24.sp,
-                                    fontWeight = FontWeight.Medium
+                                    style = AppTypography.editorTitleStyle()
                                 )
                             }
                             innerTextField()
@@ -172,13 +168,23 @@ internal fun ParentRecordHeader(
                         expanded = actionsMenuExpanded,
                         onDismissRequest = { actionsMenuExpanded = false }
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Поделиться") },
-                            onClick = {
-                                actionsMenuExpanded = false
-                                onShare()
-                            }
-                        )
+                        if (note.type == RecordType.TASK) {
+                            DropdownMenuItem(
+                                text = { Text("История и статистика") },
+                                onClick = {
+                                    actionsMenuExpanded = false
+                                    onOpenStatistics()
+                                }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Поделиться") },
+                                onClick = {
+                                    actionsMenuExpanded = false
+                                    onShare()
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Удалить") },
                             onClick = {
@@ -189,14 +195,7 @@ internal fun ParentRecordHeader(
                     }
                 }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = topBarColor,
-            scrolledContainerColor = topBarColor,
-            navigationIconContentColor = foreground,
-            titleContentColor = foreground,
-            actionIconContentColor = foreground
-        )
+        }
     )
 }
 

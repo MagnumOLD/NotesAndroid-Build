@@ -25,6 +25,45 @@ internal class NotesRepository(private val preferences: SharedPreferences) {
             .apply()
     }
 
+    fun findTask(taskId: Long): Note? {
+        val snapshot = loadSnapshot()
+        fun find(items: List<Note>): Note? {
+            items.forEach { note ->
+                if (note.id == taskId) return note
+                find(note.children)?.let { return it }
+            }
+            return null
+        }
+        return find(snapshot.notes) ?: find(snapshot.collections.flatMap { it.notes })
+    }
+
+    fun updateTaskStatus(taskId: Long, status: RecordStatus): Boolean {
+        val current = loadSnapshot()
+        var found = false
+        fun updateTree(items: List<Note>): List<Note> = items.map { note ->
+            val updatedChildren = updateTree(note.children)
+            if (note.id == taskId && note.type == RecordType.TASK) {
+                found = true
+                note.copy(status = status, deadlineResumeOverride = status == RecordStatus.IN_PROGRESS, children = updatedChildren)
+            } else if (updatedChildren != note.children) {
+                note.copy(children = updatedChildren)
+            } else note
+        }
+        val updatedNotes = updateTree(current.notes)
+        val updatedCollections = current.collections.map { collection ->
+            collection.copy(notes = updateTree(collection.notes))
+        }
+        if (found) {
+            saveSnapshot(current.copy(notes = updatedNotes, collections = updatedCollections))
+            preferences.edit().putLong(KEY_EXTERNAL_STATUS_UPDATE, System.currentTimeMillis()).apply()
+        }
+        return found
+    }
+
+    private companion object {
+        const val KEY_EXTERNAL_STATUS_UPDATE = "external_task_status_update"
+    }
+
     private fun loadNotes(): List<Note> = runCatching {
         parseNotesArray(JSONArray(preferences.getString("notes", "[]") ?: "[]"))
     }.getOrDefault(emptyList())

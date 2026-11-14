@@ -9,6 +9,7 @@ internal enum class RecordType {
 internal enum class RecordStatus {
     WAITING,
     IN_PROGRESS,
+    PAUSED,
     COMPLETED,
     CANCELLED,
     MISSED
@@ -26,8 +27,8 @@ internal object RecordStatusRules {
         dateAt: Long?,
         now: Long
     ): RecordStatus {
-        if (status == RecordStatus.COMPLETED || status == RecordStatus.CANCELLED ||
-            status == RecordStatus.MISSED
+        if (status == RecordStatus.COMPLETED || status == RecordStatus.PAUSED ||
+            status == RecordStatus.CANCELLED || status == RecordStatus.MISSED
         ) return status
         if (dateMode != RecordDateMode.DEADLINE || dateAt == null) return status
         return if (now >= dateAt + 86_400_000L) RecordStatus.MISSED else status
@@ -43,7 +44,8 @@ internal data class Note(
     val titleEnabled: Boolean = false, val titleText: String = "",
     val descriptionEnabled: Boolean = false, val descriptionText: String = "",
     val deadlineResumeOverride: Boolean = false, val children: List<Note> = emptyList(),
-    val statusBeforeAutoCompletion: RecordStatus? = null
+    val statusBeforeAutoCompletion: RecordStatus? = null,
+    val timeTrackingEnabled: Boolean = false
 )
 
 internal data class NoteCollection(val id: Long, val name: String, val notes: List<Note> = emptyList())

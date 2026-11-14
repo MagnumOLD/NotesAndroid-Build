@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.PauseCircleOutline
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Redo
@@ -42,6 +45,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,7 +59,8 @@ internal fun MainCardHeader(
     pinned: Boolean = false,
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
-    compressed: Boolean = false
+    compressed: Boolean = false,
+    showDragHandle: Boolean = true
 ) {
     val latestOnClick by rememberUpdatedState(onClick)
     val latestOnLongPress by rememberUpdatedState(onLongPress)
@@ -77,13 +82,11 @@ internal fun MainCardHeader(
         Text(
             text,
             modifier = Modifier.weight(1f).then(textInteractionModifier),
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
-            fontWeight = FontWeight.Medium,
+            style = AppTypography.cardPreviewStyle(),
             color = textColor
         )
         if (pinned) {
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(AppSpacing.xs))
             AppIcon(
                 NoteIcon.Pin,
                 contentDescription = "Закреплено",
@@ -91,12 +94,14 @@ internal fun MainCardHeader(
                 modifier = Modifier.padding(top = 5.dp).size(16.dp)
             )
         }
-        Spacer(Modifier.width(20.dp))
-        DragHandleIcon(
-            modifier = Modifier.padding(top = 6.6.dp),
-            color = textColor,
-            compressed = compressed
-        )
+        if (showDragHandle) {
+            Spacer(Modifier.width(AppSpacing.lg))
+            DragHandleIcon(
+                modifier = Modifier.padding(top = 6.6.dp),
+                color = textColor,
+                compressed = compressed
+            )
+        }
     }
 }
 
@@ -170,6 +175,20 @@ internal fun NestedRecordCard(
 }
 
 @Composable
+internal fun NestedRecordRow(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = modifier.fillMaxWidth()
+            .padding(vertical = CardDimensions.nestedRowVerticalInset)
+            .heightIn(min = CardDimensions.nestedRowContentMinHeight),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
+
+@Composable
 internal fun DraggedNotesGroup(
     notes: List<Note>,
     dark: Boolean,
@@ -229,7 +248,7 @@ internal fun DragHandleIcon(
     )
     Canvas(
         modifier = modifier
-            .size(width = 16.dp, height = (spacing + 0.8f).dp)
+            .size(width = CardDimensions.handleVisualWidth, height = (spacing + 0.8f).dp)
             .pointerInput(compressed) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -274,56 +293,73 @@ internal fun DragHandleIcon(
 
 internal fun recordStatusCompactText(status: RecordStatus): String = when (status) {
     RecordStatus.WAITING -> "Ожидает"
-    RecordStatus.IN_PROGRESS -> "В работе"
-    RecordStatus.COMPLETED -> "Выполнено"
-    RecordStatus.CANCELLED -> "Отменено"
-    RecordStatus.MISSED -> "Просрочено"
+    RecordStatus.IN_PROGRESS -> "Выполняется"
+    RecordStatus.PAUSED -> "Остановлена"
+    RecordStatus.COMPLETED -> "Завершена"
+    RecordStatus.CANCELLED -> "Отменена"
+    RecordStatus.MISSED -> "Просрочена"
 }
 
-internal fun recordStatusText(status: RecordStatus): String = when (status) {
-    RecordStatus.WAITING -> "Ожидает выполнения"
-    RecordStatus.IN_PROGRESS -> "В процессе"
-    RecordStatus.COMPLETED -> "Выполнено"
-    RecordStatus.CANCELLED -> "Отменено"
-    RecordStatus.MISSED -> "Пропущено"
-}
+internal fun recordStatusText(status: RecordStatus): String = recordStatusCompactText(status)
 
 
 @Composable
 internal fun TaskStatusMarker(status: RecordStatus) {
     val tint = when (status) {
         RecordStatus.WAITING -> MaterialTheme.colorScheme.onSurfaceVariant
-        RecordStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
-        RecordStatus.COMPLETED -> Color(0xFF30A46C)
+        RecordStatus.IN_PROGRESS -> Color(0xFF4CAF50)
+        RecordStatus.PAUSED -> Color(0xFFFF9800)
+        RecordStatus.COMPLETED -> Color(0xFF2196F3)
         RecordStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
         RecordStatus.MISSED -> MaterialTheme.colorScheme.error
     }
     val icon = when (status) {
         RecordStatus.WAITING -> Icons.Outlined.Schedule
         RecordStatus.IN_PROGRESS -> Icons.Outlined.PlayCircleOutline
+        RecordStatus.PAUSED -> Icons.Outlined.PauseCircleOutline
         RecordStatus.COMPLETED -> Icons.Outlined.CheckCircle
         RecordStatus.CANCELLED -> Icons.Outlined.Block
         RecordStatus.MISSED -> Icons.Outlined.WarningAmber
     }
-    val description = when (status) {
-        RecordStatus.WAITING -> "Ожидает"
-        RecordStatus.IN_PROGRESS -> "В процессе"
-        RecordStatus.COMPLETED -> "Выполнено"
-        RecordStatus.CANCELLED -> "Отменено"
-        RecordStatus.MISSED -> "Просрочено"
-    }
+    val description = recordStatusCompactText(status)
     Icon(
         imageVector = icon,
         contentDescription = description,
         tint = tint,
-        modifier = Modifier.size(22.dp)
+        modifier = Modifier.size(AppRowDimensions.statusGlyphSlot)
     )
 }
 
+/**
+ * Keeps a 22dp visual slot in the Row while centering a 40dp touch target
+ * over that slot. The target is allowed to extend into the surrounding space.
+ */
+@Composable
+internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.layout { measurable, _ ->
+            val targetSize = AppRowDimensions.controlTouchTarget.roundToPx()
+            val slotWidth = AppRowDimensions.statusGlyphSlot.roundToPx()
+            val placeable = measurable.measure(
+                androidx.compose.ui.unit.Constraints.fixed(targetSize, targetSize)
+            )
+            layout(slotWidth, targetSize) {
+                placeable.placeRelative((slotWidth - targetSize) / 2, 0)
+            }
+        }
+    ) {
+        Box(
+            modifier = Modifier.size(AppRowDimensions.controlTouchTarget).clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            TaskStatusMarker(status)
+        }
+    }
+}
 @Composable
 internal fun NoteRow(
     note: Note, dark: Boolean, noteColors: List<Color>, customSelectionColor: Color? = null, pinned: Boolean, selected: Boolean,
-    statusNow: Long, onClick: () -> Unit, onLongPress: () -> Unit,
+    onClick: () -> Unit, onLongPress: () -> Unit,
     colorSwipeEnabled: Boolean, onChangeColor: (Int) -> Unit,
     onMeasuredHeight: (Int) -> Unit = {}
 ) {
@@ -361,15 +397,21 @@ internal fun NoteRow(
         dark = dark,
         selectionColor = customSelectionColor
     )
-    val metadata = if (note.type == RecordType.NOTE) "Заметка" else recordStatusCompactText(note.recordStatus(statusNow))
+    var showCreationDate by remember(note.id) { mutableStateOf(false) }
+    val compactCreationDate = remember(note.id, note.created) {
+        java.text.SimpleDateFormat("dd.MM", java.util.Locale("ru"))
+            .format(java.util.Date(note.created))
+    }
 
     RecordCardSurface(
         background = selectedBackground,
         modifier = Modifier.fillMaxWidth()
             .onSizeChanged { onMeasuredHeight(it.height) }
     ) {
-        Box(
-            Modifier.fillMaxWidth().heightIn(min = CardDimensions.contentHeight)
+        Row(
+            Modifier.fillMaxWidth()
+                .heightIn(min = CardDimensions.contentHeight)
+                .height(IntrinsicSize.Min)
                 .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
                     if (colorSwipeEnabled) {
                         var horizontalDistance = 0f
@@ -432,49 +474,82 @@ internal fun NoteRow(
                 }
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(
-                    start = AppSpacing.screenHorizontal,
-                    end = AppSpacing.screenHorizontal,
-                    top = AppSpacing.md,
-                    bottom = AppSpacing.md
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.weight(1f).fillMaxHeight()
+                    .pointerInput(note.id, selected) {
+                        detectTapGestures(
+                            onTap = { onClick() },
+                            onLongPress = { onLongPress() }
+                        )
+                    }
+                    .padding(
+                        start = AppSpacing.screenHorizontal,
+                        top = AppSpacing.md,
+                        bottom = AppSpacing.md
+                    )
             ) {
                 MainCardHeader(
                     text = firstLine,
                     textColor = rowTextColor,
-                    pinned = pinned,
-                    onClick = onClick,
-                    onLongPress = onLongPress
+                    pinned = false,
+                    showDragHandle = false
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .pointerInput(note.id, selected) {
-                            detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
-                        },
-                    verticalAlignment = Alignment.CenterVertically
+            }
+
+            Column(
+                modifier = Modifier.fillMaxHeight()
+                    .padding(
+                        top = CardDimensions.sideRailTopInset,
+                        end = CardDimensions.sideRailEndInset
+                    ),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.size(CardDimensions.sideRailControlSize),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (note.type != RecordType.NOTE) {
-                        Text(
-                            metadata,
-                            fontSize = 12.sp,
-                            color = rowTextColor.copy(alpha = 0.82f),
-                            maxLines = 1
+                    DragHandleIcon(color = rowTextColor)
+                }
+                if (pinned) {
+                    Box(
+                        modifier = Modifier.size(CardDimensions.sideRailControlSize),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppIcon(
+                            NoteIcon.Pin,
+                            contentDescription = "Закреплено",
+                            tint = rowTextColor.copy(alpha = 0.8f),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        formatNoteCreationDate(note.created),
-                        fontSize = 12.sp,
-                        color = rowTextColor.copy(alpha = 0.62f),
-                        maxLines = 1
-                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(width = CardDimensions.sideRailWidth, height = CardDimensions.sideRailControlSize)
+                        .clickable { showCreationDate = !showCreationDate },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (showCreationDate) {
+                        Text(
+                            text = compactCreationDate,
+                            style = AppTypography.metadataStyle().copy(fontSize = 9.sp),
+                            color = rowTextColor.copy(alpha = 0.82f),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarToday,
+                            contentDescription = "Показать дату создания",
+                            tint = rowTextColor.copy(alpha = 0.72f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 internal enum class NoteIcon {
     Back, Add, AddBlock, Search, Close, More, Palette, Archive, Trash,
     Upload, Download, Pin, Folder, Undo, Redo, Share
