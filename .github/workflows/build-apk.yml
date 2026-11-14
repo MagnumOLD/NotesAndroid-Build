@@ -1,4 +1,5 @@
 name: Build Android APK
+# Rebuild trigger after completing the time-tracking prototype changes.
 
 on:
   push:
