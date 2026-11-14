@@ -275,7 +275,7 @@ internal fun NoteEditor(
                 )
             } else {
                 TopAppBar(
-                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка", fontWeight = FontWeight.Medium, fontSize = 18.sp) },
+                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle) },
                     navigationIcon = {},
                     actions = {
                         if (isTaskListItem) {
@@ -442,7 +442,7 @@ internal fun NoteEditor(
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else 4.dp),
-            contentPadding = PaddingValues(top = AppSpacing.sm, bottom = AppSpacing.lg)
+            contentPadding = AppPageLayout.editorListContentPadding
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 // Keep the first purchase row from becoming LazyColumn's viewport anchor
@@ -500,7 +500,7 @@ internal fun NoteEditor(
                 item(key = "record_options") {
                     Column(
                         modifier = Modifier.fillMaxWidth()
-                            .padding(horizontal = AppSpacing.screenHorizontal),
+                            .appPageHorizontalInsets(),
                         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                     ) {
                         if (note.titleEnabled && isTaskListItem) {
@@ -512,8 +512,8 @@ internal fun NoteEditor(
                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                                 textStyle = TextStyle(
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 18.sp,
-                                    lineHeight = 24.sp,
+                                    fontSize = AppTypography.screenTitle,
+                                    lineHeight = AppTypography.bodyLineHeight,
                                     fontWeight = FontWeight.Medium
                                 ),
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
@@ -523,8 +523,8 @@ internal fun NoteEditor(
                                             Text(
                                                 "Название",
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                                                fontSize = 18.sp,
-                                                lineHeight = 24.sp,
+                                                fontSize = AppTypography.screenTitle,
+                                                lineHeight = AppTypography.bodyLineHeight,
                                                 fontWeight = FontWeight.Medium
                                             )
                                         }
@@ -540,8 +540,8 @@ internal fun NoteEditor(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
                                 textStyle = TextStyle(
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 16.sp,
-                                    lineHeight = 24.sp
+                                    fontSize = AppTypography.body,
+                                    lineHeight = AppTypography.bodyLineHeight
                                 ),
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                                 decorationBox = { inner ->
@@ -553,8 +553,8 @@ internal fun NoteEditor(
                                             Text(
                                                 "Описание",
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                                                fontSize = 16.sp,
-                                                lineHeight = 24.sp
+                                                fontSize = AppTypography.body,
+                                                lineHeight = AppTypography.bodyLineHeight
                                             )
                                         }
                                         inner()
@@ -564,7 +564,7 @@ internal fun NoteEditor(
                         }
                         if (isTaskListItem && taskDetailsExpanded) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.sectionLabel)
                                 Spacer(Modifier.weight(1f))
                                 Box {
                                     TextButton(onClick = { dateModeMenuExpanded = true }) {
@@ -606,10 +606,10 @@ internal fun NoteEditor(
                 if (isTaskListItem && taskDetailsExpanded) {
                     item(key = "record_status") {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.xs),
+                            modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.sectionLabel)
                             Spacer(Modifier.weight(1f))
                             Box {
                                 TextButton(onClick = { statusMenuExpanded = true }) {
@@ -646,8 +646,8 @@ internal fun NoteEditor(
                 }
                 val editorTextStyle = TextStyle(
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp
+                    fontSize = AppTypography.body,
+                    lineHeight = AppTypography.bodyLineHeight
                 )
                 BasicTextField(
                     value = fieldValue,
@@ -656,7 +656,7 @@ internal fun NoteEditor(
                         updateText(it.text)
                     },
                     modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = AppSpacing.screenHorizontal)
+                        .appPageHorizontalInsets()
                         .focusRequester(bodyFocusRequester)
                         .heightIn(min = 160.dp)
                         .onFocusChanged { state ->
@@ -688,9 +688,9 @@ internal fun NoteEditor(
                     item(key = "empty_nested_tasks") {
                         Text(
                             "Пока нет задач",
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.md),
+                            modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp
+                            fontSize = AppTypography.sectionLabel
                         )
                     }
                 }
@@ -755,7 +755,7 @@ internal fun NoteEditor(
                                         }
                                     }
                                 }
-                                Spacer(Modifier.width(9.dp))
+                                Spacer(Modifier.width(AppRowDimensions.taskStatusToTextGap))
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
@@ -772,12 +772,12 @@ internal fun NoteEditor(
                                         )
                                     },
                                     color = childTextColor,
-                                    fontSize = 16.sp,
-                                    lineHeight = 24.sp,
+                                    fontSize = AppTypography.body,
+                                    lineHeight = AppTypography.bodyLineHeight,
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
-                                Spacer(Modifier.width(22.dp))
+                                Spacer(Modifier.width(AppRowDimensions.taskTextToHandleGap))
                                 DragHandleIcon(color = dragHandleColor)
                             }
                         }
