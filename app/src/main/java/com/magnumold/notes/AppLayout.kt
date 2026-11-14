@@ -335,8 +335,9 @@ internal object CardDimensions {
     val handleVisualWidth = AppLayoutContract.dragHandleVisualWidth
     val handleHitTargetRightInset = (sidePanelWidth - handleTouchTargetSize) / 2f
     // The nested hit target is centered on the same visible glyph at the row's right edge.
+    // Nested editor rows retain their original 40dp hit-target geometry.
     val nestedHandleHitTargetRightOverhang =
-        (handleTouchTargetSize - handleVisualWidth) / 2f
+        (AppLayoutContract.controlTouchTarget - handleVisualWidth) / 2f
     val nestedRowVerticalInset = AppLayoutContract.nestedRowVerticalInset
     val nestedRowContentMinHeight = AppLayoutContract.nestedRowContentMinHeight
     val nestedRowMinHeight = AppLayoutContract.nestedRowMinHeight
