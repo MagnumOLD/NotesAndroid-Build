@@ -23,40 +23,82 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Canonical layout contract derived from the approved NotesHome screen.
+ *
+ * Keep these values as the single source of truth for shared geometry.
+ * Screen-specific components may expose semantic aliases, but must not
+ * redefine the underlying measurements independently.
+ *
+ * NotesHome intentionally remains unchanged while this contract is introduced:
+ * its current literal dimensions match these values exactly.
+ */
+internal object AppLayoutContract {
+    // Base spacing scale.
+    val space2xs = 4.dp
+    val spaceXs = 8.dp
+    val spaceSm = 12.dp
+    val spaceMd = 16.dp
+    val spaceLg = 20.dp
+    val spaceXl = 24.dp
+    val space2xl = 32.dp
+
+    // Main page guides and toolbar geometry.
+    val pageHorizontalInset = spaceLg
+    val pageVerticalInset = spaceMd
+    val toolbarLeadingInset = pageHorizontalInset
+    val toolbarActionInset = space2xs
+    val toolbarHeight = 64.dp
+
+    // Main list geometry from the approved NotesHome layout.
+    val collectionRowHeight = 48.dp
+    val mainCardMinHeight = 88.dp
+    val mainCardVerticalInset = spaceMd
+    val mainCardTextSize = 16.sp
+    val pageTitleSize = 18.sp
+
+    // Shared interaction geometry.
+    val controlTouchTarget = 40.dp
+    val statusGlyphSlot = 22.dp
+}
+
 /** Shared geometry for every primary circular add button. */
 internal object PrimaryAddButtonDimensions {
     val diameter = 56.dp
     val verticalOffset = (-65).dp
 }
 
+/**
+ * Compatibility names for existing screens.
+ * New layout code should prefer AppLayoutContract or semantic dimensions below.
+ */
 internal object AppSpacing {
-    val xxs = 4.dp
-    val xs = 8.dp
-    val sm = 12.dp
-    val md = 16.dp
-    val lg = 20.dp
-    val xl = 24.dp
-    val xxl = 32.dp
+    val xxs = AppLayoutContract.space2xs
+    val xs = AppLayoutContract.spaceXs
+    val sm = AppLayoutContract.spaceSm
+    val md = AppLayoutContract.spaceMd
+    val lg = AppLayoutContract.spaceLg
+    val xl = AppLayoutContract.spaceXl
+    val xxl = AppLayoutContract.space2xl
 
-    val screenHorizontal = lg
-    val screenVertical = md
-    val toolbarControlInset = xxs
+    val screenHorizontal = AppLayoutContract.pageHorizontalInset
+    val screenVertical = AppLayoutContract.pageVerticalInset
+    val toolbarControlInset = AppLayoutContract.toolbarActionInset
     // Material3 ListItem has a 16.dp default content inset; 4.dp outside
     // aligns its visible content with the app's 20.dp page guide.
     val settingsListItemOuterInset = xxs
 }
-
 
 /**
  * App-wide typography tokens. Screen-specific hierarchy may differ, but the
  * underlying sizes and line heights are defined here rather than duplicated.
  */
 internal object AppTypography {
-    val screenTitle = 18.sp
+    val screenTitle = AppLayoutContract.pageTitleSize
     val editorTitle = 18.sp
     val sectionHeading = 17.sp
     val body = 16.sp
-    val cardPreview = 16.sp
+    val cardPreview = AppLayoutContract.mainCardTextSize
     val cardPreviewLineHeight = 22.sp
     val helper = 13.sp
     val bodyLineHeight = 24.sp
@@ -65,24 +107,28 @@ internal object AppTypography {
     val metadata = 12.sp
 }
 
-/** Shared page/list geometry used by note, task, purchase and secondary screens. */
+/** Semantic dimensions for the common page and list structures. */
 internal object AppPageLayout {
     val editorListContentPadding = PaddingValues(
         top = AppSpacing.sm,
         bottom = AppSpacing.lg
     )
     val standardListContentPadding = PaddingValues(vertical = AppSpacing.xs)
-    val toolbarHeight = 64.dp
+    val toolbarHeight = AppLayoutContract.toolbarHeight
+}
+
+internal object AppCollectionRowDimensions {
+    val height = AppLayoutContract.collectionRowHeight
 }
 
 /** Shared row geometry; leading/trailing controls may differ by row semantics. */
 internal object AppRowDimensions {
-    val statusGlyphSlot = 22.dp
-    val controlTouchTarget = 40.dp
+    val statusGlyphSlot = AppLayoutContract.statusGlyphSlot
+    val controlTouchTarget = AppLayoutContract.controlTouchTarget
     val taskStatusToTextGap = 9.dp
     val taskTextToHandleGap = 22.dp
     val purchaseTextToCheckboxGap = 12.dp
-    val purchaseCheckboxTouchTarget = 40.dp
+    val purchaseCheckboxTouchTarget = AppLayoutContract.controlTouchTarget
     val purchaseCheckboxToHandleGap = 14.dp
 }
 
@@ -148,21 +194,19 @@ internal fun Modifier.appPageContentInsets(): Modifier =
         vertical = AppSpacing.screenVertical
     )
 
-
-
 /**
  * Shared main-list card dimensions.
  * contentHeight is a minimum; long first lines can increase the measured row height.
  */
 internal object CardDimensions {
-    val contentHeight = 88.dp
+    val contentHeight = AppLayoutContract.mainCardMinHeight
     val dividerThickness = 1.dp
     val rowHeight = contentHeight + dividerThickness
 
     // Align the visible handle with the first 22dp title line.
     // Keep a 40dp touch target centered on that visual position.
     val headerFirstLineHeight = 22.dp
-    val handleTouchTargetSize = 40.dp
+    val handleTouchTargetSize = AppLayoutContract.controlTouchTarget
     val handleHitTargetTopOffset =
         AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f
     // Keep the 40dp hit target centered on the handle, whose right edge now
