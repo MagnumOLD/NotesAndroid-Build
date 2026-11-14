@@ -731,9 +731,17 @@ internal fun NoteEditor(
                             ) {
                                 var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
                                 Box {
-                                    Box(Modifier.size(40.dp).clickable { childStatusMenuExpanded = true },
-                                        contentAlignment = Alignment.Center) {
+                                    Box(
+                                        modifier = Modifier.width(22.dp).height(40.dp),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
                                         TaskStatusMarker(childStatus)
+                                        Box(
+                                            modifier = Modifier
+                                                .offset(x = (-18).dp)
+                                                .size(40.dp)
+                                                .clickable { childStatusMenuExpanded = true }
+                                        )
                                     }
                                     DropdownMenu(
                                         expanded = childStatusMenuExpanded,
