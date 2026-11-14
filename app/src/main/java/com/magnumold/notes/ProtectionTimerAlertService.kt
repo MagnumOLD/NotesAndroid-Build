@@ -83,10 +83,12 @@ internal class ProtectionTimerAlertService : Service() {
             } else null
             val taskTitle = intent.getStringExtra(ProtectionTimerContract.EXTRA_TASK_TITLE) ?: "Задача"
             val subtaskTitle = intent.getStringExtra(ProtectionTimerContract.EXTRA_SUBTASK_TITLE)
-            if (notesRepository().updateTaskStatus(taskId, RecordStatus.IN_PROGRESS)) {
+            val notes = notesRepository()
+            val trackingEnabled = notes.findTask(taskId)?.timeTrackingEnabled == true
+            if (notes.updateTaskStatus(taskId, RecordStatus.IN_PROGRESS)) {
                 timeRepository().update { state ->
                     val clean = state.copy(protectionTimer = null)
-                    if (taskId in clean.activeSessions) clean
+                    if (!trackingEnabled || taskId in clean.activeSessions) clean
                     else TimeTrackingEngine.start(
                         state = clean,
                         taskId = taskId,
