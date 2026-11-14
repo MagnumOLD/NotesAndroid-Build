@@ -533,8 +533,7 @@ internal fun NoteEditor(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.descriptionMinHeight),
                                 textStyle = TextStyle(
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = AppTypography.body,
-                                    lineHeight = AppTypography.bodyLineHeight
+                                    style = AppTypography.bodyStyle()
                                 ),
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                                 decorationBox = { inner ->
@@ -546,8 +545,7 @@ internal fun NoteEditor(
                                             Text(
                                                 "Описание",
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                                                fontSize = AppTypography.body,
-                                                lineHeight = AppTypography.bodyLineHeight
+                                                style = AppTypography.bodyStyle()
                                             )
                                         }
                                         inner()
@@ -557,7 +555,7 @@ internal fun NoteEditor(
                         }
                         if (isTaskListItem && taskDetailsExpanded) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.sectionLabel)
+                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                                 Spacer(Modifier.weight(1f))
                                 Box {
                                     TextButton(onClick = { dateModeMenuExpanded = true }) {
@@ -602,7 +600,7 @@ internal fun NoteEditor(
                             modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.sectionLabel)
+                            Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                             Spacer(Modifier.weight(1f))
                             Box {
                                 TextButton(onClick = { statusMenuExpanded = true }) {
@@ -639,8 +637,7 @@ internal fun NoteEditor(
                 }
                 val editorTextStyle = TextStyle(
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = AppTypography.body,
-                    lineHeight = AppTypography.bodyLineHeight
+                    style = AppTypography.bodyStyle()
                 )
                 BasicTextField(
                     value = fieldValue,
@@ -683,7 +680,7 @@ internal fun NoteEditor(
                             "Пока нет задач",
                             modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = AppTypography.sectionLabel
+                            style = AppTypography.sectionLabelStyle()
                         )
                     }
                 }
@@ -765,8 +762,7 @@ internal fun NoteEditor(
                                         )
                                     },
                                     color = childTextColor,
-                                    fontSize = AppTypography.body,
-                                    lineHeight = AppTypography.bodyLineHeight,
+                                    style = AppTypography.bodyStyle(),
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
