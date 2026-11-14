@@ -49,24 +49,23 @@ internal fun WorkTimeControls(
     val totalMillis = TimeTrackingEngine.taskDurationMillis(state, taskId, nowMillis)
     TimeTrackingSection(
         title = "Время работы",
-        headerAction = {
-            IconButton(onClick = onAddManualSession) {
-                Icon(Icons.Outlined.Add, contentDescription = "Добавить время")
-            }
-        }
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
+        trailingContent = {
             Text(
                 formatWorkDuration(totalMillis),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
+        },
+        headerAction = {
+            IconButton(onClick = onAddManualSession) {
+                Icon(
+                    Icons.Outlined.Add,
+                    contentDescription = "Добавить время",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -123,19 +122,16 @@ internal fun ParentWorkTimeSummary(
     }
 
     val totalMillis = TimeTrackingEngine.parentDurationMillis(state, parentTaskId, nowMillis)
-    TimeTrackingSection(title = "Затраты времени") {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
+    TimeTrackingSection(
+        title = "Затраты времени",
+        trailingContent = {
             Text(
                 formatWorkDuration(totalMillis),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-    }
+    )
 }
 
 private fun formatWorkDuration(value: Long): String {
