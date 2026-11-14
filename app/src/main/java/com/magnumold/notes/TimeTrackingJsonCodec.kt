@@ -30,6 +30,7 @@ internal fun timeTrackingToJson(state: TimeTrackingState): JSONObject {
             .put("soundEnabled", t.soundEnabled)
     } ?: JSONObject.NULL
     return JSONObject().put("sessions", sessions).put("activeSessions", active).put("protectionTimer", timer)
+        .put("soundUri", state.soundUri ?: JSONObject.NULL).put("soundEnabled", state.soundEnabled)
 }
 
 internal fun parseTimeTrackingJson(json: JSONObject?): TimeTrackingState {
@@ -82,5 +83,6 @@ internal fun parseTimeTrackingJson(json: JSONObject?): TimeTrackingState {
             )
         }.getOrNull()
     }
-    return TimeTrackingState(sessions, active, timer)
+    val soundUri = if (json.isNull("soundUri")) null else json.optString("soundUri").takeIf { it.isNotBlank() }
+    return TimeTrackingState(sessions, active, timer, soundUri, json.optBoolean("soundEnabled", true))
 }
