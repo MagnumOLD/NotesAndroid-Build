@@ -14,12 +14,15 @@ import androidx.lifecycle.ViewModelProvider
 class MainActivity : ComponentActivity() {
     private lateinit var recordsViewModel: NotesViewModel
     private lateinit var timeTrackingRepository: TimeTrackingRepository
+    private var lastExternalTaskStatusUpdate: Long = 0L
     private val taskStatusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (::recordsViewModel.isInitialized &&
                 intent?.action == ProtectionTimerContract.ACTION_TASK_STATUS_CHANGED
             ) {
                 recordsViewModel.refreshFromRepository()
+                lastExternalTaskStatusUpdate = getPreferences(Context.MODE_PRIVATE)
+                    .getLong("external_task_status_update", lastExternalTaskStatusUpdate)
                 if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
             }
         }
@@ -38,8 +41,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::recordsViewModel.isInitialized) recordsViewModel.refreshFromRepository()
-        if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
+        if (::recordsViewModel.isInitialized) {
+            val marker = getPreferences(Context.MODE_PRIVATE)
+                .getLong("external_task_status_update", lastExternalTaskStatusUpdate)
+            if (marker > lastExternalTaskStatusUpdate) {
+                recordsViewModel.refreshFromRepository()
+                lastExternalTaskStatusUpdate = marker
+                if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
+            }
+        }
     }
 
     override fun onStop() {
@@ -66,6 +76,8 @@ class MainActivity : ComponentActivity() {
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
+        lastExternalTaskStatusUpdate = getPreferences(Context.MODE_PRIVATE)
+            .getLong("external_task_status_update", 0L)
         timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
         recordsViewModel = ViewModelProvider(
             this,
