@@ -196,8 +196,7 @@ internal fun SettingsScreen(
                 }
                 Text(
                     if (personalizationVisible) "Персонализация" else "Настройки",
-                    fontWeight = FontWeight.Medium,
-                    fontSize = AppTypography.screenTitle
+                    style = AppTypography.screenTitleStyle()
                 )
             }
         }
@@ -374,7 +373,7 @@ private fun ThemeColorEditorScreen(
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
         AppToolbarSurface(backgroundColor = topBarColor) {
             IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-            Text(title, fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
+            Text(title, style = AppTypography.screenTitleStyle())
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
@@ -382,7 +381,7 @@ private fun ThemeColorEditorScreen(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
-                    Text(title, fontSize = AppTypography.sectionHeading, fontWeight = FontWeight.Medium)
+                    Text(title, style = AppTypography.sectionHeadingStyle())
                     Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
@@ -440,7 +439,7 @@ private fun NoteColorEditorScreen(
                 Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(AppPageLayout.toolbarHeight).padding(horizontal = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text("Изменение цвета", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
+                    Text("Изменение цвета", style = AppTypography.screenTitleStyle())
                 }
             }
         }
@@ -450,7 +449,7 @@ private fun NoteColorEditorScreen(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
-                    Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], fontSize = AppTypography.sectionHeading, fontWeight = FontWeight.Medium)
+                    Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], style = AppTypography.sectionHeadingStyle())
                     Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
