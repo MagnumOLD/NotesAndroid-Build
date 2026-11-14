@@ -148,13 +148,15 @@ internal fun NotesHome(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppToolbarSurface(
-                backgroundColor = homeBarColor,
-                startInset = AppSpacing.screenHorizontal,
-                endInset = AppSpacing.toolbarControlInset
-            ) {
+            Surface(color = homeBarColor, contentColor = homeContentColor) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .height(64.dp)
+                        .padding(start = AppSpacing.screenHorizontal, end = AppSpacing.toolbarControlInset),
+                    verticalAlignment = Alignment.CenterVertically                ) {
                     if (selectionMode) {
-                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
+                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = 18.sp)
                         Spacer(Modifier.weight(1f))
                         val allSelectedPinned = notes.filter { it.id in selectedNoteIds }.all { it.pinned }
                         IconButton(onClick = { onTogglePinned(selectedNoteIds) }) {
@@ -180,7 +182,7 @@ internal fun NotesHome(
                         }
                         IconButton(onClick = { showDeleteConfirmation = true }) { AppIcon(NoteIcon.Trash, contentDescription = "Удалить выбранные заметки") }
                     } else {
-                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
+                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = 18.sp)
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onToggleSearch) {
                             AppIcon(if (searchVisible) NoteIcon.Close else NoteIcon.Search, contentDescription = "Поиск")
@@ -189,6 +191,7 @@ internal fun NotesHome(
                             AppIcon(NoteIcon.More, contentDescription = "Настройки")
                         }
                     }
+                }
             }
         },
         floatingActionButton = {
