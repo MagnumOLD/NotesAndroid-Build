@@ -269,6 +269,7 @@ internal fun NoteEditor(
                     selectedCount = selectedChildIds.size,
                     onClearSelection = { selectedChildIds = emptySet() },
                     onDelete = { onDelete(false) },
+                    onOpenStatistics = { timeAnalyticsVisible = true },
                     onShare = onShare,
                     onChange = onChange
                 )
@@ -451,28 +452,19 @@ internal fun NoteEditor(
                 }
             }
             if (note.type == RecordType.TASK) {
-                item(key = "time_analytics_button") {
-                    TextButton(
-                        onClick = { timeAnalyticsVisible = true },
-                        modifier = Modifier.padding(horizontal = AppSpacing.screenHorizontal)
-                    ) { Text("История и статистика") }
-                }
-                item(key = "work_time_tracking") {
-                    val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
-                        ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                    WorkTimeControls(
-                        taskId = note.id,
-                        parentTaskId = parentTaskId,
-                        taskTitle = if (isTaskListItem) parentTaskTitle ?: "Задача" else currentTitle,
-                        subtaskTitle = if (isTaskListItem) currentTitle else null,
-                        state = timeTrackingState,
-                        allowTracking = isTaskListItem,
-                        trackingEnabled = note.timeTrackingEnabled,
-                        onTrackingEnabledChange = { enabled ->
-                            onChange(note.copy(timeTrackingEnabled = enabled))
-                        },
-                        onStateChange = onTimeTrackingStateChange
-                    )
+                if (isTaskListItem) {
+                    item(key = "work_time_controls") {
+                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+                        WorkTimeControls(
+                            taskId = note.id,
+                            parentTaskId = parentTaskId,
+                            taskTitle = parentTaskTitle ?: "Задача",
+                            subtaskTitle = currentTitle,
+                            state = timeTrackingState,
+                            onStateChange = onTimeTrackingStateChange
+                        )
+                    }
                 }
                 if (isTaskListItem) {
                     item(key = "protection_timer") {
