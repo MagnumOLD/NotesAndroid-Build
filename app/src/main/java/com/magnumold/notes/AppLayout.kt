@@ -1,11 +1,18 @@
 package com.magnumold.notes
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +78,26 @@ internal object AppRowDimensions {
     val purchaseTextToCheckboxGap = 12.dp
     val purchaseCheckboxTouchTarget = 40.dp
     val purchaseCheckboxToHandleGap = 14.dp
+}
+
+@Composable
+internal fun AppToolbarSurface(
+    backgroundColor: Color,
+    content: @Composable RowScope.() -> Unit
+) {
+    Surface(
+        color = backgroundColor,
+        contentColor = noteTextColor(backgroundColor)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .height(AppPageLayout.toolbarHeight)
+                .padding(horizontal = AppSpacing.toolbarControlInset),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
