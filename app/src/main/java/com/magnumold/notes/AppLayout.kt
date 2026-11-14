@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -17,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -136,6 +138,34 @@ internal object AppTypography {
     val sectionLabel = AppLayoutContract.sectionLabelSize
     val sectionLabelLineHeight = AppLayoutContract.sectionLabelLineHeight
     val metadata = AppLayoutContract.metadataTextSize
+
+    // Semantic text styles are aliases of the app-wide Material typography.
+    // This keeps screen code from rebuilding equivalent TextStyle values.
+    @Composable
+    fun screenTitleStyle(): TextStyle = MaterialTheme.typography.titleLarge
+
+    @Composable
+    fun editorTitleStyle(): TextStyle = MaterialTheme.typography.titleLarge
+
+    @Composable
+    fun sectionHeadingStyle(): TextStyle =
+        MaterialTheme.typography.titleMedium.copy(fontSize = sectionHeading)
+
+    @Composable
+    fun bodyStyle(): TextStyle = MaterialTheme.typography.bodyLarge
+
+    @Composable
+    fun cardPreviewStyle(): TextStyle =
+        MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight)
+
+    @Composable
+    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.labelLarge
+
+    @Composable
+    fun helperStyle(): TextStyle = MaterialTheme.typography.bodySmall
+
+    @Composable
+    fun metadataStyle(): TextStyle = MaterialTheme.typography.labelSmall
 }
 
 /** Semantic dimensions for the common page and list structures. */
@@ -251,8 +281,7 @@ internal fun AppEditorTopBar(
         title = {
             Text(
                 title,
-                fontWeight = FontWeight.Medium,
-                fontSize = AppTypography.screenTitle
+                style = AppTypography.screenTitleStyle()
             )
         },
         actions = actions
