@@ -56,16 +56,46 @@ internal object AppLayoutContract {
     val mainCardVerticalInset = spaceMd
     val mainCardTextSize = 16.sp
     val pageTitleSize = 18.sp
+    val collectionLabelSize = 14.sp
 
-    // Shared interaction geometry.
+    // Typography roles shared by all features.
+    val editorTitleSize = 18.sp
+    val sectionHeadingSize = 17.sp
+    val bodyTextSize = 16.sp
+    val cardPreviewLineHeight = 22.sp
+    val helperTextSize = 13.sp
+    val bodyLineHeight = 24.sp
+    val sectionLabelSize = 14.sp
+    val sectionLabelLineHeight = 20.sp
+    val metadataTextSize = 12.sp
+
+    // Semantic editor geometry.
+    val editorTitleMinHeight = 48.dp
+    val editorDescriptionMinHeight = 72.dp
+    val editorBodyMinHeight = 160.dp
+
+    // Shared row geometry; gaps remain role-specific.
     val controlTouchTarget = 40.dp
     val statusGlyphSlot = 22.dp
+    val taskStatusToTextGap = 9.dp
+    val taskTextToHandleGap = 22.dp
+    val purchaseTextToCheckboxGap = 12.dp
+    val purchaseCheckboxToHandleGap = 14.dp
+
+    // Main-card geometry.
+    val mainCardDividerThickness = 1.dp
+    val mainCardHeaderFirstLineHeight = 22.dp
+    val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
+
+    // Primary add control geometry.
+    val primaryAddButtonDiameter = 56.dp
+    val primaryAddButtonVerticalOffset = (-65).dp
 }
 
 /** Shared geometry for every primary circular add button. */
 internal object PrimaryAddButtonDimensions {
-    val diameter = 56.dp
-    val verticalOffset = (-65).dp
+    val diameter = AppLayoutContract.primaryAddButtonDiameter
+    val verticalOffset = AppLayoutContract.primaryAddButtonVerticalOffset
 }
 
 /**
@@ -95,16 +125,16 @@ internal object AppSpacing {
  */
 internal object AppTypography {
     val screenTitle = AppLayoutContract.pageTitleSize
-    val editorTitle = 18.sp
-    val sectionHeading = 17.sp
-    val body = 16.sp
+    val editorTitle = AppLayoutContract.editorTitleSize
+    val sectionHeading = AppLayoutContract.sectionHeadingSize
+    val body = AppLayoutContract.bodyTextSize
     val cardPreview = AppLayoutContract.mainCardTextSize
-    val cardPreviewLineHeight = 22.sp
-    val helper = 13.sp
-    val bodyLineHeight = 24.sp
-    val sectionLabel = 14.sp
-    val sectionLabelLineHeight = 20.sp
-    val metadata = 12.sp
+    val cardPreviewLineHeight = AppLayoutContract.cardPreviewLineHeight
+    val helper = AppLayoutContract.helperTextSize
+    val bodyLineHeight = AppLayoutContract.bodyLineHeight
+    val sectionLabel = AppLayoutContract.sectionLabelSize
+    val sectionLabelLineHeight = AppLayoutContract.sectionLabelLineHeight
+    val metadata = AppLayoutContract.metadataTextSize
 }
 
 /** Semantic dimensions for the common page and list structures. */
@@ -119,9 +149,9 @@ internal object AppPageLayout {
 
 /** Semantic minimum sizes used inside record editors; visual values stay unchanged. */
 internal object AppEditorDimensions {
-    val taskTitleMinHeight = 48.dp
-    val descriptionMinHeight = 72.dp
-    val bodyMinHeight = 160.dp
+    val taskTitleMinHeight = AppLayoutContract.editorTitleMinHeight
+    val descriptionMinHeight = AppLayoutContract.editorDescriptionMinHeight
+    val bodyMinHeight = AppLayoutContract.editorBodyMinHeight
 }
 
 internal object AppCollectionRowDimensions {
@@ -132,11 +162,11 @@ internal object AppCollectionRowDimensions {
 internal object AppRowDimensions {
     val statusGlyphSlot = AppLayoutContract.statusGlyphSlot
     val controlTouchTarget = AppLayoutContract.controlTouchTarget
-    val taskStatusToTextGap = 9.dp
-    val taskTextToHandleGap = 22.dp
-    val purchaseTextToCheckboxGap = 12.dp
+    val taskStatusToTextGap = AppLayoutContract.taskStatusToTextGap
+    val taskTextToHandleGap = AppLayoutContract.taskTextToHandleGap
+    val purchaseTextToCheckboxGap = AppLayoutContract.purchaseTextToCheckboxGap
     val purchaseCheckboxTouchTarget = AppLayoutContract.controlTouchTarget
-    val purchaseCheckboxToHandleGap = 14.dp
+    val purchaseCheckboxToHandleGap = AppLayoutContract.purchaseCheckboxToHandleGap
 }
 
 @Composable
@@ -207,12 +237,12 @@ internal fun Modifier.appPageContentInsets(): Modifier =
  */
 internal object CardDimensions {
     val contentHeight = AppLayoutContract.mainCardMinHeight
-    val dividerThickness = 1.dp
+    val dividerThickness = AppLayoutContract.mainCardDividerThickness
     val rowHeight = contentHeight + dividerThickness
 
-    // Align the visible handle with the first 22dp title line.
+    // Align the visible handle with the first title line.
     // Keep a 40dp touch target centered on that visual position.
-    val headerFirstLineHeight = 22.dp
+    val headerFirstLineHeight = AppLayoutContract.mainCardHeaderFirstLineHeight
     val handleTouchTargetSize = AppLayoutContract.controlTouchTarget
     val handleHitTargetTopOffset =
         AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f

@@ -488,7 +488,7 @@ internal fun PurchaseEditor(
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
                         .focusRequester(bodyFocusRequester)
-                        .heightIn(min = 160.dp)
+                        .heightIn(min = AppEditorDimensions.bodyMinHeight)
                         .onFocusChanged { state ->
                             if (!state.isFocused && editingBlockId == editorBlockId) editingBlockId = null
                         },
@@ -496,7 +496,7 @@ internal fun PurchaseEditor(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
                         Box(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.bodyMinHeight),
                             contentAlignment = Alignment.TopStart
                         ) {
                             if (fieldValue.text.isEmpty()) {

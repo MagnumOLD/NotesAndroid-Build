@@ -152,11 +152,11 @@ internal fun NotesHome(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.statusBars)
-                        .height(64.dp)
+                        .height(AppPageLayout.toolbarHeight)
                         .padding(start = AppSpacing.screenHorizontal, end = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically                ) {
                     if (selectionMode) {
-                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
                         Spacer(Modifier.weight(1f))
                         val allSelectedPinned = notes.filter { it.id in selectedNoteIds }.all { it.pinned }
                         IconButton(onClick = { onTogglePinned(selectedNoteIds) }) {
@@ -182,7 +182,7 @@ internal fun NotesHome(
                         }
                         IconButton(onClick = { showDeleteConfirmation = true }) { AppIcon(NoteIcon.Trash, contentDescription = "Удалить выбранные заметки") }
                     } else {
-                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onToggleSearch) {
                             AppIcon(if (searchVisible) NoteIcon.Close else NoteIcon.Search, contentDescription = "Поиск")
@@ -236,18 +236,18 @@ internal fun NotesHome(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            Row(Modifier.fillMaxWidth().height(48.dp).padding(start = AppSpacing.screenHorizontal, end = AppSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().height(AppCollectionRowDimensions.height).padding(start = AppSpacing.screenHorizontal, end = AppSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).fillMaxHeight().horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.lg)) {
                     Text("Все",
                         color = if (activeCollectionId == null) themeColors.collectionText else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp, fontWeight = if (activeCollectionId == null) FontWeight.SemiBold else FontWeight.Normal,
+                        fontSize = AppTypography.sectionLabel, fontWeight = if (activeCollectionId == null) FontWeight.SemiBold else FontWeight.Normal,
                         modifier = Modifier.pointerInput(activeCollectionId) { detectTapGestures(onTap = { onSelectCollection(null); selectedNoteIds = emptySet() }) })
                     collections.forEach { collection ->
                         Box {
                             Text(collection.name,
                                 color = if (activeCollectionId == collection.id) themeColors.collectionText else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp, fontWeight = if (activeCollectionId == collection.id) FontWeight.SemiBold else FontWeight.Normal,
+                                fontSize = AppTypography.sectionLabel, fontWeight = if (activeCollectionId == collection.id) FontWeight.SemiBold else FontWeight.Normal,
                                 maxLines = 1,
                                 modifier = Modifier.pointerInput(collection.id, activeCollectionId) {
                                     detectTapGestures(onTap = { onSelectCollection(collection.id); selectedNoteIds = emptySet() },
@@ -334,7 +334,7 @@ internal fun NotesHome(
                                 // Hit-test the handle in viewport coordinates. This listener
                                 // remains attached while the keyed row changes its list position.
                                 val handleRight = size.width - CardDimensions.handleHitTargetRightInset.toPx()
-                                val handleLeft = handleRight - 40.dp.toPx()
+                                val handleLeft = handleRight - CardDimensions.handleTouchTargetSize.toPx()
                                 if (down.position.x < handleLeft ||
                                     down.position.x > handleRight
                                 ) return@awaitEachGesture
