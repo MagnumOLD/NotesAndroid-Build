@@ -56,8 +56,6 @@ internal object AppLayoutContract {
     // Main list geometry from the approved NotesHome layout.
     val collectionRowHeight = 48.dp
     val mainCardMinHeight = 88.dp
-    // Keep the card's trailing edge aligned to the shared page guide.
-    val mainCardTrailingInset = pageHorizontalInset
     val mainCardVerticalInset = spaceMd
     val mainCardTextSize = 16.sp
     val pageTitleSize = 18.sp
