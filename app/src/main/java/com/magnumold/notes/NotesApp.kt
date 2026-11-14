@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
@@ -20,6 +22,12 @@ internal fun NotesApp(
             }
             val backupFileStore = remember(activity) {
                 BackupFileStore(activity.contentResolver)
+            }
+            val timeTrackingRepository = remember(activity) {
+                TimeTrackingRepository(activity.getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
+            }
+            var timeTrackingState by remember(timeTrackingRepository) {
+                mutableStateOf(timeTrackingRepository.load())
             }
             val themeState = remember(themeSettings, savedThemeMode, initialThemeColorSets) {
                 AppThemeState(
@@ -161,20 +169,37 @@ internal fun NotesApp(
                         }
                     )
                 } else {
-                    RecordEditor(
+                    NoteEditor(
                         note = selected,
                         dark = dark,
                         topBarColor = activeThemeColors.topBar,
                         addButtonColor = activeThemeColors.addButton,
                         selectionColor = activeThemeColors.selection,
                         autoFocus = autoFocusNewNote,
+                        timeTrackingState = timeTrackingState,
+                        onTimeTrackingStateChange = { updated ->
+                            timeTrackingRepository.save(updated)
+                            timeTrackingState = updated
+                        },
                         onBack = {
                             if (!selected.hasContent()) recordsViewModel.removeActiveRecord(activeCollectionId, selected.id)
                             navigation.closeEditor()
                         },
                         onChange = { changed ->
+                            val previous = activeNotes.firstOrNull { it.id == changed.id } ?: selected
+                            val now = System.currentTimeMillis()
+                            val updatedTimeState = syncWorkSessionsForTaskChanges(
+                                oldRoots = listOf(previous),
+                                newRoots = listOf(changed),
+                                currentState = timeTrackingState,
+                                nowMillis = now
+                            )
+                            if (updatedTimeState != timeTrackingState) {
+                                timeTrackingRepository.save(updatedTimeState)
+                                timeTrackingState = updatedTimeState
+                            }
                             val index = activeNotes.indexOfFirst { it.id == changed.id }
-                            if (index >= 0) recordsViewModel.updateActiveRecord(activeCollectionId, changed.copy(updated = System.currentTimeMillis()))
+                            if (index >= 0) recordsViewModel.updateActiveRecord(activeCollectionId, changed.copy(updated = now))
                         },
                         onDelete = { promoteChildren ->
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
