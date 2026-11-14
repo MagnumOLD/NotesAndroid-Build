@@ -479,7 +479,7 @@ internal fun NotesHome(
                                     Box(
                                         Modifier.align(Alignment.TopEnd)
                                             .padding(top = CardDimensions.handleHitTargetTopOffset, end = CardDimensions.handleHitTargetRightInset)
-                                            // Keep the touch target centered on the first title line.
+                                            // Match the top control slot in the right-side card rail.
                                             .size(CardDimensions.handleTouchTargetSize)
                                             .zIndex(2f)
 
