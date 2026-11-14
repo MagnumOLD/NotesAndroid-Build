@@ -328,16 +328,29 @@ internal fun TaskStatusMarker(status: RecordStatus) {
 }
 
 /**
- * A 40dp touch target with the status glyph centered inside it.
- * The full target occupies layout space, preventing overlap with adjacent text.
+ * Keeps a 22dp visual slot in the Row while centering a 40dp touch target
+ * over that slot. The target is allowed to extend into the surrounding space.
  */
 @Composable
 internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
     Box(
-        modifier = Modifier.size(40.dp).clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.layout { measurable, _ ->
+            val targetSize = 40.dp.roundToPx()
+            val slotWidth = 22.dp.roundToPx()
+            val placeable = measurable.measure(
+                androidx.compose.ui.unit.Constraints.fixed(targetSize, targetSize)
+            )
+            layout(slotWidth, targetSize) {
+                placeable.placeRelative((slotWidth - targetSize) / 2, 0)
+            }
+        }
     ) {
-        TaskStatusMarker(status)
+        Box(
+            modifier = Modifier.size(40.dp).clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            TaskStatusMarker(status)
+        }
     }
 }
 @Composable
