@@ -357,11 +357,29 @@ internal fun NoteEditor(
             }
         }
     ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize()
-                .padding(padding)
-                .pointerInput(note.id) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) {
+            if (note.type == RecordType.TASK && isTaskListItem) {
+                WorkTimeControls(
+                    taskId = note.id,
+                    state = timeTrackingState,
+                    status = note.recordStatus(),
+                    onStatusChange = { nextStatus ->
+                        val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                            nextStatus != RecordStatus.MISSED
+                        onChange(note.copy(
+                            status = nextStatus,
+                            deadlineResumeOverride = resumingMissed
+                        ))
+                    },
+                    onAddManualSession = { manualSessionDialogVisible = true }
+                )
+            }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().weight(1f)
+                    .pointerInput(note.id) {
                     awaitEachGesture {
                         val down = awaitFirstDown(
                             requireUnconsumed = false,
@@ -468,26 +486,6 @@ internal fun NoteEditor(
                 }
             }
             if (note.type == RecordType.TASK) {
-                if (isTaskListItem) {
-                    item(key = "work_time_controls") {
-                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
-                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                        WorkTimeControls(
-                            taskId = note.id,
-                            state = timeTrackingState,
-                            status = note.recordStatus(),
-                            onStatusChange = { nextStatus ->
-                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
-                                    nextStatus != RecordStatus.MISSED
-                                onChange(note.copy(
-                                    status = nextStatus,
-                                    deadlineResumeOverride = resumingMissed
-                                ))
-                            },
-                            onAddManualSession = { manualSessionDialogVisible = true }
-                        )
-                    }
-                }
                 if (isTaskListItem) {
                     item(key = "protection_timer") {
                         val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
@@ -755,6 +753,7 @@ internal fun NoteEditor(
                         }
                     }
                 }
+            }
             }
         }
     }
