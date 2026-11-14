@@ -491,7 +491,7 @@ internal fun NoteRow(
                         }
                         .padding(
                             start = AppSpacing.screenHorizontal,
-                            end = AppSpacing.sm,
+                            end = AppSpacing.xs,
                             top = AppSpacing.md,
                             bottom = AppSpacing.md
                         ),
@@ -505,63 +505,58 @@ internal fun NoteRow(
                     )
                 }
 
-                // Fixed-width control rail. The divider and all three controls
-                // keep their positions when the date label replaces the calendar.
-                Row(
+                // Compact, seamless side rail: handle at the top, an optional
+                // pin marker in the middle, and the date control at the bottom.
+                Column(
                     modifier = Modifier.width(CardDimensions.sidePanelWidth)
-                        .heightIn(min = CardDimensions.contentHeight)
+                        .heightIn(min = CardDimensions.contentHeight),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
-                        Modifier.width(1.dp).heightIn(min = CardDimensions.contentHeight)
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        verticalArrangement = Arrangement.SpaceBetween,
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.size(CardDimensions.sidePanelControlSize),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(CardDimensions.sidePanelControlSize),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            DragHandleIcon(color = rowTextColor)
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(CardDimensions.sidePanelControlSize)
-                                .clickable(onClick = onTogglePinned),
-                            contentAlignment = Alignment.Center
-                        ) {
+                        DragHandleIcon(color = rowTextColor)
+                    }
+                    // Keep the middle touch slot stable, but only draw a pin
+                    // for notes that are actually pinned.
+                    Box(
+                        modifier = Modifier.size(CardDimensions.sidePanelControlSize)
+                            .clickable(onClick = onTogglePinned),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (pinned) {
                             AppIcon(
                                 NoteIcon.Pin,
-                                contentDescription = if (pinned) "Открепить" else "Закрепить",
-                                tint = if (pinned) rowTextColor.copy(alpha = 0.95f)
-                                    else rowTextColor.copy(alpha = 0.42f),
+                                contentDescription = "Открепить",
+                                tint = rowTextColor.copy(alpha = 0.95f),
                                 iconSize = 17.dp
                             )
                         }
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(CardDimensions.sidePanelControlSize)
-                                .clickable(onClick = onToggleCreationDate),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (showCreationDate) {
-                                Text(
-                                    text = formatNoteCreationDate(note.created),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = rowTextColor.copy(alpha = 0.72f),
-                                    fontSize = 9.sp,
-                                    lineHeight = 10.sp,
-                                    maxLines = 2,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            } else {
-                                AppIcon(
-                                    NoteIcon.Calendar,
-                                    contentDescription = "Показать дату создания",
-                                    tint = rowTextColor.copy(alpha = 0.62f),
-                                    iconSize = 17.dp
-                                )
-                            }
+                    }
+                    Box(
+                        modifier = Modifier.size(CardDimensions.sidePanelControlSize)
+                            .clickable(onClick = onToggleCreationDate),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (showCreationDate) {
+                            Text(
+                                text = formatNoteCreationDate(note.created),
+                                modifier = Modifier.fillMaxWidth(),
+                                color = rowTextColor.copy(alpha = 0.72f),
+                                fontSize = 9.sp,
+                                lineHeight = 10.sp,
+                                maxLines = 2,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        } else {
+                            AppIcon(
+                                NoteIcon.Calendar,
+                                contentDescription = "Показать дату создания",
+                                tint = rowTextColor.copy(alpha = 0.62f),
+                                iconSize = 17.dp
+                            )
                         }
                     }
                 }
