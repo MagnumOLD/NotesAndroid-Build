@@ -38,6 +38,10 @@ internal class NotesViewModel(
         }
     }
 
+    fun refreshFromRepository() {
+        _snapshot.value = repository.loadSnapshot()
+    }
+
     private fun updateSnapshot(transform: (PersistenceSnapshot) -> PersistenceSnapshot) {
         _snapshot.update(transform)
     }
