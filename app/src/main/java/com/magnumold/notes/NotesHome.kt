@@ -180,7 +180,7 @@ internal fun NotesHome(
                         }
                         IconButton(onClick = { showDeleteConfirmation = true }) { AppIcon(NoteIcon.Trash, contentDescription = "Удалить выбранные заметки") }
                     } else {
-                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onToggleSearch) {
                             AppIcon(if (searchVisible) NoteIcon.Close else NoteIcon.Search, contentDescription = "Поиск")
