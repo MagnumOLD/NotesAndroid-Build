@@ -522,6 +522,7 @@ internal fun NoteRow(
                 ) {
                     DragHandleIcon(color = rowTextColor)
                 }
+                Spacer(Modifier.height(6.dp))
                 if (pinned) {
                     Box(
                         modifier = Modifier.size(CardDimensions.sideRailControlSize),
