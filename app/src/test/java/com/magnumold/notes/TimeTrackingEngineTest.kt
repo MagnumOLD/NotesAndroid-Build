@@ -44,6 +44,8 @@ class TimeTrackingEngineTest {
             endReason = WorkSessionEndReason.STOP
         )
 
+        val groups = TimeTrackingEngine.groupSessionsForDisplay(listOf(first, second, third))
+
         assertEquals(listOf(1, 2), groups.map { it.size }.sorted())
         val merged = groups.single { it.size == 2 }
         assertEquals(10 * 60_000L, merged.sumOf { it.durationMillis })
