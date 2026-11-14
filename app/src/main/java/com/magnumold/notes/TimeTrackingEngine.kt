@@ -188,7 +188,8 @@ internal object ProtectionTimerEngine {
         durationMillis: Long,
         endMode: ProtectionEndMode,
         soundUri: String?,
-        soundEnabled: Boolean
+        soundEnabled: Boolean,
+        parentTaskId: Long? = null
     ): ProtectionTimer {
         require(current == null) { "Only one protection timer can run at a time." }
         require(durationMillis > 0L)
@@ -200,7 +201,8 @@ internal object ProtectionTimerEngine {
             endsAtMillis = nowMillis + durationMillis,
             endMode = endMode,
             soundUri = soundUri,
-            soundEnabled = soundEnabled
+            soundEnabled = soundEnabled,
+            parentTaskId = parentTaskId
         )
     }
 
