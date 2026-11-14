@@ -43,8 +43,8 @@ internal fun syncWorkSessionsForTaskChanges(
         val note = entry.note
         if (note.type != RecordType.TASK) return@forEach
         val old = oldEntries[id]?.note
-        val wasTrackable = old?.type == RecordType.TASK && oldEntries[id]?.parentId != null
-        val isTrackable = entry.parentId != null
+        val wasTrackable = old?.type == RecordType.TASK && oldEntries[id]?.parentId != null && old.timeTrackingEnabled
+        val isTrackable = entry.parentId != null && note.timeTrackingEnabled
         val oldStatus = old?.recordStatus(nowMillis)
         val newStatus = note.recordStatus(nowMillis)
 
