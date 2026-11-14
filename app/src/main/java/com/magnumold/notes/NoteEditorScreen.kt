@@ -499,26 +499,67 @@ internal fun NoteEditor(
                 (note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal),
-                        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(horizontal = AppSpacing.screenHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                     ) {
                         if (note.titleEnabled && isTaskListItem) {
-                            OutlinedTextField(
+                            BasicTextField(
                                 value = note.titleText,
                                 onValueChange = { onChange(note.copy(titleText = it)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Название") },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 18.sp,
+                                    lineHeight = 24.sp,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                                decorationBox = { inner ->
+                                    Box(contentAlignment = Alignment.CenterStart) {
+                                        if (note.titleText.isEmpty()) {
+                                            Text(
+                                                "Название",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                                                fontSize = 18.sp,
+                                                lineHeight = 24.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                        inner()
+                                    }
+                                }
                             )
                         }
                         if (note.descriptionEnabled) {
-                            OutlinedTextField(
+                            BasicTextField(
                                 value = note.descriptionText,
                                 onValueChange = { onChange(note.copy(descriptionText = it)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Описание") },
-                                minLines = 2
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                                textStyle = TextStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 16.sp,
+                                    lineHeight = 24.sp
+                                ),
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                                decorationBox = { inner ->
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                                        contentAlignment = Alignment.TopStart
+                                    ) {
+                                        if (note.descriptionText.isEmpty()) {
+                                            Text(
+                                                "Описание",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                                                fontSize = 16.sp,
+                                                lineHeight = 24.sp
+                                            )
+                                        }
+                                        inner()
+                                    }
+                                }
                             )
                         }
                         if (isTaskListItem && taskDetailsExpanded) {
