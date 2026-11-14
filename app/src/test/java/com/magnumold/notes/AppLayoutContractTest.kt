@@ -46,6 +46,11 @@ class AppLayoutContractTest {
     }
 
     @Test
+    fun editorListSpacingDoesNotDependOnSelectionState() {
+        assertEquals(4f, AppPageLayout.editorListItemSpacing.value, 0f)
+    }
+
+    @Test
     fun compatibilityTokensResolveToTheCanonicalContract() {
         assertEquals(AppLayoutContract.pageHorizontalInset, AppSpacing.screenHorizontal)
         assertEquals(AppLayoutContract.toolbarHeight, AppPageLayout.toolbarHeight)
