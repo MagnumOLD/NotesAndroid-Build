@@ -336,6 +336,16 @@ internal object CardDimensions {
     val handleVisualWidth = AppLayoutContract.dragHandleVisualWidth
     val handleHitTargetRightInset =
         AppSpacing.screenHorizontal - (handleTouchTargetSize - handleVisualWidth) / 2f
+    // The side rail shares the drag target's visual center while keeping its
+    // controls compact and reserving only the width needed by the rail.
+    val sideRailWidth = 32.dp
+    val sideRailControlSize = 28.dp
+    val sideRailTopInset =
+        handleHitTargetTopOffset + (handleTouchTargetSize - sideRailControlSize) / 2f
+    val sideRailEndInset =
+        handleHitTargetRightInset + (handleTouchTargetSize - sideRailWidth) / 2f
+    val sideRailReservedWidth = sideRailWidth + sideRailEndInset
+    val sideRailMinHeight = sideRailTopInset + sideRailControlSize * 3f
     // The nested hit target is centered on the same visible glyph at the row's right edge.
     val nestedHandleHitTargetRightOverhang =
         (handleTouchTargetSize - handleVisualWidth) / 2f
