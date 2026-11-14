@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +24,8 @@ internal fun WorkTimeControls(
     subtaskTitle: String?,
     state: TimeTrackingState,
     allowTracking: Boolean,
+    trackingEnabled: Boolean = false,
+    onTrackingEnabledChange: (Boolean) -> Unit = {},
     onStateChange: (TimeTrackingState) -> Unit
 ) {
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -44,8 +47,16 @@ internal fun WorkTimeControls(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Фактическое время")
-        Text(durationText)
         if (allowTracking) {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Checkbox(checked = trackingEnabled, onCheckedChange = onTrackingEnabledChange)
+                Text("Учитывать время")
+            }
+        }
+        if (!allowTracking || trackingEnabled) {
+            Text(durationText)
+        }
+        if (allowTracking && trackingEnabled) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (active == null) {
                     Button(onClick = {
