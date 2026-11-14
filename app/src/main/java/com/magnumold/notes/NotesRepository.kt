@@ -32,7 +32,7 @@ internal class NotesRepository(private val preferences: SharedPreferences) {
             val updatedChildren = updateTree(note.children)
             if (note.id == taskId && note.type == RecordType.TASK) {
                 found = true
-                note.copy(status = status, deadlineResumeOverride = false, children = updatedChildren)
+                note.copy(status = status, deadlineResumeOverride = status == RecordStatus.IN_PROGRESS, children = updatedChildren)
             } else if (updatedChildren != note.children) {
                 note.copy(children = updatedChildren)
             } else note
