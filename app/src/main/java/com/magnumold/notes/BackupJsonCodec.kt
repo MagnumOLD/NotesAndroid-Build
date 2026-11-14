@@ -109,7 +109,8 @@ internal fun createBackupJson(items: List<Note>, collections: List<NoteCollectio
     }
     return JSONObject().put("format", "notes_backup").put("version", 7).put("exportedAt", System.currentTimeMillis())
         .put("notes", notesToJson(items)).put("collections", collectionArray)
-        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash))\n        .put("timeTracking", timeTrackingToJson(timeTracking)).toString(2)
+        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash))
+        .put("timeTracking", timeTrackingToJson(timeTracking)).toString(2)
 }
 internal fun parseBackupJson(raw: String): BackupData {
     val root = JSONObject(raw)
