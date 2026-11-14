@@ -43,6 +43,19 @@ class TimeTrackingEngineTest {
         assertTrue(state.sessions.isEmpty())
     }
 
+    @Test fun periodStatisticsSumParallelSessionsWithoutDeduplication() {
+        var state = TimeTrackingState()
+        state = TimeTrackingEngine.start(state, 1, 9, "Parent", "One", 0, "one")
+        state = TimeTrackingEngine.start(state, 2, 9, "Parent", "Two", 0, "two")
+        state = TimeTrackingEngine.finish(state, 1, 3_600_000, WorkSessionEndReason.STOP)
+        state = TimeTrackingEngine.finish(state, 2, 1_800_000, WorkSessionEndReason.STOP)
+        val stats = TimeTrackingEngine.statisticsBetween(state, 0, 7_200_000, 7_200_000)
+        assertEquals(5_400_000L, stats.totalMillis)
+        assertEquals(3_600_000L, stats.taskTotalsMillis[1L])
+        assertEquals(1_800_000L, stats.taskTotalsMillis[2L])
+        assertEquals(2, stats.sessionCount)
+    }
+
     @Test fun protectionTimerIsIndependentAndOnlyOneCanRun() {
         val timer = ProtectionTimerEngine.start(null, 1, "Task", "Child", 0, 60_000, ProtectionEndMode.SIGNAL_ONLY, null, false)
         assertEquals(30_000L, ProtectionTimerEngine.remainingMillis(timer, 30_000))
