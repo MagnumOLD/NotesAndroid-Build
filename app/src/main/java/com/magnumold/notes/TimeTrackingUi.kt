@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 internal fun TimeTrackingSection(
     title: String,
     headerAction: (@Composable () -> Unit)? = null,
-    trailingContent: @Composable RowScope.() -> Unit,
+    trailingContent: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
