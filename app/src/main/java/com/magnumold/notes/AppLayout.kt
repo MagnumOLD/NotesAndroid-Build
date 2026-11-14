@@ -65,7 +65,7 @@ internal object AppLayoutContract {
     val cardPreviewLineHeight = 22.sp
     val helperTextSize = 13.sp
     val bodyLineHeight = 24.sp
-    val sectionLabelSize = 14.sp
+    val sectionLabelSize = collectionLabelSize
     val sectionLabelLineHeight = 20.sp
     val metadataTextSize = 12.sp
 
@@ -85,7 +85,7 @@ internal object AppLayoutContract {
     // Main-card geometry.
     val mainCardDividerThickness = 1.dp
     val mainCardHeaderFirstLineHeight = 22.dp
-    val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
+    val nestedGroupMinHeight = 72.dp
 
     // Primary add control geometry.
     val primaryAddButtonDiameter = 56.dp
@@ -251,7 +251,7 @@ internal object CardDimensions {
     val handleHitTargetRightInset = AppSpacing.screenHorizontal - 12.dp
     // Nested glyphs end at the row edge; center the 40.dp hit target on the 16.dp glyph.
     val nestedHandleHitTargetRightOverhang = 12.dp
-    val nestedGroupMinHeight = 72.dp
+    val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
 }
 
 
