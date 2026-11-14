@@ -86,7 +86,7 @@ internal object AppLayoutContract {
     val purchaseCheckboxToHandleGap = 14.dp
     val nestedRowVerticalInset = spaceMd
     val nestedRowContentMinHeight = controlTouchTarget
-    val nestedRowMinHeight = nestedRowContentMinHeight + nestedRowVerticalInset * 2
+    val nestedRowMinHeight = nestedRowContentMinHeight + nestedRowVerticalInset * 2f
 
     // Main-card geometry.
     val mainCardDividerThickness = 1.dp
