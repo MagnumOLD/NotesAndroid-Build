@@ -28,11 +28,21 @@ class TimeTrackingEngineTest {
     }
 
     @Test fun historyGroupsIntervalsWithGapsUpToTenMinutesWithoutCountingBreaks() {
-        val first = WorkSession("first", 7, 2, "Parent", "Child", 0, 5 * 60_000L, 5 * 60_000L, WorkSessionEndReason.PAUSE)
-        val second = WorkSession("second", 7, 2, "Parent", "Child", 15 * 60_000L, 20 * 60_000L, WorkSessionEndReason.PAUSE)
-        val third = WorkSession("third", 7, 2, "Parent", "Child", 31 * 60_000L, 36 * 60_000L, WorkSessionEndReason.STOP)
-
-        val groups = TimeTrackingEngine.groupSessionsForDisplay(listOf(first, second, third))
+        val first = WorkSession(
+            id = "first", taskId = 7L, parentTaskId = 2L, taskTitle = "Parent", subtaskTitle = "Child",
+            startedAtMillis = 0L, endedAtMillis = 5 * 60_000L, durationMillis = 5 * 60_000L,
+            endReason = WorkSessionEndReason.PAUSE
+        )
+        val second = WorkSession(
+            id = "second", taskId = 7L, parentTaskId = 2L, taskTitle = "Parent", subtaskTitle = "Child",
+            startedAtMillis = 15 * 60_000L, endedAtMillis = 20 * 60_000L, durationMillis = 5 * 60_000L,
+            endReason = WorkSessionEndReason.PAUSE
+        )
+        val third = WorkSession(
+            id = "third", taskId = 7L, parentTaskId = 2L, taskTitle = "Parent", subtaskTitle = "Child",
+            startedAtMillis = 31 * 60_000L, endedAtMillis = 36 * 60_000L, durationMillis = 5 * 60_000L,
+            endReason = WorkSessionEndReason.STOP
+        )
 
         assertEquals(listOf(1, 2), groups.map { it.size }.sorted())
         val merged = groups.single { it.size == 2 }
