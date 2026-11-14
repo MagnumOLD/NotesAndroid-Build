@@ -67,7 +67,7 @@ internal fun ProtectionTimerControls(
             else -> {
                 OutlinedTextField(
                     value = minutesText,
-                    onValueChange = { value -> minutesText = value.filter(Char::isDigit).take(4) },
+                    onValueChange = { value -> minutesText = value.filter { it.isDigit() }.take(4) },
                     modifier = Modifier,
                     label = { Text("Продолжительность, минут") },
                     singleLine = true,
