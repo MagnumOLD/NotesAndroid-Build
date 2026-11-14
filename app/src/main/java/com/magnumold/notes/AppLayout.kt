@@ -69,7 +69,7 @@ internal object AppLayoutContract {
     val helperTextSize = 13.sp
     val bodyLineHeight = 24.sp
     val sectionLabelSize = collectionLabelSize
-    val sectionLabelLineHeight = 20.sp
+    val sectionLabelLineHeight = 24.sp
     val metadataTextSize = 12.sp
 
     // Semantic editor geometry.
@@ -159,7 +159,7 @@ internal object AppTypography {
         MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight, fontWeight = FontWeight.Medium)
 
     @Composable
-    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel)
+    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel, lineHeight = sectionLabelLineHeight)
 
     @Composable
     fun helperStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = helper)
