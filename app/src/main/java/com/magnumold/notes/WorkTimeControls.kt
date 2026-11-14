@@ -44,14 +44,14 @@ internal fun WorkTimeControls(
                         state, taskId, System.currentTimeMillis(), WorkSessionEndReason.STOP
                     ))
                 }) { Text("Стоп") }
-            } else if (hasHistory) {
+            } else {
                 TextButton(onClick = {
                     onStateChange(TimeTrackingEngine.start(
                         state = state, taskId = taskId, parentTaskId = parentTaskId,
                         taskTitle = taskTitle, subtaskTitle = subtaskTitle,
                         nowMillis = System.currentTimeMillis()
                     ))
-                }) { Text("Продолжить") }
+                }) { Text(if (hasHistory) "Продолжить" else "Начать") }
             }
         }
     }
