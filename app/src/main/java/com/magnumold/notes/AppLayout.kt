@@ -165,6 +165,18 @@ internal object AppTypography {
     fun helperStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = helper)
 
     @Composable
+    fun compactBodyStyle(): TextStyle = MaterialTheme.typography.bodyMedium
+
+    @Composable
+    fun smallBodyStyle(): TextStyle = MaterialTheme.typography.bodySmall
+
+    @Composable
+    fun compactTitleStyle(): TextStyle = MaterialTheme.typography.titleSmall
+
+    @Composable
+    fun smallLabelStyle(): TextStyle = MaterialTheme.typography.labelSmall
+
+    @Composable
     fun metadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = metadata)
 }
 
