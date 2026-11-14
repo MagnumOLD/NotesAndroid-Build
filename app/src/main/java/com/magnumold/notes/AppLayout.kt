@@ -149,7 +149,7 @@ internal object AppTypography {
 
     @Composable
     fun sectionHeadingStyle(): TextStyle =
-        MaterialTheme.typography.titleMedium.copy(fontSize = sectionHeading)
+        MaterialTheme.typography.bodyLarge.copy(fontSize = sectionHeading)
 
     @Composable
     fun bodyStyle(): TextStyle = MaterialTheme.typography.bodyLarge
@@ -159,13 +159,13 @@ internal object AppTypography {
         MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight, fontWeight = FontWeight.Medium)
 
     @Composable
-    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.labelLarge
+    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel)
 
     @Composable
-    fun helperStyle(): TextStyle = MaterialTheme.typography.bodySmall
+    fun helperStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = helper)
 
     @Composable
-    fun metadataStyle(): TextStyle = MaterialTheme.typography.labelSmall
+    fun metadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = metadata)
 }
 
 /** Semantic dimensions for the common page and list structures. */
