@@ -512,7 +512,7 @@ internal fun NoteEditor(
                                     expanded = statusMenuExpanded,
                                     onDismissRequest = { statusMenuExpanded = false }
                                 ) {
-                                    RecordStatus.values().forEach { status ->
+                                    listOf(RecordStatus.WAITING, RecordStatus.IN_PROGRESS, RecordStatus.PAUSED, RecordStatus.COMPLETED).forEach { status ->
                                         DropdownMenuItem(
                                             text = { Text(recordStatusText(status)) },
                                             onClick = {
@@ -632,7 +632,7 @@ internal fun NoteEditor(
                                         expanded = childStatusMenuExpanded,
                                         onDismissRequest = { childStatusMenuExpanded = false }
                                     ) {
-                                        RecordStatus.values().forEach { status ->
+                                        listOf(RecordStatus.WAITING, RecordStatus.IN_PROGRESS, RecordStatus.PAUSED, RecordStatus.COMPLETED).forEach { status ->
                                             DropdownMenuItem(
                                                 text = { Text(recordStatusText(status)) },
                                                 onClick = {
