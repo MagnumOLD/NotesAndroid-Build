@@ -54,7 +54,10 @@ internal object AppLayoutContract {
     val toolbarHeight = 64.dp
 
     // Main list geometry from the approved NotesHome layout.
-    val collectionRowHeight = 48.dp
+    // Shared compact row height for collection navigation and section headers.
+    val compactSectionRowHeight = 48.dp
+    val collectionRowHeight = compactSectionRowHeight
+    val timeTrackingHeaderRowHeight = compactSectionRowHeight
     val mainCardMinHeight = 88.dp
     val mainCardVerticalInset = spaceMd
     val mainCardTextSize = 16.sp
