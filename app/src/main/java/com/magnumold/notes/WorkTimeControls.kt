@@ -2,6 +2,8 @@ package com.magnumold.notes
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -13,10 +15,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
-/** Work controls are status-driven: the status synchronizer owns session start/stop. */
+/** Actual work time for one subtask. Every subtask is tracked automatically. */
 @Composable
 internal fun WorkTimeControls(
     taskId: Long,
@@ -29,81 +32,122 @@ internal fun WorkTimeControls(
     val active = state.activeSessions[taskId]
 
     LaunchedEffect(taskId, active?.startedAtMillis) {
-        while (true) {
+        if (active == null) {
             nowMillis = System.currentTimeMillis()
-            delay(1_000L)
+        } else {
+            while (true) {
+                nowMillis = System.currentTimeMillis()
+                delay(1_000L)
+            }
         }
     }
 
     val totalMillis = TimeTrackingEngine.taskDurationMillis(state, taskId, nowMillis)
-    val hasHistory = state.sessions.any { it.taskId == taskId }
+    val hasHistory = state.sessions.any { it.taskId == taskId } || active != null
 
-    fun durationLabel(value: Long): String {
-        val seconds = (value / 1_000L).coerceAtLeast(0L)
-        val hours = seconds / 3_600L
-        val minutes = (seconds % 3_600L) / 60L
-        val remainingSeconds = seconds % 60L
-        return if (hours > 0L) "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
-        else "%02d:%02d".format(minutes, remainingSeconds)
-    }
-
-    TimeTrackingSection(title = "Учёт времени") {
+    TimeTrackingSection(title = "Фактическое время") {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Text("Всего", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                "Всего: ${durationLabel(totalMillis)}",
-                modifier = Modifier.weight(1f),
-                style = AppTypography.compactBodyStyle(),
+                formatWorkDuration(totalMillis),
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
-            TextButton(onClick = onOpenHistory, enabled = hasHistory) { Text("История") }
         }
+
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
         ) {
             when (status) {
                 RecordStatus.IN_PROGRESS -> {
-                    Text(
-                        "Выполняется",
-                        modifier = Modifier.weight(1f),
-                        style = AppTypography.compactBodyStyle(),
-                        color = Color(0xFF4CAF50)
-                    )
-                    TextButton(onClick = { onStatusChange(RecordStatus.PAUSED) }) { Text("Остановить") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.PAUSED) }) { Text("Пауза") }
                     TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
                 }
                 RecordStatus.PAUSED -> {
-                    Text(
-                        "Остановлена",
-                        modifier = Modifier.weight(1f),
-                        style = AppTypography.compactBodyStyle(),
-                        color = Color(0xFFFF9800)
-                    )
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Продолжить работу") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Продолжить") }
                     TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
                 }
                 RecordStatus.COMPLETED -> {
-                    Text(
-                        "Завершена",
-                        modifier = Modifier.weight(1f),
-                        style = AppTypography.compactBodyStyle(),
-                        color = Color(0xFF2196F3)
-                    )
                     TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Возобновить работу") }
                 }
+                RecordStatus.CANCELLED -> {
+                    Text("Отменена", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                RecordStatus.MISSED -> {
+                    Text("Просрочена", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать") }
+                }
                 else -> {
-                    Text(
-                        "Ожидает",
-                        modifier = Modifier.weight(1f),
-                        style = AppTypography.compactBodyStyle(),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                     TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать работу") }
                 }
             }
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = onOpenHistory, enabled = hasHistory) {
+                Text("История и статистика →")
+            }
         }
     }
+}
+
+/** Parent tasks show only the sum of their subtasks; they never run their own timer. */
+@Composable
+internal fun ParentWorkTimeSummary(
+    parentTaskId: Long,
+    state: TimeTrackingState,
+    onOpenHistory: () -> Unit
+) {
+    var nowMillis by remember(parentTaskId) { mutableLongStateOf(System.currentTimeMillis()) }
+    val activeSignature = state.activeSessions.values
+        .filter { it.parentTaskId == parentTaskId }
+        .map { it.taskId to it.startedAtMillis }
+
+    LaunchedEffect(parentTaskId, activeSignature) {
+        if (activeSignature.isEmpty()) {
+            nowMillis = System.currentTimeMillis()
+        } else {
+            while (true) {
+                nowMillis = System.currentTimeMillis()
+                delay(1_000L)
+            }
+        }
+    }
+
+    val totalMillis = TimeTrackingEngine.parentDurationMillis(state, parentTaskId, nowMillis)
+    val hasHistory = state.sessions.any { it.parentTaskId == parentTaskId } || activeSignature.isNotEmpty()
+
+    TimeTrackingSection(title = "Фактическое время") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Всего по подзадачам", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                formatWorkDuration(totalMillis),
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onOpenHistory, enabled = hasHistory) {
+                Text("История и статистика →")
+            }
+        }
+    }
+}
+
+private fun formatWorkDuration(value: Long): String {
+    val seconds = (value / 1_000L).coerceAtLeast(0L)
+    val hours = seconds / 3_600L
+    val minutes = (seconds % 3_600L) / 60L
+    val remainingSeconds = seconds % 60L
+    return if (hours > 0L) "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
+    else "%02d:%02d".format(minutes, remainingSeconds)
 }
