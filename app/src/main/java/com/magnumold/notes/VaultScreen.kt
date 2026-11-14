@@ -46,7 +46,7 @@ internal fun VaultScreen(
                         block.text.lineSequence().firstOrNull { it.isNotBlank() }
                     }.firstOrNull() ?: "Пустая заметка"
                     Column(Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs)) {
-                        Text(preview, fontSize = AppTypography.body, maxLines = 2)
+                        Text(preview, style = AppTypography.bodyStyle(), maxLines = 2)
                         Text(if (entry.collectionId == null) "Основной блокнот" else "Подборка",
                             style = AppTypography.metadataStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
