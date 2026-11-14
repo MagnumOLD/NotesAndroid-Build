@@ -188,6 +188,8 @@ internal object AppTypography {
 
 /** Semantic dimensions for the common page and list structures. */
 internal object AppPageLayout {
+    // Keep editor list rhythm identical in normal and multi-selection states.
+    val editorListItemSpacing = AppSpacing.xxs
     val editorListContentPadding = PaddingValues(
         top = AppSpacing.sm,
         bottom = AppSpacing.lg
