@@ -41,8 +41,15 @@ internal class NotesRepository(private val preferences: SharedPreferences) {
         val updatedCollections = current.collections.map { collection ->
             collection.copy(notes = updateTree(collection.notes))
         }
-        if (found) saveSnapshot(current.copy(notes = updatedNotes, collections = updatedCollections))
+        if (found) {
+            saveSnapshot(current.copy(notes = updatedNotes, collections = updatedCollections))
+            preferences.edit().putLong(KEY_EXTERNAL_STATUS_UPDATE, System.currentTimeMillis()).apply()
+        }
         return found
+    }
+
+    private companion object {
+        const val KEY_EXTERNAL_STATUS_UPDATE = "external_task_status_update"
     }
 
     private fun loadNotes(): List<Note> = runCatching {
