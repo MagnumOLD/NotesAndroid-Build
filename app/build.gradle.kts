@@ -9,12 +9,12 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.magnumold.notes"
+        applicationId = "com.magnumold.notes.prototype"
         minSdk = 23
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 120
-        versionName = "1.106.17"
+        versionCode = 121
+        versionName = "1.106.17-prototype"
     }
 
     buildTypes {
