@@ -61,6 +61,7 @@ internal fun NotesHome(
     var deleteCollectionId by remember { mutableStateOf<Long?>(null) }
     var createMenuExpanded by remember { mutableStateOf(false) }
     var deadlineClock by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var showCreationDates by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60_000L)
@@ -461,6 +462,9 @@ internal fun NotesHome(
                                     NoteRow(
                                         note = note, dark = dark, noteColors = noteColors,
                                         customSelectionColor = selectedNoteBackground, pinned = note.pinned, selected = isSelected,
+                                        showCreationDate = showCreationDates,
+                                        onToggleCreationDate = { showCreationDates = !showCreationDates },
+                                        onTogglePinned = { onTogglePinned(setOf(note.id)) },
                                         statusNow = deadlineClock,
                                         onClick = {
                                             if (selectionMode) selectedNoteIds = if (isSelected) selectedNoteIds - note.id else selectedNoteIds + note.id
