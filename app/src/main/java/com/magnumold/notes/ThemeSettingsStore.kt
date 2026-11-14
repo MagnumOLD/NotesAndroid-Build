@@ -35,9 +35,16 @@ internal class ThemeSettingsStore(private val preferences: SharedPreferences) {
             val darkJson = json.optJSONObject("dark") ?: JSONObject()
             val darkColors = themeColorsFromJson(darkJson, defaults.dark)
             // Migrate the former generic dark selection tint to the original chosen note highlight.
-            val migratedDark = if (darkColors.selection == Color(0xFF38383A)) {
-                darkColors.copy(selection = Color(0xFF1C2B40))
-            } else darkColors
+            val migratedSelection = if (darkColors.selection == Color(0xFF38383A)) {
+                Color(0xFF1C2B40)
+            } else darkColors.selection
+            // Replace only untouched former defaults; preserve colors explicitly customized by the user.
+            val migratedDark = darkColors.copy(
+                topBar = if (darkColors.topBar == Color.Black) Color(0xFF9B2D30) else darkColors.topBar,
+                selection = migratedSelection,
+                addButton = if (darkColors.addButton == Color(0xFF0A84FF)) Color(0xFF9B2D30) else darkColors.addButton,
+                collectionText = if (darkColors.collectionText == Color(0xFF0A84FF)) Color.White else darkColors.collectionText
+            )
             ThemeColorSets(
                 themeColorsFromJson(json.optJSONObject("light") ?: JSONObject(), defaults.light),
                 migratedDark,
