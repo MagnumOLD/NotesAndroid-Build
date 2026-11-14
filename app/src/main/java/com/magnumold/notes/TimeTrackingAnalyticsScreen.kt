@@ -276,14 +276,18 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
     var period by remember { mutableStateOf("День") }
     var customStart by remember { mutableStateOf(formatSessionDay(System.currentTimeMillis())) }
     var customEnd by remember { mutableStateOf(formatSessionDay(System.currentTimeMillis())) }
+    var compareStart by remember { mutableStateOf("") }
+    var compareEnd by remember { mutableStateOf("") }
     val now = System.currentTimeMillis()
     val range = remember(period, customStart, customEnd, now / 60_000L) {
         periodBounds(period, customStart, customEnd, now)
     }
     val stats = TimeTrackingEngine.statisticsBetween(state, range.first, range.second, now)
     val duration = range.second - range.first
-    val previousRange = remember(period, range.first, range.second) {
-        previousPeriodBounds(period, range.first, range.second)
+    val previousRange = remember(period, range.first, range.second, compareStart, compareEnd) {
+        if (period == "Диапазон" && compareStart.isNotBlank() && compareEnd.isNotBlank()) {
+            periodBounds("Диапазон", compareStart, compareEnd, now)
+        } else previousPeriodBounds(period, range.first, range.second)
     }
     val previous = TimeTrackingEngine.statisticsBetween(
         state, previousRange.first, previousRange.second, now
@@ -314,6 +318,21 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 onValueChange = { customEnd = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("По дату включительно") },
+                singleLine = true
+            )
+            Text("Сравнить с другим периодом (необязательно)", style = MaterialTheme.typography.titleSmall)
+            OutlinedTextField(
+                value = compareStart,
+                onValueChange = { compareStart = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Начало периода сравнения") },
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = compareEnd,
+                onValueChange = { compareEnd = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Окончание периода сравнения") },
                 singleLine = true
             )
         }
