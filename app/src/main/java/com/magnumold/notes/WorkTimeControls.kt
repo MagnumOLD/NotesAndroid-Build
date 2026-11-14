@@ -1,20 +1,20 @@
 package com.magnumold.notes
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 /** Compact actual-time controls. Task status is deliberately not modified here. */
@@ -49,44 +49,45 @@ internal fun WorkTimeControls(
 
     TimeTrackingSection(title = "Фактическое время") {
         if (allowTracking) {
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = trackingEnabled, onCheckedChange = onTrackingEnabledChange)
-                Text("Учитывать время")
+                Text("Учитывать время", style = MaterialTheme.typography.bodyMedium)
             }
         }
-        Text(durationText, style = MaterialTheme.typography.headlineMedium)
-        if (allowTracking && trackingEnabled) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (active == null) {
-                    Button(onClick = {
-                        onStateChange(
-                            TimeTrackingEngine.start(
-                                state = state,
-                                taskId = taskId,
-                                parentTaskId = parentTaskId,
-                                taskTitle = taskTitle,
-                                subtaskTitle = subtaskTitle,
+        Row(
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                durationText,
+                fontSize = 16.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (allowTracking && trackingEnabled) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xxs)) {
+                    if (active == null) {
+                        TextButton(onClick = {
+                            onStateChange(TimeTrackingEngine.start(
+                                state = state, taskId = taskId, parentTaskId = parentTaskId,
+                                taskTitle = taskTitle, subtaskTitle = subtaskTitle,
                                 nowMillis = System.currentTimeMillis()
-                            )
-                        )
-                    }) {
-                        Text(if (hasHistory) "Продолжить учёт" else "Начать учёт")
-                    }
-                } else {
-                    Button(onClick = {
-                        onStateChange(
-                            TimeTrackingEngine.finish(
+                            ))
+                        }) { Text(if (hasHistory) "Продолжить" else "Начать") }
+                    } else {
+                        TextButton(onClick = {
+                            onStateChange(TimeTrackingEngine.finish(
                                 state, taskId, System.currentTimeMillis(), WorkSessionEndReason.PAUSE
-                            )
-                        )
-                    }) { Text("Пауза") }
-                    OutlinedButton(onClick = {
-                        onStateChange(
-                            TimeTrackingEngine.finish(
+                            ))
+                        }) { Text("Пауза") }
+                        TextButton(onClick = {
+                            onStateChange(TimeTrackingEngine.finish(
                                 state, taskId, System.currentTimeMillis(), WorkSessionEndReason.STOP
-                            )
-                        )
-                    }) { Text("Стоп") }
+                            ))
+                        }) { Text("Стоп") }
+                    }
                 }
             }
         }
