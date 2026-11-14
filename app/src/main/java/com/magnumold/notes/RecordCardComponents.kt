@@ -44,6 +44,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -324,6 +326,34 @@ internal fun TaskStatusMarker(status: RecordStatus) {
         tint = tint,
         modifier = Modifier.size(22.dp)
     )
+}
+
+/**
+ * Keeps the row's visual slot at the icon width while centering a 40dp touch target
+ * over the 22dp status glyph. The caller should leave enough trailing space so
+ * the touch target does not overlap the adjacent text.
+ */
+@Composable
+internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.layout { measurable, constraints ->
+            val touchTarget = 40.dp.roundToPx()
+            val visualSlot = 22.dp.roundToPx()
+            val placeable = measurable.measure(Constraints.fixed(touchTarget, touchTarget))
+            val width = constraints.constrainWidth(visualSlot)
+            val height = constraints.constrainHeight(touchTarget)
+            layout(width, height) {
+                placeable.placeRelative((width - touchTarget) / 2, 0)
+            }
+        }
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            TaskStatusMarker(status)
+        }
+    }
 }
 
 @Composable
