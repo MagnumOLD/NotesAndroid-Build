@@ -696,32 +696,10 @@ internal fun NoteEditor(
                             val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             val dragHandleColor = childTextColor
                             NestedRecordRow {
-                                var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
-                                Box {
-                                    TaskStatusButton(
-                                        status = childStatus,
-                                        onClick = { childStatusMenuExpanded = true }
-                                    )
-                                    DropdownMenu(
-                                        expanded = childStatusMenuExpanded,
-                                        onDismissRequest = { childStatusMenuExpanded = false }
-                                    ) {
-                                        listOf(RecordStatus.WAITING, RecordStatus.IN_PROGRESS, RecordStatus.PAUSED, RecordStatus.COMPLETED).forEach { status ->
-                                            DropdownMenuItem(
-                                                text = { Text(recordStatusText(status)) },
-                                                onClick = {
-                                                    childStatusMenuExpanded = false
-                                                    val resumingMissed = child.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                    val changed = child.copy(status = status, deadlineResumeOverride = resumingMissed)
-                                                    latestTaskOnChange.value(
-                                                        withUpdatedRecordChildren(latestTaskNote.value,
-                                                            latestTaskChildren.value.map { if (it.id == child.id) changed else it })
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
+                                TaskStatusButton(
+                                    status = childStatus,
+                                    onClick = { /* Status is controlled from the subtask work controls. */ }
+                                )
                                 Spacer(Modifier.width(AppRowDimensions.taskStatusToTextGap))
                                 Text(
                                     childText,
