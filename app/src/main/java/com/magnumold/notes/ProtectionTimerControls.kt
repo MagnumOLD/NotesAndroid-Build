@@ -90,23 +90,6 @@ internal fun ProtectionTimerControls(
                         Text("Остановить и поставить на паузу")
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onChooseSound) { Text("Выбрать звук") }
-                    TextButton(onClick = {
-                        if (state.soundEnabled) {
-                            val uri = state.soundUri?.let(android.net.Uri::parse)
-                                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                            RingtoneManager.getRingtone(context, uri)?.play()
-                        }
-                    }, enabled = state.soundEnabled) { Text("Прослушать") }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Checkbox(
-                        checked = state.soundEnabled,
-                        onCheckedChange = { onStateChange(state.copy(soundEnabled = it)) }
-                    )
-                    Text("Звуковой сигнал")
-                }
                 Button(
                     enabled = (minutesText.toLongOrNull() ?: 0L) > 0L,
                     onClick = {
@@ -128,6 +111,30 @@ internal fun ProtectionTimerControls(
                     }
                 ) { Text("Запустить таймер") }
             }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onChooseSound) { Text("Выбрать звук") }
+            TextButton(onClick = {
+                if (state.soundEnabled) {
+                    val uri = state.soundUri?.let(android.net.Uri::parse)
+                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    RingtoneManager.getRingtone(context, uri)?.play()
+                }
+            }, enabled = state.soundEnabled) { Text("Прослушать") }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.material3.Checkbox(
+                checked = state.soundEnabled,
+                onCheckedChange = { enabled ->
+                    onStateChange(
+                        state.copy(
+                            soundEnabled = enabled,
+                            protectionTimer = state.protectionTimer?.copy(soundEnabled = enabled)
+                        )
+                    )
+                }
+            )
+            Text("Звуковой сигнал")
         }
     }
 }
