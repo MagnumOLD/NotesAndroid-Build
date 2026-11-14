@@ -243,7 +243,7 @@ private fun EditWorkSessionDialog(
 }
 
 @Composable
-private fun AddWorkSessionDialog(
+internal fun AddWorkSessionDialog(
     taskId: Long,
     parentTaskId: Long?,
     taskTitle: String,
