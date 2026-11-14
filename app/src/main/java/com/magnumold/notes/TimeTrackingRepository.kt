@@ -19,6 +19,11 @@ internal class TimeTrackingRepository(
     @Synchronized
     fun load(): TimeTrackingState = _state.value
 
+    @Synchronized
+    fun reload() {
+        _state.value = loadStoredState()
+    }
+
     private fun loadStoredState(): TimeTrackingState = runCatching {
         val raw = preferences.getString(KEY_STATE, null) ?: return TimeTrackingState()
         parseTimeTrackingJson(JSONObject(raw))
