@@ -20,8 +20,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -66,13 +64,18 @@ internal fun TimeTrackingAnalyticsScreen(
             Text("Учёт времени", fontSize = 18.sp, fontWeight = FontWeight.Medium)
             TextButton(onClick = onBack) { Text("Назад") }
         }
-        TabRow(selectedTabIndex = tab) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("История") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Статистика") })
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+            TextButton(onClick = { tab = 0 }) {
+                Text("История", color = if (tab == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            TextButton(onClick = { tab = 1 }) {
+                Text("Статистика", color = if (tab == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), thickness = CardDimensions.dividerThickness)
         if (tab == 0) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Рабочие сессии", style = MaterialTheme.typography.titleMedium)
+                Text("Рабочие сессии", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 if (manualTaskId != null) {
                     TextButton(onClick = { adding = true }) { Text("Добавить") }
                 }
@@ -87,9 +90,9 @@ internal fun TimeTrackingAnalyticsScreen(
                     items(state.sessions.sortedByDescending { it.startedAtMillis }, key = { it.id }) { session ->
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
-                            verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                            verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
                         ) {
-                                Text(session.subtaskTitle ?: session.taskTitle, style = MaterialTheme.typography.titleSmall)
+                                Text(session.subtaskTitle ?: session.taskTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                                 if (session.subtaskTitle != null) {
                                     Text(session.taskTitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
@@ -97,7 +100,7 @@ internal fun TimeTrackingAnalyticsScreen(
                                     "${formatSessionDate(session.startedAtMillis)} — ${formatSessionDate(session.endedAtMillis)}",
                                     style = MaterialTheme.typography.bodySmall
                                 )
-                                Text("Длительность: ${formatSessionDuration(session.durationMillis)}")
+                                Text("Длительность: ${formatSessionDuration(session.durationMillis)}", style = MaterialTheme.typography.bodySmall)
                                 Text("Завершение: ${session.endReason.toRussianLabel()}", style = MaterialTheme.typography.bodySmall)
                                 Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                                     TextButton(onClick = { editing = session }) { Text("Изменить") }
@@ -300,7 +303,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
         modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.xxs)) {
             listOf("День", "Неделя", "Месяц", "Диапазон").forEach { value ->
                 TextButton(onClick = { period = value }) {
                     Text(value, color = if (period == value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -338,14 +341,14 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 singleLine = true
             )
         }
-        Text("Фактическое время", style = MaterialTheme.typography.titleMedium)
-        Text(formatSessionDuration(stats.totalMillis), style = MaterialTheme.typography.headlineMedium)
+        Text("Фактическое время", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(formatSessionDuration(stats.totalMillis), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
         Text("Рабочих сессий: ${stats.sessionCount}")
         Text(
             "По сравнению с предыдущим периодом: ${if (delta >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(delta))}",
             color = if (delta >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
-        Text("Изменение по задачам", style = MaterialTheme.typography.titleSmall)
+        Text("Изменение по задачам", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         val taskIds = (stats.taskTotalsMillis.keys + previous.taskTotalsMillis.keys).toSet()
         data class BreakdownRow(
             val id: Long,
@@ -380,7 +383,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 )
             }
         }
-        Text("Изменение по дням", style = MaterialTheme.typography.titleSmall)
+        Text("Изменение по дням", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         val chartData = dailyTotals.filter { (day, _) ->
             val dayStart = parseSessionDay(day) ?: 0L
             dayStart < range.second && dayStart + 86_400_000L > range.first
@@ -388,7 +391,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
         if (chartData.isEmpty()) {
             Text("За этот период записей нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(104.dp)) {
                 val maxValue = (chartData.maxOfOrNull { it.second } ?: 1L).coerceAtLeast(1L).toFloat()
                 val gap = 6.dp.toPx()
                 val barWidth = ((size.width - gap * (chartData.size - 1)) / chartData.size).coerceAtLeast(2f)
