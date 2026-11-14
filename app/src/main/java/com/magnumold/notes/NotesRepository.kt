@@ -25,6 +25,18 @@ internal class NotesRepository(private val preferences: SharedPreferences) {
             .apply()
     }
 
+    fun findTask(taskId: Long): Note? {
+        val snapshot = loadSnapshot()
+        fun find(items: List<Note>): Note? {
+            items.forEach { note ->
+                if (note.id == taskId) return note
+                find(note.children)?.let { return it }
+            }
+            return null
+        }
+        return find(snapshot.notes) ?: find(snapshot.collections.flatMap { it.notes })
+    }
+
     fun updateTaskStatus(taskId: Long, status: RecordStatus): Boolean {
         val current = loadSnapshot()
         var found = false
