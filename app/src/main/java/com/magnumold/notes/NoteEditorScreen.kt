@@ -450,6 +450,7 @@ internal fun NoteEditor(
                             taskId = note.id,
                             taskTitle = parentTaskTitle ?: "Задача",
                             subtaskTitle = currentTitle,
+                            parentTaskId = parentTaskId,
                             state = timeTrackingState,
                             onStateChange = onTimeTrackingStateChange,
                             onChooseSound = {
