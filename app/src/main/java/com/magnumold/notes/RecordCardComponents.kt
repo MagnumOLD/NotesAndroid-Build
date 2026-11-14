@@ -177,11 +177,12 @@ internal fun NestedRecordCard(
 @Composable
 internal fun NestedRecordRow(
     modifier: Modifier = Modifier,
+    topInset: androidx.compose.ui.unit.Dp = CardDimensions.nestedRowVerticalInset,
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
         modifier = modifier.fillMaxWidth()
-            .padding(vertical = CardDimensions.nestedRowVerticalInset)
+            .padding(top = topInset, bottom = CardDimensions.nestedRowVerticalInset)
             .heightIn(min = CardDimensions.nestedRowContentMinHeight),
         verticalAlignment = Alignment.CenterVertically,
         content = content
