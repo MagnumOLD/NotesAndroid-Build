@@ -1,6 +1,10 @@
 package com.magnumold.notes
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /** Shared geometry for every primary circular add button. */
 internal object PrimaryAddButtonDimensions {
@@ -24,6 +28,54 @@ internal object AppSpacing {
     // aligns its visible content with the app's 20.dp page guide.
     val settingsListItemOuterInset = xxs
 }
+
+
+/**
+ * App-wide typography tokens. Screen-specific hierarchy may differ, but the
+ * underlying sizes and line heights are defined here rather than duplicated.
+ */
+internal object AppTypography {
+    val screenTitle = 18.sp
+    val editorTitle = 18.sp
+    val body = 16.sp
+    val bodyLineHeight = 24.sp
+    val sectionLabel = 14.sp
+    val sectionLabelLineHeight = 20.sp
+    val metadata = 12.sp
+}
+
+/** Shared page/list geometry used by note, task, purchase and secondary screens. */
+internal object AppPageLayout {
+    val editorListContentPadding = PaddingValues(
+        top = AppSpacing.sm,
+        bottom = AppSpacing.lg
+    )
+    val standardListContentPadding = PaddingValues(vertical = AppSpacing.xs)
+    val toolbarHeight = 64.dp
+}
+
+/** Shared row geometry; leading/trailing controls may differ by row semantics. */
+internal object AppRowDimensions {
+    val statusGlyphSlot = 22.dp
+    val controlTouchTarget = 40.dp
+    val taskStatusToTextGap = 9.dp
+    val taskTextToHandleGap = 22.dp
+    val purchaseTextToCheckboxGap = 12.dp
+    val purchaseCheckboxTouchTarget = 40.dp
+    val purchaseCheckboxToHandleGap = 14.dp
+}
+
+internal fun Modifier.appPageHorizontalInsets(): Modifier =
+    padding(horizontal = AppSpacing.screenHorizontal)
+
+internal fun Modifier.appPageVerticalInsets(): Modifier =
+    padding(vertical = AppSpacing.screenVertical)
+
+internal fun Modifier.appPageContentInsets(): Modifier =
+    padding(
+        horizontal = AppSpacing.screenHorizontal,
+        vertical = AppSpacing.screenVertical
+    )
 
 
 
