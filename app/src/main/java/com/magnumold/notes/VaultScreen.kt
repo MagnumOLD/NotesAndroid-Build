@@ -50,17 +50,33 @@ internal fun VaultScreen(
                     val preview = entry.note.blocks.asSequence().mapNotNull { block ->
                         block.text.lineSequence().firstOrNull { it.isNotBlank() }
                     }.firstOrNull() ?: "Пустая заметка"
-                    Column(Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs)) {
-                        Text(preview, style = AppTypography.bodyStyle(), maxLines = 2)
-                        Text(if (entry.collectionId == null) "Основной блокнот" else "Подборка",
-                            style = AppTypography.metadataStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            if (!isTrash) TextButton(onClick = { onMoveToTrash(entry) }) { Text("Удалить") }
-                            if (isTrash) TextButton(onClick = { onDeleteForever(entry) }) { Text("Удалить навсегда") }
-                            TextButton(onClick = { onRestore(entry) }) { Text("Восстановить") }
+                    RecordCardSurface(background = MaterialTheme.colorScheme.background) {
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .heightIn(min = CardDimensions.contentHeight)
+                                .padding(
+                                    horizontal = AppSpacing.screenHorizontal,
+                                    vertical = AppSpacing.mainCardVerticalInset
+                                )
+                        ) {
+                            Text(preview, style = AppTypography.cardPreviewStyle(), maxLines = 2)
+                            Text(
+                                if (entry.collectionId == null) "Основной блокнот" else "Подборка",
+                                style = AppTypography.metadataStyle(),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = AppSpacing.xxs)
+                            )
+                            Row(
+                                Modifier.fillMaxWidth().padding(top = AppSpacing.xs),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (!isTrash) TextButton(onClick = { onMoveToTrash(entry) }) { Text("Удалить") }
+                                if (isTrash) TextButton(onClick = { onDeleteForever(entry) }) { Text("Удалить навсегда") }
+                                TextButton(onClick = { onRestore(entry) }) { Text("Восстановить") }
+                            }
                         }
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 }
             }
         }
