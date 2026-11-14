@@ -1,5 +1,6 @@
 package com.magnumold.notes
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -40,6 +41,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_PERMISSION_REQUEST)
+        }
         val initialDark = getPreferences(Context.MODE_PRIVATE).getBoolean("dark_v2", true)
         val savedThemeMode = getPreferences(Context.MODE_PRIVATE).getString("theme_mode", null)
             ?.takeIf { it in listOf("light", "dark", "custom") } ?: if (initialDark) "dark" else "light"
@@ -74,4 +80,7 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent.createChooser(intent, "Поделиться заметкой"))
     }
 
+    private companion object {
+        const val NOTIFICATION_PERMISSION_REQUEST = 7433
+    }
 }
