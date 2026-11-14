@@ -23,7 +23,7 @@ internal fun TimeTrackingSection(
         Column(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = AppSpacing.screenHorizontal)
-                .padding(top = AppSpacing.xs, bottom = AppSpacing.sm),
+                .padding(top = AppSpacing.xxs, bottom = AppSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
         ) {
             Text(
@@ -36,7 +36,7 @@ internal fun TimeTrackingSection(
             content()
         }
         HorizontalDivider(
-            modifier = Modifier.padding(top = AppSpacing.xs),
+            modifier = Modifier.padding(top = AppSpacing.xxs),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
             thickness = CardDimensions.dividerThickness
         )
