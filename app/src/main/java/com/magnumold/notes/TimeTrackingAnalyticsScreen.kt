@@ -3,6 +3,7 @@ package com.magnumold.notes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -271,7 +272,7 @@ private fun AddWorkSessionDialog(
 }
 
 @Composable
-private fun TimeTrackingStatisticsContent(state: TimeTrackingState) {
+private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) {
     var period by remember { mutableStateOf("День") }
     var customStart by remember { mutableStateOf(formatSessionDay(System.currentTimeMillis())) }
     var customEnd by remember { mutableStateOf(formatSessionDay(System.currentTimeMillis())) }
@@ -281,8 +282,11 @@ private fun TimeTrackingStatisticsContent(state: TimeTrackingState) {
     }
     val stats = TimeTrackingEngine.statisticsBetween(state, range.first, range.second, now)
     val duration = range.second - range.first
+    val previousRange = remember(period, range.first, range.second) {
+        previousPeriodBounds(period, range.first, range.second)
+    }
     val previous = TimeTrackingEngine.statisticsBetween(
-        state, range.first - duration, range.first, now
+        state, previousRange.first, previousRange.second, now
     )
     val delta = stats.totalMillis - previous.totalMillis
     val dailyTotals = TimeTrackingEngine.dailyTotals(state, now)
@@ -389,6 +393,30 @@ private fun periodBounds(period: String, customStart: String, customEnd: String,
             val start = calendar.timeInMillis
             calendar.add(Calendar.DAY_OF_MONTH, 1)
             start to calendar.timeInMillis
+        }
+    }
+}
+
+private fun previousPeriodBounds(period: String, start: Long, end: Long): Pair<Long, Long> {
+    return when (period) {
+        "День" -> {
+            val calendar = Calendar.getInstance().apply { timeInMillis = start }
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            calendar.timeInMillis to start
+        }
+        "Неделя" -> {
+            val previousStart = Calendar.getInstance().apply { timeInMillis = start }
+                .apply { add(Calendar.DAY_OF_MONTH, -7) }.timeInMillis
+            previousStart to start
+        }
+        "Месяц" -> {
+            val previousStart = Calendar.getInstance().apply { timeInMillis = start }
+                .apply { add(Calendar.MONTH, -1) }.timeInMillis
+            previousStart to start
+        }
+        else -> {
+            val duration = end - start
+            (start - duration) to start
         }
     }
 }
