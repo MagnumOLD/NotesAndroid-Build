@@ -57,11 +57,11 @@ internal fun TimeTrackingAnalyticsScreen(
     var adding by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.screenVertical),
+        modifier = Modifier.fillMaxSize().appPageContentInsets(),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Учёт времени", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text("Учёт времени", fontSize = AppTypography.screenTitle, fontWeight = FontWeight.Medium)
             TextButton(onClick = onBack) { Text("Назад") }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
