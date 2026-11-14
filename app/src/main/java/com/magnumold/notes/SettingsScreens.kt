@@ -190,15 +190,20 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppToolbarSurface(backgroundColor = themeColors.topBar) {
-                IconButton(onClick = { if (personalizationVisible) personalizationVisible = false else onBack() }) {
-                    AppIcon(NoteIcon.Back, contentDescription = "Назад")
+            AppPageTopBar(
+                backgroundColor = themeColors.topBar,
+                navigationIcon = {
+                    IconButton(onClick = { if (personalizationVisible) personalizationVisible = false else onBack() }) {
+                        AppIcon(NoteIcon.Back, contentDescription = "Назад")
+                    }
+                },
+                title = {
+                    Text(
+                        if (personalizationVisible) "Персонализация" else "Настройки",
+                        style = AppTypography.screenTitleStyle()
+                    )
                 }
-                Text(
-                    if (personalizationVisible) "Персонализация" else "Настройки",
-                    style = AppTypography.screenTitleStyle()
-                )
-            }
+            )
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
@@ -371,10 +376,11 @@ private fun ThemeColorEditorScreen(
         catch (_: Exception) { null }
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
-        AppToolbarSurface(backgroundColor = topBarColor) {
-            IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-            Text(title, style = AppTypography.screenTitleStyle())
-        }
+        AppPageTopBar(
+            backgroundColor = topBarColor,
+            navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+            title = { Text(title, style = AppTypography.screenTitleStyle()) }
+        )
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
@@ -435,13 +441,11 @@ private fun NoteColorEditorScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = topBarColor, contentColor = noteTextColor(topBarColor)) {
-                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(AppPageLayout.toolbarHeight).padding(horizontal = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text("Изменение цвета", style = AppTypography.screenTitleStyle())
-                }
-            }
+            AppPageTopBar(
+                backgroundColor = topBarColor,
+                navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+                title = { Text("Изменение цвета", style = AppTypography.screenTitleStyle()) }
+            )
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
