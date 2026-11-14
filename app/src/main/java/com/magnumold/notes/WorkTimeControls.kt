@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,7 +30,7 @@ internal fun WorkTimeControls(
     state: TimeTrackingState,
     status: RecordStatus,
     onStatusChange: (RecordStatus) -> Unit,
-    onOpenHistory: () -> Unit
+    onAddManualSession: () -> Unit
 ) {
     var nowMillis by remember(taskId) { mutableLongStateOf(System.currentTimeMillis()) }
     val active = state.activeSessions[taskId]
@@ -43,9 +47,14 @@ internal fun WorkTimeControls(
     }
 
     val totalMillis = TimeTrackingEngine.taskDurationMillis(state, taskId, nowMillis)
-    val hasHistory = state.sessions.any { it.taskId == taskId } || active != null
-
-    TimeTrackingSection(title = "Фактическое время") {
+    TimeTrackingSection(
+        title = "Фактическое время",
+        headerAction = {
+            IconButton(onClick = onAddManualSession) {
+                Icon(Icons.Outlined.Add, contentDescription = "Добавить время")
+            }
+        }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -88,10 +97,6 @@ internal fun WorkTimeControls(
                     TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать работу") }
                 }
             }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onOpenHistory, enabled = hasHistory) {
-                Text("История и статистика →")
-            }
         }
     }
 }
@@ -100,8 +105,7 @@ internal fun WorkTimeControls(
 @Composable
 internal fun ParentWorkTimeSummary(
     parentTaskId: Long,
-    state: TimeTrackingState,
-    onOpenHistory: () -> Unit
+    state: TimeTrackingState
 ) {
     var nowMillis by remember(parentTaskId) { mutableLongStateOf(System.currentTimeMillis()) }
     val activeSignature = state.activeSessions.values
@@ -120,8 +124,6 @@ internal fun ParentWorkTimeSummary(
     }
 
     val totalMillis = TimeTrackingEngine.parentDurationMillis(state, parentTaskId, nowMillis)
-    val hasHistory = state.sessions.any { it.parentTaskId == parentTaskId } || activeSignature.isNotEmpty()
-
     TimeTrackingSection(title = "Фактическое время") {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -134,11 +136,6 @@ internal fun ParentWorkTimeSummary(
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onOpenHistory, enabled = hasHistory) {
-                Text("История и статистика →")
-            }
         }
     }
 }
