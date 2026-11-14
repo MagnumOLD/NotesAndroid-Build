@@ -3,7 +3,7 @@ package com.magnumold.notes
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>)
+internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>, val timeTracking: TimeTrackingState = TimeTrackingState())
 private fun noteToJson(note: Note): JSONObject {
     val blocks = JSONArray()
     note.blocks.forEach { block ->
@@ -101,22 +101,22 @@ internal fun parseCollectionsArray(array: JSONArray): List<NoteCollection> =
         )
     }
 
-internal fun createBackupJson(items: List<Note>, collections: List<NoteCollection>, archived: List<VaultNote>, trash: List<VaultNote>): String {
+internal fun createBackupJson(items: List<Note>, collections: List<NoteCollection>, archived: List<VaultNote>, trash: List<VaultNote>, timeTracking: TimeTrackingState = TimeTrackingState()): String {
     val collectionArray = JSONArray()
     collections.forEach { collection ->
         collectionArray.put(JSONObject().put("id", collection.id).put("name", collection.name).put("notes", notesToJson(collection.notes)))
     }
-    return JSONObject().put("format", "notes_backup").put("version", 6).put("exportedAt", System.currentTimeMillis())
+    return JSONObject().put("format", "notes_backup").put("version", 7).put("exportedAt", System.currentTimeMillis())
         .put("notes", notesToJson(items)).put("collections", collectionArray)
-        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash)).toString(2)
+        .put("archive", vaultToJson(archived)).put("trash", vaultToJson(trash))\n        .put("timeTracking", timeTrackingToJson(timeTracking)).toString(2)
 }
 internal fun parseBackupJson(raw: String): BackupData {
     val root = JSONObject(raw)
     require(root.optString("format") == "notes_backup") { "Это не резервная копия блокнота" }
-    require(root.optInt("version") in 1..6) { "Неподдерживаемая версия файла" }
+    require(root.optInt("version") in 1..7) { "Неподдерживаемая версия файла" }
     val notes = parseNotesArray(root.optJSONArray("notes") ?: error("В файле нет списка заметок"))
     val collections = parseCollectionsArray(root.optJSONArray("collections") ?: JSONArray())
-    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")))
+    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")), parseTimeTrackingJson(root.optJSONObject("timeTracking")))
 }
 
 private fun Note.sameRecordContent(other: Note): Boolean =
