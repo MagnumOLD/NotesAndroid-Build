@@ -3,8 +3,13 @@ package com.magnumold.notes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.json.JSONObject
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class TimeTrackingJsonCodecTest {
     @Test fun trackingStateRoundTripsSessionsActiveStopwatchesAndTimer() {
         val session = WorkSession(
