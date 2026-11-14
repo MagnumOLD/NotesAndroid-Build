@@ -27,6 +27,24 @@ internal data class WorkSession(
         require(taskTitle.isNotBlank())
         require(endedAtMillis >= startedAtMillis)
         require(durationMillis >= 0L)
+        require(durationMillis == endedAtMillis - startedAtMillis)
+    }
+
+    fun withDuration(newDurationMillis: Long): WorkSession {
+        require(newDurationMillis >= 0L)
+        return copy(
+            endedAtMillis = startedAtMillis + newDurationMillis,
+            durationMillis = newDurationMillis
+        )
+    }
+
+    fun withInterval(newStartMillis: Long, newEndMillis: Long): WorkSession {
+        require(newEndMillis >= newStartMillis)
+        return copy(
+            startedAtMillis = newStartMillis,
+            endedAtMillis = newEndMillis,
+            durationMillis = newEndMillis - newStartMillis
+        )
     }
 }
 
