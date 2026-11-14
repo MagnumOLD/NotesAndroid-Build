@@ -19,7 +19,8 @@ import kotlinx.coroutines.withContext
  * UI state (navigation, selection, dialogs and theme) remains in Compose.
  */
 internal class NotesViewModel(
-    private val repository: NotesRepository
+    private val repository: NotesRepository,
+    private val timeTrackingRepository: TimeTrackingRepository
 ) : ViewModel() {
     private val _snapshot = MutableStateFlow(repository.loadSnapshot())
     val snapshot: StateFlow<PersistenceSnapshot> = _snapshot.asStateFlow()
@@ -89,6 +90,7 @@ internal class NotesViewModel(
 
     fun importBackup(json: String): Int {
         val imported = parseBackupJson(json)
+        imported.timeTracking?.let(timeTrackingRepository::restoreBackup)
         var importedCount = 0
         updateSnapshot { current ->
             val merged = RecordOperations.mergeBackup(current, imported)
@@ -124,13 +126,14 @@ internal class NotesViewModel(
 }
 
 internal class NotesViewModelFactory(
-    private val repository: NotesRepository
+    private val repository: NotesRepository,
+    private val timeTrackingRepository: TimeTrackingRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(NotesViewModel::class.java)) {
             "Unknown ViewModel class: ${modelClass.name}"
         }
-        return NotesViewModel(repository) as T
+        return NotesViewModel(repository, timeTrackingRepository) as T
     }
 }
