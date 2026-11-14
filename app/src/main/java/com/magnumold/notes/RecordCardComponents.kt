@@ -549,8 +549,8 @@ internal fun NoteRow(
                                     text = formatNoteCreationDate(note.created),
                                     modifier = Modifier.fillMaxWidth(),
                                     color = rowTextColor.copy(alpha = 0.72f),
-                                    fontSize = 8.sp,
-                                    lineHeight = 9.sp,
+                                    fontSize = 9.sp,
+                                    lineHeight = 10.sp,
                                     maxLines = 2,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
