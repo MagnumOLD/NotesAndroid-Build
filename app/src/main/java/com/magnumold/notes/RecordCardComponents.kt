@@ -422,8 +422,10 @@ internal fun NoteRow(
         modifier = Modifier.fillMaxWidth()
             .onSizeChanged { onMeasuredHeight(it.height) }
     ) {
-        Box(
-            Modifier.fillMaxWidth().heightIn(min = CardDimensions.contentHeight)
+        Row(
+            Modifier.fillMaxWidth()
+                .heightIn(min = CardDimensions.contentHeight)
+                .height(IntrinsicSize.Min)
                 .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
                     if (colorSwipeEnabled) {
                         var horizontalDistance = 0f
@@ -486,7 +488,7 @@ internal fun NoteRow(
                 }
         ) {
             Column(
-                modifier = Modifier.matchParentSize()
+                modifier = Modifier.weight(1f).fillMaxHeight()
                     .pointerInput(note.id, selected) {
                         detectTapGestures(
                             onTap = { onClick() },
@@ -509,11 +511,12 @@ internal fun NoteRow(
             }
 
             Column(
-                modifier = Modifier.align(Alignment.TopEnd)
+                modifier = Modifier.fillMaxHeight()
                     .padding(
                         top = CardDimensions.sideRailTopInset,
                         end = CardDimensions.sideRailEndInset
                     ),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
@@ -522,7 +525,6 @@ internal fun NoteRow(
                 ) {
                     DragHandleIcon(color = rowTextColor)
                 }
-                Spacer(Modifier.height(6.dp))
                 if (pinned) {
                     Box(
                         modifier = Modifier.size(CardDimensions.sideRailControlSize),
