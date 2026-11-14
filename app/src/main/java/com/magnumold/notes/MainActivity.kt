@@ -22,11 +22,16 @@ class MainActivity : ComponentActivity() {
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
-        val recordsViewModel = ViewModelProvider(this, NotesViewModelFactory(repository))[NotesViewModel::class.java]
+        val timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
+        val recordsViewModel = ViewModelProvider(
+            this,
+            NotesViewModelFactory(repository, timeTrackingRepository)
+        )[NotesViewModel::class.java]
         setContent {
             NotesApp(
                 activity = this@MainActivity,
                 recordsViewModel = recordsViewModel,
+                timeTrackingRepository = timeTrackingRepository,
                 savedThemeMode = savedThemeMode,
                 initialThemeColorSets = initialThemeColorSets
             )
