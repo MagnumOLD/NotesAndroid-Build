@@ -480,7 +480,7 @@ internal fun NoteRow(
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .heightIn(min = CardDimensions.contentHeight),
-                verticalAlignment = Alignment.Stretch
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // The left side is reserved entirely for the note preview.
                 Box(
@@ -512,7 +512,7 @@ internal fun NoteRow(
                         .heightIn(min = CardDimensions.contentHeight)
                 ) {
                     Box(
-                        Modifier.width(1.dp).fillMaxHeight()
+                        Modifier.width(1.dp).heightIn(min = CardDimensions.contentHeight)
                             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
                     )
                     Column(
