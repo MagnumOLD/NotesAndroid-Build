@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 internal fun NotesApp(
     activity: MainActivity,
     recordsViewModel: NotesViewModel,
+    timeTrackingRepository: TimeTrackingRepository,
     savedThemeMode: String,
     initialThemeColorSets: ThemeColorSets
 ) {
@@ -20,11 +21,8 @@ internal fun NotesApp(
             val themeSettings = remember(activity) {
                 ThemeSettingsStore(activity.getSharedPreferences("notes_settings", Context.MODE_PRIVATE))
             }
-            val backupFileStore = remember(activity) {
-                BackupFileStore(activity.contentResolver)
-            }
-            val timeTrackingRepository = remember(activity) {
-                TimeTrackingRepository(activity.getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
+            val backupFileStore = remember(activity, timeTrackingRepository) {
+                BackupFileStore(activity.contentResolver) { timeTrackingRepository.load() }
             }
             var timeTrackingState by remember(timeTrackingRepository) {
                 mutableStateOf(timeTrackingRepository.load())
