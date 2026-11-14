@@ -93,7 +93,7 @@ internal fun ParentRecordHeader(
             if (selectedCount > 0) {
                 Text(
                     "$selectedCount выбрано",
-                    fontSize = 16.sp,
+                    fontSize = AppTypography.body,
                     fontWeight = FontWeight.Medium,
                     color = foreground
                 )
@@ -107,8 +107,8 @@ internal fun ParentRecordHeader(
                     singleLine = true,
                     textStyle = TextStyle(
                         color = foreground,
-                        fontSize = 18.sp,
-                        lineHeight = 24.sp,
+                        fontSize = AppTypography.editorTitle,
+                        lineHeight = AppTypography.bodyLineHeight,
                         fontWeight = FontWeight.Medium,
                         textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None
                     ),
@@ -129,8 +129,8 @@ internal fun ParentRecordHeader(
                                 Text(
                                     placeholder,
                                     color = foreground.copy(alpha = 0.48f),
-                                    fontSize = 18.sp,
-                                    lineHeight = 24.sp,
+                                    fontSize = AppTypography.editorTitle,
+                                    lineHeight = AppTypography.bodyLineHeight,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
