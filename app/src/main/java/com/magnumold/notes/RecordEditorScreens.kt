@@ -105,9 +105,8 @@ internal fun ParentRecordHeader(
                         .focusRequester(focusRequester)
                         .onGloballyPositioned { fieldLaidOut = true },
                     singleLine = true,
-                    textStyle = TextStyle(
+                    textStyle = AppTypography.editorTitleStyle().copy(
                         color = foreground,
-                        style = AppTypography.editorTitleStyle(),
                         textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None
                     ),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(foreground),
