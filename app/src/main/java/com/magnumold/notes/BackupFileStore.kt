@@ -10,9 +10,10 @@ import android.net.Uri
  * stream access and UTF-8 conversion.
  */
 internal class BackupFileStore(
-    private val contentResolver: ContentResolver
+    private val contentResolver: ContentResolver,
+    private val timeTrackingStateProvider: () -> TimeTrackingState = { TimeTrackingState() }
 ) {
-    fun writeBackup(uri: Uri, snapshot: PersistenceSnapshot, timeTracking: TimeTrackingState = TimeTrackingState()) {
+    fun writeBackup(uri: Uri, snapshot: PersistenceSnapshot, timeTracking: TimeTrackingState = timeTrackingStateProvider()) {
         val output = contentResolver.openOutputStream(uri)
             ?: error("Не удалось открыть файл")
         output.use {
