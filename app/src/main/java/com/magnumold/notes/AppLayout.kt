@@ -156,7 +156,7 @@ internal object AppTypography {
 
     @Composable
     fun cardPreviewStyle(): TextStyle =
-        MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight)
+        MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight, fontWeight = FontWeight.Medium)
 
     @Composable
     fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.labelLarge
