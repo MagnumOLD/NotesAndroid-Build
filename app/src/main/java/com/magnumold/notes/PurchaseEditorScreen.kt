@@ -227,9 +227,8 @@ internal fun PurchaseEditor(
                     onChange = onChange
                 )
             } else {
-                TopAppBar(
-                    title = { Text(if (isPurchaseListItem) "Товар" else "Заметка", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle) },
-                    navigationIcon = {},
+                AppEditorTopBar(
+                    title = if (isPurchaseListItem) "Товар" else "Заметка",
                     actions = {
                         if (isPurchaseListItem) {
                             IconButton(onClick = { purchaseDetailsExpanded = !purchaseDetailsExpanded }) {
@@ -268,13 +267,7 @@ internal fun PurchaseEditor(
                         IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
                         if (!isPurchaseListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarColor,
-                        scrolledContainerColor = topBarColor,
-                        navigationIconContentColor = noteTextColor(topBarColor),
-                        titleContentColor = noteTextColor(topBarColor),
-                        actionIconContentColor = noteTextColor(topBarColor)
-                    )
+                    backgroundColor = topBarColor
                 )
             }
         },
