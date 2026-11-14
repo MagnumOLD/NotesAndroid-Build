@@ -48,7 +48,7 @@ internal fun WorkTimeControls(
 
     val totalMillis = TimeTrackingEngine.taskDurationMillis(state, taskId, nowMillis)
     TimeTrackingSection(
-        title = "Фактическое время",
+        title = "Время работы",
         headerAction = {
             IconButton(onClick = onAddManualSession) {
                 Icon(Icons.Outlined.Add, contentDescription = "Добавить время")
@@ -58,9 +58,8 @@ internal fun WorkTimeControls(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text("Всего", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 formatWorkDuration(totalMillis),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
@@ -124,13 +123,12 @@ internal fun ParentWorkTimeSummary(
     }
 
     val totalMillis = TimeTrackingEngine.parentDurationMillis(state, parentTaskId, nowMillis)
-    TimeTrackingSection(title = "Фактическое время") {
+    TimeTrackingSection(title = "Затраты времени") {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text("Всего по подзадачам", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 formatWorkDuration(totalMillis),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
@@ -146,5 +144,5 @@ private fun formatWorkDuration(value: Long): String {
     val minutes = (seconds % 3_600L) / 60L
     val remainingSeconds = seconds % 60L
     return if (hours > 0L) "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
-    else "%02d:%02d".format(minutes, remainingSeconds)
+    else "%02d:%02d".format(minutes, seconds % 60L)
 }
