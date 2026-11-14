@@ -326,8 +326,7 @@ internal fun NotesHome(
 
                                 // Hit-test the handle in viewport coordinates. This listener
                                 // remains attached while the keyed row changes its list position.
-                                val handleRight = size.width - AppLayoutContract.mainCardTrailingInset.toPx() -
-                                    CardDimensions.handleHitTargetRightInset.toPx()
+                                val handleRight = size.width - CardDimensions.handleHitTargetRightInset.toPx()
                                 val handleLeft = handleRight - CardDimensions.handleTouchTargetSize.toPx()
                                 if (down.position.x < handleLeft ||
                                     down.position.x > handleRight
@@ -436,7 +435,6 @@ internal fun NotesHome(
                             val anchorNote = dragRow.notes.firstOrNull { it.id == anchorNoteId } ?: dragRow.notes.first()
                             Box(
                                 Modifier.fillMaxWidth().then(rowPlacementModifier)
-                                    .padding(end = AppLayoutContract.mainCardTrailingInset)
                             ) {
                                 if (dragRow.notes.size > 1) {
                                     DraggedNotesGroup(
