@@ -2,6 +2,9 @@ package com.magnumold.notes
 
 import android.content.SharedPreferences
 import org.json.JSONObject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Durable store for time tracking. Unlike debounced note autosave, timer/session
@@ -10,8 +13,13 @@ import org.json.JSONObject
 internal class TimeTrackingRepository(
     private val preferences: SharedPreferences
 ) {
+    private val _state = MutableStateFlow(loadStoredState())
+    val state: StateFlow<TimeTrackingState> = _state.asStateFlow()
+
     @Synchronized
-    fun load(): TimeTrackingState = runCatching {
+    fun load(): TimeTrackingState = _state.value
+
+    private fun loadStoredState(): TimeTrackingState = runCatching {
         val raw = preferences.getString(KEY_STATE, null) ?: return TimeTrackingState()
         parseTimeTrackingJson(JSONObject(raw))
     }.getOrDefault(TimeTrackingState())
@@ -21,6 +29,7 @@ internal class TimeTrackingRepository(
         check(preferences.edit().putString(KEY_STATE, timeTrackingToJson(state).toString()).commit()) {
             "Не удалось сохранить учёт времени"
         }
+        _state.value = state
     }
 
     @Synchronized
