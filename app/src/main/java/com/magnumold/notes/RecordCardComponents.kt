@@ -486,19 +486,19 @@ internal fun NoteRow(
                 }
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(
-                        start = AppSpacing.screenHorizontal,
-                        end = CardDimensions.sideRailReservedWidth,
-                        top = AppSpacing.md,
-                        bottom = AppSpacing.md
-                    )
+                modifier = Modifier.matchParentSize()
                     .pointerInput(note.id, selected) {
                         detectTapGestures(
                             onTap = { onClick() },
                             onLongPress = { onLongPress() }
                         )
                     }
+                    .padding(
+                        start = AppSpacing.screenHorizontal,
+                        end = CardDimensions.sideRailReservedWidth,
+                        top = AppSpacing.md,
+                        bottom = AppSpacing.md
+                    )
             ) {
                 MainCardHeader(
                     text = firstLine,
