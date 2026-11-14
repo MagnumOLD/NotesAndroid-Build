@@ -53,9 +53,7 @@ internal fun WorkTimeControls(
                 Text("Учитывать время")
             }
         }
-        if (!allowTracking || trackingEnabled) {
-            Text(durationText)
-        }
+        Text(durationText)
         if (allowTracking && trackingEnabled) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (active == null) {
