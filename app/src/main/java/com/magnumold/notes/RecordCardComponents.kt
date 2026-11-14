@@ -494,7 +494,7 @@ internal fun NoteRow(
                     onClick = onClick,
                     onLongPress = onLongPress
                 )
-                Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
+                Spacer(Modifier.weight(1f).heightIn(min = 16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .pointerInput(note.id, selected) {
