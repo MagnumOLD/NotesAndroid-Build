@@ -114,8 +114,8 @@ internal object TimeTrackingEngine {
             val overlap = (minOf(end, endExclusive) - maxOf(start, startInclusive)).coerceAtLeast(0L)
             if (overlap > 0L) {
                 totals[taskId] = (totals[taskId] ?: 0L) + overlap
-                count++
             }
+            if (start >= startInclusive && start < endExclusive) count++
         }
         state.sessions.forEach { include(it.taskId, it.startedAtMillis, it.endedAtMillis) }
         state.activeSessions.values.forEach {
