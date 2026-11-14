@@ -22,14 +22,14 @@ internal fun TimeTrackingSection(
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = AppSpacing.screenHorizontal)
+                .appPageHorizontalInsets()
                 .padding(top = AppSpacing.xxs, bottom = AppSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
         ) {
             Text(
                 title,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
+                fontSize = AppTypography.sectionLabel,
+                lineHeight = AppTypography.sectionLabelLineHeight,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
