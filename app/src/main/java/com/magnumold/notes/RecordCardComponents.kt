@@ -80,9 +80,7 @@ internal fun MainCardHeader(
         Text(
             text,
             modifier = Modifier.weight(1f).then(textInteractionModifier),
-            fontSize = AppTypography.cardPreview,
-            lineHeight = AppTypography.cardPreviewLineHeight,
-            fontWeight = FontWeight.Medium,
+            style = AppTypography.cardPreviewStyle(),
             color = textColor
         )
         if (pinned) {
@@ -491,7 +489,7 @@ internal fun NoteRow(
                     if (note.type != RecordType.NOTE) {
                         Text(
                             metadata,
-                            fontSize = AppTypography.metadata,
+                            style = AppTypography.metadataStyle(),
                             color = rowTextColor.copy(alpha = 0.82f),
                             maxLines = 1
                         )
@@ -499,7 +497,7 @@ internal fun NoteRow(
                     Spacer(Modifier.weight(1f))
                     Text(
                         formatNoteCreationDate(note.created),
-                        fontSize = AppTypography.metadata,
+                        style = AppTypography.metadataStyle(),
                         color = rowTextColor.copy(alpha = 0.62f),
                         maxLines = 1
                     )
