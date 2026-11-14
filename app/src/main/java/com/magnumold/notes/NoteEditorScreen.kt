@@ -434,7 +434,7 @@ internal fun NoteEditor(
                         }
                     }
                 },
-            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else AppSpacing.xxs),
+            verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
             contentPadding = AppPageLayout.editorListContentPadding
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
