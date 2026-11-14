@@ -1,6 +1,11 @@
 package com.magnumold.notes
 
+import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -68,6 +73,15 @@ internal fun NoteEditor(
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
     var pendingDateMode by remember(note.id) { mutableStateOf(note.dateMode ?: RecordDateMode.DATE) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = note.dateAt)
+    val ringtonePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val pickedUri = result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        onTimeTrackingStateChange(
+            timeTrackingState.copy(
+                soundUri = pickedUri?.toString(),
+                soundEnabled = pickedUri != null
+            )
+        )
+    }
     LaunchedEffect(note.id, note.dateAt) {
         datePickerState.selectedDateMillis = note.dateAt
     }
@@ -427,6 +441,33 @@ internal fun NoteEditor(
                         allowTracking = isTaskListItem,
                         onStateChange = onTimeTrackingStateChange
                     )
+                }
+                if (isTaskListItem) {
+                    item(key = "protection_timer") {
+                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+                        ProtectionTimerControls(
+                            taskId = note.id,
+                            taskTitle = parentTaskTitle ?: "Задача",
+                            subtaskTitle = currentTitle,
+                            state = timeTrackingState,
+                            onStateChange = onTimeTrackingStateChange,
+                            onChooseSound = {
+                                val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Выберите сигнал")
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                                    putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                                    putExtra(
+                                        RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                        timeTrackingState.soundUri?.let(Uri::parse)
+                                            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                                    )
+                                }
+                                ringtonePicker.launch(intent)
+                            }
+                        )
+                    }
                 }
             }
             if (note.type != RecordType.NOTE &&
