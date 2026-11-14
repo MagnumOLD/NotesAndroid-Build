@@ -68,6 +68,7 @@ internal fun NoteEditor(
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
+    var timeAnalyticsVisible by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
@@ -171,7 +172,22 @@ internal fun NoteEditor(
         )
         return
     }
- 
+
+    if (timeAnalyticsVisible) {
+        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+        TimeTrackingAnalyticsScreen(
+            state = timeTrackingState,
+            onStateChange = onTimeTrackingStateChange,
+            onBack = { timeAnalyticsVisible = false },
+            manualTaskId = if (isTaskListItem) note.id else null,
+            manualParentTaskId = parentTaskId,
+            manualTaskTitle = if (isTaskListItem) parentTaskTitle ?: "Задача" else currentTitle,
+            manualSubtaskTitle = if (isTaskListItem) currentTitle else null
+        )
+        return
+    }
+
     fun resetChildDrag() {
         childReorderSession = null
         childDragBaseRows = emptyMap()
@@ -435,6 +451,12 @@ internal fun NoteEditor(
                 }
             }
             if (note.type == RecordType.TASK) {
+                item(key = "time_analytics_button") {
+                    TextButton(
+                        onClick = { timeAnalyticsVisible = true },
+                        modifier = Modifier.padding(horizontal = AppSpacing.screenHorizontal)
+                    ) { Text("История и статистика") }
+                }
                 item(key = "work_time_tracking") {
                     val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
                         ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
