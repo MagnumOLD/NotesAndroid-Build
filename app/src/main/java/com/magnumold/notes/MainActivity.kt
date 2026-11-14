@@ -49,7 +49,12 @@ class MainActivity : ComponentActivity() {
                 lastExternalTaskStatusUpdate = marker
             }
         }
-        if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
+        if (::timeTrackingRepository.isInitialized) {
+            timeTrackingRepository.reload()
+            timeTrackingRepository.load().protectionTimer?.let {
+                ProtectionTimerScheduler(this).schedule(it)
+            }
+        }
     }
 
     override fun onStop() {
