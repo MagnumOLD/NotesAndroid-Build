@@ -705,10 +705,7 @@ internal fun NoteEditor(
                             val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             val dragHandleColor = childTextColor
                             NestedRecordRow {
-                                TaskStatusButton(
-                                    status = childStatus,
-                                    onClick = { /* Status is controlled from the subtask work controls. */ }
-                                )
+                                TaskStatusMarker(status = childStatus)
                                 Spacer(Modifier.width(AppRowDimensions.taskStatusToTextGap))
                                 Text(
                                     childText,
