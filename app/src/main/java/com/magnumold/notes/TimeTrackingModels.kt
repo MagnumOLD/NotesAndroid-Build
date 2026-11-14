@@ -84,3 +84,9 @@ internal data class ProtectionTimer(
         require(endsAtMillis > startedAtMillis)
     }
 }
+
+internal data class TimeTrackingPeriodStats(
+    val totalMillis: Long,
+    val taskTotalsMillis: Map<Long, Long>,
+    val sessionCount: Int
+)
