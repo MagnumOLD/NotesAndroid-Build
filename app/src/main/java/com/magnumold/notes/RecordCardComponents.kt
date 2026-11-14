@@ -408,6 +408,7 @@ internal fun NoteRow(
         selectionColor = customSelectionColor
     )
     val metadata = if (note.type == RecordType.NOTE) "Заметка" else recordStatusCompactText(note.recordStatus(statusNow))
+    var creationDateVisible by remember(note.id) { mutableStateOf(false) }
 
     RecordCardSurface(
         background = selectedBackground,
@@ -511,11 +512,31 @@ internal fun NoteRow(
                         )
                     }
                     Spacer(Modifier.weight(1f))
+                }
+            }
+            // Overlay the date control in the existing footer area. Its 40dp
+            // touch target does not participate in the card's measured height.
+            Box(
+                modifier = Modifier.align(Alignment.BottomEnd)
+                    .padding(end = AppSpacing.screenHorizontal)
+                    .width(112.dp)
+                    .height(40.dp)
+                    .clickable { creationDateVisible = !creationDateVisible },
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                if (creationDateVisible) {
                     Text(
                         formatNoteCreationDate(note.created),
                         style = AppTypography.metadataStyle(),
                         color = rowTextColor.copy(alpha = 0.62f),
                         maxLines = 1
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Schedule,
+                        contentDescription = "Показать дату создания",
+                        tint = rowTextColor.copy(alpha = 0.62f),
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
