@@ -9,6 +9,8 @@ class AppLayoutContractTest {
         assertEquals(20f, AppLayoutContract.pageHorizontalInset.value, 0f)
         assertEquals(16f, AppLayoutContract.pageVerticalInset.value, 0f)
         assertEquals(64f, AppLayoutContract.toolbarHeight.value, 0f)
+        assertEquals(20f, AppLayoutContract.toolbarLeadingInset.value, 0f)
+        assertEquals(4f, AppLayoutContract.toolbarActionInset.value, 0f)
         assertEquals(48f, AppLayoutContract.collectionRowHeight.value, 0f)
         assertEquals(88f, AppLayoutContract.mainCardMinHeight.value, 0f)
         assertEquals(16f, AppLayoutContract.mainCardVerticalInset.value, 0f)
