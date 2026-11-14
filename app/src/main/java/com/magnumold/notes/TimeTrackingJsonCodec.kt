@@ -23,7 +23,7 @@ internal fun timeTrackingToJson(state: TimeTrackingState): JSONObject {
     }
     val timer = state.protectionTimer?.let { t ->
         JSONObject()
-            .put("taskId", t.taskId).put("taskTitle", t.taskTitle)
+            .put("taskId", t.taskId).put("parentTaskId", t.parentTaskId ?: JSONObject.NULL).put("taskTitle", t.taskTitle)
             .put("subtaskTitle", t.subtaskTitle ?: JSONObject.NULL)
             .put("startedAt", t.startedAtMillis).put("endsAt", t.endsAtMillis)
             .put("endMode", t.endMode.name).put("soundUri", t.soundUri ?: JSONObject.NULL)
@@ -79,7 +79,8 @@ internal fun parseTimeTrackingJson(json: JSONObject?): TimeTrackingState {
                 endsAtMillis = o.getLong("endsAt"),
                 endMode = ProtectionEndMode.valueOf(o.getString("endMode")),
                 soundUri = if (o.isNull("soundUri")) null else o.getString("soundUri"),
-                soundEnabled = o.optBoolean("soundEnabled", true)
+                soundEnabled = o.optBoolean("soundEnabled", true),
+                parentTaskId = if (o.isNull("parentTaskId")) null else o.getLong("parentTaskId")
             )
         }.getOrNull()
     }
