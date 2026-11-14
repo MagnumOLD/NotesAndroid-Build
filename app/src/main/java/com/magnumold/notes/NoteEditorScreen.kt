@@ -494,6 +494,15 @@ internal fun NoteEditor(
                     }
                 }
             }
+            if (note.type == RecordType.TASK && !isTaskListItem) {
+                item(key = "parent_work_time_summary") {
+                    ParentWorkTimeSummary(
+                        parentTaskId = note.id,
+                        state = timeTrackingState,
+                        onOpenHistory = { timeAnalyticsVisible = true }
+                    )
+                }
+            }
             if (note.type != RecordType.NOTE &&
                 (note.descriptionEnabled || isTaskListItem)) {
                 item(key = "record_options") {
