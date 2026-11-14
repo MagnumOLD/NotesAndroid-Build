@@ -30,7 +30,7 @@ internal fun VaultScreen(
         topBar = {
             AppToolbarSurface(backgroundColor = themeColors.topBar) {
                 IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                Text(title, fontSize = AppTypography.screenTitle, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                Text(title, style = AppTypography.screenTitleStyle(), modifier = Modifier.weight(1f))
                 if (isTrash && entries.isNotEmpty()) TextButton(onClick = { confirmEmpty = true }) { Text("Очистить") }
             }
         }
@@ -48,7 +48,7 @@ internal fun VaultScreen(
                     Column(Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs)) {
                         Text(preview, fontSize = AppTypography.body, maxLines = 2)
                         Text(if (entry.collectionId == null) "Основной блокнот" else "Подборка",
-                            fontSize = AppTypography.metadata, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
+                            style = AppTypography.metadataStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             if (!isTrash) TextButton(onClick = { onMoveToTrash(entry) }) { Text("Удалить") }
                             if (isTrash) TextButton(onClick = { onDeleteForever(entry) }) { Text("Удалить навсегда") }
