@@ -193,7 +193,7 @@ internal fun SettingsScreen(
             Surface(color = themeColors.topBar, contentColor = noteTextColor(themeColors.topBar)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
-                        .height(64.dp).padding(start = AppSpacing.toolbarControlInset, end = AppSpacing.toolbarControlInset),
+                        .height(AppPageLayout.toolbarHeight).padding(start = AppSpacing.toolbarControlInset, end = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { if (personalizationVisible) personalizationVisible = false else onBack() }) {
@@ -202,7 +202,7 @@ internal fun SettingsScreen(
                     Text(
                         if (personalizationVisible) "Персонализация" else "Настройки",
                         fontWeight = FontWeight.Medium,
-                        fontSize = 18.sp
+                        fontSize = AppTypography.screenTitle
                     )
                 }
             }
@@ -317,7 +317,7 @@ private fun CompactOpacitySlider(value: Float, onValueChange: (Float) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Прозрачность", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text("Прозрачность", fontSize = AppTypography.sectionLabel, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(AppSpacing.sm))
         Canvas(
             modifier = Modifier.weight(1f).height(28.dp)
@@ -358,7 +358,7 @@ private fun CompactOpacitySlider(value: Float, onValueChange: (Float) -> Unit) {
         Spacer(Modifier.width(AppSpacing.xs))
         Text(
             "${(value.coerceIn(0f, 1f) * 100f).roundToInt()}%",
-            fontSize = 12.sp,
+            fontSize = AppTypography.metadata,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -379,14 +379,14 @@ private fun ThemeColorEditorScreen(
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
         Surface(color = topBarColor, contentColor = noteTextColor(topBarColor)) {
-            Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
+            Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(AppPageLayout.toolbarHeight).padding(horizontal = AppSpacing.toolbarControlInset),
                 verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                Text(title, fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                Text(title, fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
             }
         }
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.screenVertical),
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
@@ -446,15 +446,15 @@ private fun NoteColorEditorScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(color = topBarColor, contentColor = noteTextColor(topBarColor)) {
-                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
+                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(AppPageLayout.toolbarHeight).padding(horizontal = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text("Изменение цвета", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                    Text("Изменение цвета", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
                 }
             }
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.screenVertical),
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
