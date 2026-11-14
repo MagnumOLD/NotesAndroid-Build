@@ -781,6 +781,7 @@ internal fun NoteEditor(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
     if (manualSessionDialogVisible && isTaskListItem) {
         val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
             ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
@@ -797,7 +798,5 @@ internal fun NoteEditor(
                 manualSessionDialogVisible = false
             }
         )
-    }
-
     }
 }
