@@ -514,22 +514,15 @@ internal fun NoteRow(
                     Spacer(Modifier.weight(1f))
                 }
             }
-            // Keep the clock's touch target comfortably tappable, but avoid
-            // an oversized invisible hit area. Once the date is shown, only
-            // the date and its small padding remain clickable.
+            // Overlay the date control in the existing footer area. Its 40dp
+            // touch target does not participate in the card's measured height.
             Box(
                 modifier = Modifier.align(Alignment.BottomEnd)
                     .padding(end = AppSpacing.screenHorizontal)
-                    .then(
-                        if (creationDateVisible) {
-                            Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                                .clickable { creationDateVisible = false }
-                        } else {
-                            Modifier.size(40.dp)
-                                .clickable { creationDateVisible = true }
-                        }
-                    ),
-                contentAlignment = Alignment.Center
+                    .width(112.dp)
+                    .height(40.dp)
+                    .clickable { creationDateVisible = !creationDateVisible },
+                contentAlignment = Alignment.CenterEnd
             ) {
                 if (creationDateVisible) {
                     Text(
