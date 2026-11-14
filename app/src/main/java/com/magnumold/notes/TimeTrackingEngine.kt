@@ -114,7 +114,16 @@ internal object TimeTrackingEngine {
     }
 
     fun dailySessionCounts(state: TimeTrackingState): Map<String, Int> =
-        state.sessions.groupingBy { dayKey(it.startedAtMillis) }.eachCount()
+        buildMap {
+            state.sessions.forEach { session ->
+                val key = dayKey(session.startedAtMillis)
+                put(key, (get(key) ?: 0) + 1)
+            }
+            state.activeSessions.values.forEach { active ->
+                val key = dayKey(active.startedAtMillis)
+                put(key, (get(key) ?: 0) + 1)
+            }
+        }
 
     private fun addSessionByDay(totals: MutableMap<String, Long>, start: Long, end: Long) {
         var cursor = start
@@ -125,7 +134,9 @@ internal object TimeTrackingEngine {
             dayStart.set(Calendar.MINUTE, 0)
             dayStart.set(Calendar.SECOND, 0)
             dayStart.set(Calendar.MILLISECOND, 0)
-            val nextDay = dayStart.timeInMillis + 24L * 60L * 60L * 1000L
+            val nextDayCalendar = dayStart.clone() as Calendar
+            nextDayCalendar.add(Calendar.DAY_OF_MONTH, 1)
+            val nextDay = nextDayCalendar.timeInMillis
             val segmentEnd = minOf(end, nextDay)
             val key = dayKey(cursor)
             totals[key] = (totals[key] ?: 0L) + (segmentEnd - cursor)
