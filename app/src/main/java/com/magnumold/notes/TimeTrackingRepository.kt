@@ -24,6 +24,11 @@ internal class TimeTrackingRepository(
     }
 
     @Synchronized
+    fun restoreBackup(backupState: TimeTrackingState) {
+        save(backupState)
+    }
+
+    @Synchronized
     fun update(transform: (TimeTrackingState) -> TimeTrackingState): TimeTrackingState {
         val updated = transform(load())
         save(updated)
