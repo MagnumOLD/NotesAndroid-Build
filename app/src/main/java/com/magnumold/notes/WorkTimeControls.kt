@@ -144,5 +144,5 @@ private fun formatWorkDuration(value: Long): String {
     val minutes = (seconds % 3_600L) / 60L
     val remainingSeconds = seconds % 60L
     return if (hours > 0L) "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
-    else "%02d:%02d".format(minutes, seconds % 60L)
+    else "%02d:%02d".format(minutes, remainingSeconds)
 }
