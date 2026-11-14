@@ -23,6 +23,16 @@ internal fun NotesApp(
                 BackupFileStore(activity.contentResolver) { timeTrackingRepository.load() }
             }
             val timeTrackingState by timeTrackingRepository.state.collectAsStateWithLifecycle()
+            fun closeActiveSessionsForRemoved(records: List<Note>) {
+                if (records.isEmpty()) return
+                val updated = syncWorkSessionsForTaskChanges(
+                    oldRoots = records,
+                    newRoots = emptyList(),
+                    currentState = timeTrackingRepository.load(),
+                    nowMillis = System.currentTimeMillis()
+                )
+                if (updated != timeTrackingRepository.load()) timeTrackingRepository.save(updated)
+            }
             val themeState = remember(themeSettings, savedThemeMode, initialThemeColorSets) {
                 AppThemeState(
                     initialMode = savedThemeMode,
@@ -141,9 +151,11 @@ internal fun NotesApp(
                         onOpenSettings = { navigation.openSettings() },
                         onOpen = { navigation.openRecord(it) },
                         onArchiveSelected = { ids ->
+                            closeActiveSessionsForRemoved(activeNotes.filter { it.id in ids })
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = false)
                         },
                         onDeleteSelected = { ids ->
+                            closeActiveSessionsForRemoved(activeNotes.filter { it.id in ids })
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, ids, toTrash = true)
                         },
                         onMoveSelected = { ids, afterId ->
@@ -194,6 +206,7 @@ internal fun NotesApp(
                             if (index >= 0) recordsViewModel.updateActiveRecord(activeCollectionId, changed.copy(updated = now))
                         },
                         onDelete = { promoteChildren ->
+                            closeActiveSessionsForRemoved(listOf(selected))
                             recordsViewModel.moveActiveRecordsToVault(activeCollectionId, setOf(selected.id), toTrash = true)
                             navigation.closeEditor()
                         },
