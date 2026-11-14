@@ -293,30 +293,23 @@ internal fun DragHandleIcon(
 
 internal fun recordStatusCompactText(status: RecordStatus): String = when (status) {
     RecordStatus.WAITING -> "Ожидает"
-    RecordStatus.IN_PROGRESS -> "В работе"
-    RecordStatus.PAUSED -> "На паузе"
-    RecordStatus.COMPLETED -> "Выполнено"
-    RecordStatus.CANCELLED -> "Отменено"
-    RecordStatus.MISSED -> "Просрочено"
+    RecordStatus.IN_PROGRESS -> "Выполняется"
+    RecordStatus.PAUSED -> "Остановлена"
+    RecordStatus.COMPLETED -> "Завершена"
+    RecordStatus.CANCELLED -> "Отменена"
+    RecordStatus.MISSED -> "Просрочена"
 }
 
-internal fun recordStatusText(status: RecordStatus): String = when (status) {
-    RecordStatus.WAITING -> "Ожидает выполнения"
-    RecordStatus.IN_PROGRESS -> "В процессе"
-    RecordStatus.PAUSED -> "На паузе"
-    RecordStatus.COMPLETED -> "Выполнено"
-    RecordStatus.CANCELLED -> "Отменено"
-    RecordStatus.MISSED -> "Пропущено"
-}
+internal fun recordStatusText(status: RecordStatus): String = recordStatusCompactText(status)
 
 
 @Composable
 internal fun TaskStatusMarker(status: RecordStatus) {
     val tint = when (status) {
         RecordStatus.WAITING -> MaterialTheme.colorScheme.onSurfaceVariant
-        RecordStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
-        RecordStatus.PAUSED -> MaterialTheme.colorScheme.tertiary
-        RecordStatus.COMPLETED -> Color(0xFF30A46C)
+        RecordStatus.IN_PROGRESS -> Color(0xFF4CAF50)
+        RecordStatus.PAUSED -> Color(0xFFFF9800)
+        RecordStatus.COMPLETED -> Color(0xFF2196F3)
         RecordStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
         RecordStatus.MISSED -> MaterialTheme.colorScheme.error
     }
@@ -328,14 +321,7 @@ internal fun TaskStatusMarker(status: RecordStatus) {
         RecordStatus.CANCELLED -> Icons.Outlined.Block
         RecordStatus.MISSED -> Icons.Outlined.WarningAmber
     }
-    val description = when (status) {
-        RecordStatus.WAITING -> "Ожидает"
-        RecordStatus.IN_PROGRESS -> "В процессе"
-        RecordStatus.PAUSED -> "На паузе"
-        RecordStatus.COMPLETED -> "Выполнено"
-        RecordStatus.CANCELLED -> "Отменено"
-        RecordStatus.MISSED -> "Просрочено"
-    }
+    val description = recordStatusCompactText(status)
     Icon(
         imageVector = icon,
         contentDescription = description,
