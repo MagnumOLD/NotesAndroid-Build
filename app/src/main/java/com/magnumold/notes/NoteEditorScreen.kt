@@ -274,9 +274,8 @@ internal fun NoteEditor(
                     onChange = onChange
                 )
             } else {
-                TopAppBar(
-                    title = { Text(if (isTaskListItem) "Подзадача" else "Заметка", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle) },
-                    navigationIcon = {},
+                AppEditorTopBar(
+                    title = if (isTaskListItem) "Подзадача" else "Заметка",
                     actions = {
                         if (isTaskListItem) {
                             IconButton(onClick = { taskDetailsExpanded = !taskDetailsExpanded }) {
@@ -315,13 +314,7 @@ internal fun NoteEditor(
                         IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
                         if (!isTaskListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarColor,
-                        scrolledContainerColor = topBarColor,
-                        navigationIconContentColor = noteTextColor(topBarColor),
-                        titleContentColor = noteTextColor(topBarColor),
-                        actionIconContentColor = noteTextColor(topBarColor)
-                    )
+                    backgroundColor = topBarColor
                 )
             }
         },
