@@ -80,13 +80,13 @@ internal fun MainCardHeader(
         Text(
             text,
             modifier = Modifier.weight(1f).then(textInteractionModifier),
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
+            fontSize = AppTypography.cardPreview,
+            lineHeight = AppTypography.cardPreviewLineHeight,
             fontWeight = FontWeight.Medium,
             color = textColor
         )
         if (pinned) {
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(AppSpacing.xs))
             AppIcon(
                 NoteIcon.Pin,
                 contentDescription = "Закреплено",
@@ -94,7 +94,7 @@ internal fun MainCardHeader(
                 modifier = Modifier.padding(top = 5.dp).size(16.dp)
             )
         }
-        Spacer(Modifier.width(20.dp))
+        Spacer(Modifier.width(AppSpacing.lg))
         DragHandleIcon(
             modifier = Modifier.padding(top = 6.6.dp),
             color = textColor,
@@ -491,7 +491,7 @@ internal fun NoteRow(
                     if (note.type != RecordType.NOTE) {
                         Text(
                             metadata,
-                            fontSize = 12.sp,
+                            fontSize = AppTypography.metadata,
                             color = rowTextColor.copy(alpha = 0.82f),
                             maxLines = 1
                         )
@@ -499,7 +499,7 @@ internal fun NoteRow(
                     Spacer(Modifier.weight(1f))
                     Text(
                         formatNoteCreationDate(note.created),
-                        fontSize = 12.sp,
+                        fontSize = AppTypography.metadata,
                         color = rowTextColor.copy(alpha = 0.62f),
                         maxLines = 1
                     )
