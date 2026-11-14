@@ -505,9 +505,7 @@ internal fun NoteEditor(
                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                                 textStyle = TextStyle(
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = AppTypography.screenTitle,
-                                    lineHeight = AppTypography.bodyLineHeight,
-                                    fontWeight = FontWeight.Medium
+                                    style = AppTypography.screenTitleStyle()
                                 ),
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                                 decorationBox = { inner ->
@@ -516,9 +514,7 @@ internal fun NoteEditor(
                                             Text(
                                                 "Название",
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                                                fontSize = AppTypography.screenTitle,
-                                                lineHeight = AppTypography.bodyLineHeight,
-                                                fontWeight = FontWeight.Medium
+                                                style = AppTypography.screenTitleStyle()
                                             )
                                         }
                                         inner()
