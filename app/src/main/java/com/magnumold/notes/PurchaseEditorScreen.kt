@@ -208,7 +208,7 @@ internal fun PurchaseEditor(
         publish(changed)
     }
 
-    Scaffold(
+    AppPageScaffold(
         modifier = Modifier.fillMaxSize().imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {

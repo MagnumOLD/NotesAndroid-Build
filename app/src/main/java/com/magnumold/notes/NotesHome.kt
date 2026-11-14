@@ -145,7 +145,7 @@ internal fun NotesHome(
         onFinishDrag = { finishDrag() }
     )
 
-    Scaffold(
+    AppPageScaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(color = homeBarColor, contentColor = homeContentColor) {

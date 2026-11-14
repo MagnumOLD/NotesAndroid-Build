@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Text
@@ -191,23 +192,43 @@ internal fun AppToolbarSurface(
     }
 }
 
+/**
+ * Shared page frame. Feature screens provide content and actions; this layer
+ * owns the common Scaffold contract without taking ownership of feature state.
+ */
+@Composable
+internal fun AppPageScaffold(
+    modifier: Modifier = Modifier,
+    containerColor: Color,
+    topBar: @Composable () -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit
+) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = containerColor,
+        topBar = topBar,
+        floatingActionButton = floatingActionButton,
+        content = content
+    )
+}
+
+/**
+ * Shared top-bar surface and Material3 behavior for page-level headers.
+ * Feature-specific title fields and actions remain supplied through slots.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AppEditorTopBar(
-    title: String,
+internal fun AppPageTopBar(
     backgroundColor: Color,
-    actions: @Composable RowScope.() -> Unit
+    title: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
+    navigationIcon: @Composable () -> Unit = {}
 ) {
     val foreground = noteTextColor(backgroundColor)
     TopAppBar(
-        title = {
-            Text(
-                title,
-                fontWeight = FontWeight.Medium,
-                fontSize = AppTypography.screenTitle
-            )
-        },
-        navigationIcon = {},
+        title = title,
+        navigationIcon = navigationIcon,
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = backgroundColor,
@@ -216,6 +237,25 @@ internal fun AppEditorTopBar(
             titleContentColor = foreground,
             actionIconContentColor = foreground
         )
+    )
+}
+
+@Composable
+internal fun AppEditorTopBar(
+    title: String,
+    backgroundColor: Color,
+    actions: @Composable RowScope.() -> Unit
+) {
+    AppPageTopBar(
+        backgroundColor = backgroundColor,
+        title = {
+            Text(
+                title,
+                fontWeight = FontWeight.Medium,
+                fontSize = AppTypography.screenTitle
+            )
+        },
+        actions = actions
     )
 }
 

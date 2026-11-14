@@ -88,7 +88,8 @@ internal fun ParentRecordHeader(
         }
     }
 
-    TopAppBar(
+    AppPageTopBar(
+        backgroundColor = topBarColor,
         title = {
             if (selectedCount > 0) {
                 Text(
@@ -200,14 +201,7 @@ internal fun ParentRecordHeader(
                     }
                 }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = topBarColor,
-            scrolledContainerColor = topBarColor,
-            navigationIconContentColor = foreground,
-            titleContentColor = foreground,
-            actionIconContentColor = foreground
-        )
+        }
     )
 }
 
