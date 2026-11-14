@@ -84,11 +84,15 @@ internal object AppLayoutContract {
     val taskTextToHandleGap = 22.dp
     val purchaseTextToCheckboxGap = 12.dp
     val purchaseCheckboxToHandleGap = 14.dp
+    val nestedRowVerticalInset = spaceMd
+    val nestedRowContentMinHeight = controlTouchTarget
+    val nestedRowMinHeight = nestedRowContentMinHeight + nestedRowVerticalInset * 2
 
     // Main-card geometry.
     val mainCardDividerThickness = 1.dp
     val mainCardHeaderFirstLineHeight = 22.dp
-    val nestedGroupMinHeight = 72.dp
+    val dragHandleVisualWidth = 16.dp
+    val nestedGroupMinHeight = nestedRowMinHeight
 
     // Primary add control geometry.
     val primaryAddButtonDiameter = 56.dp
@@ -325,9 +329,15 @@ internal object CardDimensions {
         AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f
     // Keep the 40dp hit target centered on the handle, whose right edge now
     // aligns directly with the card metadata/date guide.
-    val handleHitTargetRightInset = AppSpacing.screenHorizontal - 12.dp
-    // Nested glyphs end at the row edge; center the 40.dp hit target on the 16.dp glyph.
-    val nestedHandleHitTargetRightOverhang = 12.dp
+    val handleVisualWidth = AppLayoutContract.dragHandleVisualWidth
+    val handleHitTargetRightInset =
+        AppSpacing.screenHorizontal - (handleTouchTargetSize - handleVisualWidth) / 2f
+    // The nested hit target is centered on the same visible glyph at the row's right edge.
+    val nestedHandleHitTargetRightOverhang =
+        (handleTouchTargetSize - handleVisualWidth) / 2f
+    val nestedRowVerticalInset = AppLayoutContract.nestedRowVerticalInset
+    val nestedRowContentMinHeight = AppLayoutContract.nestedRowContentMinHeight
+    val nestedRowMinHeight = AppLayoutContract.nestedRowMinHeight
     val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
 }
 
