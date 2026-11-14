@@ -71,7 +71,7 @@ internal fun ProtectionTimerControls(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Осталось", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), fontSize = AppTypography.body, fontWeight = FontWeight.Medium)
                     TextButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) { Text("Остановить") }
                 }
                 Text(
@@ -90,7 +90,7 @@ internal fun ProtectionTimerControls(
                         modifier = androidx.compose.ui.Modifier.width(72.dp).padding(start = AppSpacing.sm),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
+                        textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = AppTypography.body),
                         decorationBox = { innerTextField ->
                             androidx.compose.foundation.layout.Box {
                                 if (minutesText.isEmpty()) Text("25", color = MaterialTheme.colorScheme.onSurfaceVariant)
