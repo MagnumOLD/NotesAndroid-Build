@@ -75,10 +75,16 @@ internal fun NoteEditor(
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = note.dateAt)
     val ringtonePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val pickedUri = result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        val soundUri = pickedUri?.toString()
+        val soundEnabled = pickedUri != null
         onTimeTrackingStateChange(
             timeTrackingState.copy(
-                soundUri = pickedUri?.toString(),
-                soundEnabled = pickedUri != null
+                soundUri = soundUri,
+                soundEnabled = soundEnabled,
+                protectionTimer = timeTrackingState.protectionTimer?.copy(
+                    soundUri = soundUri,
+                    soundEnabled = soundEnabled
+                )
             )
         )
     }
