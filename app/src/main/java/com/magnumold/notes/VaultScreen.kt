@@ -29,10 +29,10 @@ internal fun VaultScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(color = themeColors.topBar, contentColor = noteTextColor(themeColors.topBar)) {
-                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(64.dp).padding(horizontal = AppSpacing.toolbarControlInset),
+                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(AppPageLayout.toolbarHeight).padding(horizontal = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                    Text(title, fontSize = AppTypography.screenTitle, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                     if (isTrash && entries.isNotEmpty()) TextButton(onClick = { confirmEmpty = true }) { Text("Очистить") }
                 }
             }
@@ -43,15 +43,15 @@ internal fun VaultScreen(
                 Text(if (isTrash) "Корзина пуста" else "Архив пуст", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(vertical = AppSpacing.xs)) {
+            LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = AppPageLayout.standardListContentPadding) {
                 items(entries, key = { it.note.id }) { entry ->
                     val preview = entry.note.blocks.asSequence().mapNotNull { block ->
                         block.text.lineSequence().firstOrNull { it.isNotBlank() }
                     }.firstOrNull() ?: "Пустая заметка"
-                    Column(Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal, vertical = AppSpacing.xs)) {
-                        Text(preview, fontSize = 16.sp, maxLines = 2)
+                    Column(Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.xs)) {
+                        Text(preview, fontSize = AppTypography.body, maxLines = 2)
                         Text(if (entry.collectionId == null) "Основной блокнот" else "Подборка",
-                            fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
+                            fontSize = AppTypography.metadata, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = AppSpacing.xxs))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             if (!isTrash) TextButton(onClick = { onMoveToTrash(entry) }) { Text("Удалить") }
                             if (isTrash) TextButton(onClick = { onDeleteForever(entry) }) { Text("Удалить навсегда") }
