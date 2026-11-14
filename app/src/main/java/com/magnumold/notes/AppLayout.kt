@@ -215,8 +215,8 @@ internal object AppRowDimensions {
 @Composable
 internal fun AppToolbarSurface(
     backgroundColor: Color,
-    startInset: Dp = AppSpacing.toolbarControlInset,
-    endInset: Dp = AppSpacing.toolbarControlInset,
+    startInset: Dp = AppLayoutContract.toolbarLeadingInset,
+    endInset: Dp = AppLayoutContract.toolbarActionInset,
     content: @Composable RowScope.() -> Unit
 ) {
     Surface(
