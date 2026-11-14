@@ -424,7 +424,7 @@ internal fun NoteEditor(
                         taskTitle = if (isTaskListItem) parentTaskTitle ?: "Задача" else currentTitle,
                         subtaskTitle = if (isTaskListItem) currentTitle else null,
                         state = timeTrackingState,
-                        allowTracking = note.children.isEmpty(),
+                        allowTracking = isTaskListItem,
                         onStateChange = onTimeTrackingStateChange
                     )
                 }
