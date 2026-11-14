@@ -466,7 +466,11 @@ internal fun NoteEditor(
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
-            contentPadding = AppPageLayout.editorListContentPadding
+            contentPadding = if (note.type == RecordType.TASK && !isTaskListItem) {
+                PaddingValues(top = 0.dp, bottom = AppSpacing.lg)
+            } else {
+                AppPageLayout.editorListContentPadding
+            }
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
                 // Keep the first purchase row from becoming LazyColumn's viewport anchor
