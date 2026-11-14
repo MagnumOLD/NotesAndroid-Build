@@ -28,11 +28,16 @@ internal fun VaultScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppToolbarSurface(backgroundColor = themeColors.topBar) {
-                IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                Text(title, style = AppTypography.screenTitleStyle(), modifier = Modifier.weight(1f))
-                if (isTrash && entries.isNotEmpty()) TextButton(onClick = { confirmEmpty = true }) { Text("Очистить") }
-            }
+            AppPageTopBar(
+                backgroundColor = themeColors.topBar,
+                navigationIcon = { IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+                title = { Text(title, style = AppTypography.screenTitleStyle()) },
+                actions = {
+                    if (isTrash && entries.isNotEmpty()) {
+                        TextButton(onClick = { confirmEmpty = true }) { Text("Очистить") }
+                    }
+                }
+            )
         }
     ) { padding ->
         if (entries.isEmpty()) {
