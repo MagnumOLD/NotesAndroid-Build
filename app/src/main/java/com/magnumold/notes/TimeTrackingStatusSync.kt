@@ -39,7 +39,7 @@ internal fun syncWorkSessionsForTaskChanges(
     removedIds.forEach { removedId ->
         state = TimeTrackingEngine.finish(state, removedId, nowMillis, WorkSessionEndReason.STOP)
     }
-    if (state.protectionTimer?.taskId in removedIds) {
+    if (state.protectionTimer?.taskId?.let { it in removedIds } == true) {
         state = state.copy(protectionTimer = null)
     }
 
