@@ -324,7 +324,7 @@ internal fun TaskStatusMarker(status: RecordStatus) {
         imageVector = icon,
         contentDescription = description,
         tint = tint,
-        modifier = Modifier.size(22.dp)
+        modifier = Modifier.size(AppRowDimensions.statusGlyphSlot)
     )
 }
 
@@ -336,8 +336,8 @@ internal fun TaskStatusMarker(status: RecordStatus) {
 internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
     Box(
         modifier = Modifier.layout { measurable, _ ->
-            val targetSize = 40.dp.roundToPx()
-            val slotWidth = 22.dp.roundToPx()
+            val targetSize = AppRowDimensions.controlTouchTarget.roundToPx()
+            val slotWidth = AppRowDimensions.statusGlyphSlot.roundToPx()
             val placeable = measurable.measure(
                 androidx.compose.ui.unit.Constraints.fixed(targetSize, targetSize)
             )
@@ -347,7 +347,7 @@ internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
         }
     ) {
         Box(
-            modifier = Modifier.size(40.dp).clickable(onClick = onClick),
+            modifier = Modifier.size(AppRowDimensions.controlTouchTarget).clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             TaskStatusMarker(status)
