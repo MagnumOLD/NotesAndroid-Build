@@ -190,21 +190,15 @@ internal fun SettingsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = themeColors.topBar, contentColor = noteTextColor(themeColors.topBar)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
-                        .height(AppPageLayout.toolbarHeight).padding(start = AppSpacing.toolbarControlInset, end = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { if (personalizationVisible) personalizationVisible = false else onBack() }) {
-                        AppIcon(NoteIcon.Back, contentDescription = "Назад")
-                    }
-                    Text(
-                        if (personalizationVisible) "Персонализация" else "Настройки",
-                        fontWeight = FontWeight.Medium,
-                        fontSize = AppTypography.screenTitle
-                    )
+            AppToolbarSurface(backgroundColor = themeColors.topBar) {
+                IconButton(onClick = { if (personalizationVisible) personalizationVisible = false else onBack() }) {
+                    AppIcon(NoteIcon.Back, contentDescription = "Назад")
                 }
+                Text(
+                    if (personalizationVisible) "Персонализация" else "Настройки",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = AppTypography.screenTitle
+                )
             }
         }
     ) { padding ->
@@ -378,12 +372,9 @@ private fun ThemeColorEditorScreen(
         catch (_: Exception) { null }
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
-        Surface(color = topBarColor, contentColor = noteTextColor(topBarColor)) {
-            Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(AppPageLayout.toolbarHeight).padding(horizontal = AppSpacing.toolbarControlInset),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
-                Text(title, fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
-            }
+        AppToolbarSurface(backgroundColor = topBarColor) {
+            IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") }
+            Text(title, fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).appPageContentInsets(),
