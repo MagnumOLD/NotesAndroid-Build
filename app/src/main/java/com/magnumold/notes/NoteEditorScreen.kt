@@ -506,26 +506,26 @@ internal fun NoteEditor(
                             ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
                         Column(modifier = Modifier.padding(top = AppSpacing.xxs)) {
                             ProtectionTimerControls(
-                            taskId = note.id,
-                            taskTitle = parentTaskTitle ?: "Задача",
-                            subtaskTitle = currentTitle,
-                            parentTaskId = parentTaskId,
-                            state = timeTrackingState,
-                            onStateChange = onTimeTrackingStateChange,
-                            onChooseSound = {
-                                val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-                                    putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
-                                    putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Выберите сигнал")
-                                    putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
-                                    putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
-                                    putExtra(
-                                        RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
-                                        timeTrackingState.soundUri?.let(Uri::parse)
-                                            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                                    )
+                                taskId = note.id,
+                                taskTitle = parentTaskTitle ?: "Задача",
+                                subtaskTitle = currentTitle,
+                                parentTaskId = parentTaskId,
+                                state = timeTrackingState,
+                                onStateChange = onTimeTrackingStateChange,
+                                onChooseSound = {
+                                    val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                                        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                                        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Выберите сигнал")
+                                        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                                        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                                        putExtra(
+                                            RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                            timeTrackingState.soundUri?.let(Uri::parse)
+                                                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                                        )
+                                    }
+                                    ringtonePicker.launch(intent)
                                 }
-                                ringtonePicker.launch(intent)
-                            }
                             )
                         }
                     }
