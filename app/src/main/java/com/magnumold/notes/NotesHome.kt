@@ -148,15 +148,13 @@ internal fun NotesHome(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = homeBarColor, contentColor = homeContentColor) {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.statusBars)
-                        .height(64.dp)
-                        .padding(start = AppSpacing.screenHorizontal, end = AppSpacing.toolbarControlInset),
-                    verticalAlignment = Alignment.CenterVertically                ) {
+            AppToolbarSurface(
+                backgroundColor = homeBarColor,
+                startInset = AppSpacing.screenHorizontal,
+                endInset = AppSpacing.toolbarControlInset
+            ) {
                     if (selectionMode) {
-                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
                         Spacer(Modifier.weight(1f))
                         val allSelectedPinned = notes.filter { it.id in selectedNoteIds }.all { it.pinned }
                         IconButton(onClick = { onTogglePinned(selectedNoteIds) }) {
@@ -191,7 +189,6 @@ internal fun NotesHome(
                             AppIcon(NoteIcon.More, contentDescription = "Настройки")
                         }
                     }
-                }
             }
         },
         floatingActionButton = {
