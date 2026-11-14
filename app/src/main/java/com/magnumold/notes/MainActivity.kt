@@ -1,13 +1,43 @@
 package com.magnumold.notes
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
 
 class MainActivity : ComponentActivity() {
+    private lateinit var recordsViewModel: NotesViewModel
+    private val taskStatusReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (::recordsViewModel.isInitialized &&
+                intent?.action == ProtectionTimerContract.ACTION_TASK_STATUS_CHANGED
+            ) {
+                recordsViewModel.refreshFromRepository()
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(ProtectionTimerContract.ACTION_TASK_STATUS_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(taskStatusReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(taskStatusReceiver, filter)
+        }
+    }
+
+    override fun onStop() {
+        unregisterReceiver(taskStatusReceiver)
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val initialDark = getPreferences(Context.MODE_PRIVATE).getBoolean("dark_v2", true)
@@ -23,7 +53,7 @@ class MainActivity : ComponentActivity() {
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
         val timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
-        val recordsViewModel = ViewModelProvider(
+        recordsViewModel = ViewModelProvider(
             this,
             NotesViewModelFactory(repository, timeTrackingRepository)
         )[NotesViewModel::class.java]
