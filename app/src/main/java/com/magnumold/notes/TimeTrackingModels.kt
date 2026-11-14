@@ -79,7 +79,8 @@ internal data class ProtectionTimer(
     val endsAtMillis: Long,
     val endMode: ProtectionEndMode,
     val soundUri: String? = null,
-    val soundEnabled: Boolean = true
+    val soundEnabled: Boolean = true,
+    val parentTaskId: Long? = null
 ) {
     init {
         require(taskTitle.isNotBlank())
