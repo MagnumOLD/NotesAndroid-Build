@@ -149,7 +149,7 @@ internal object AppTypography {
 
     @Composable
     fun sectionHeadingStyle(): TextStyle =
-        MaterialTheme.typography.bodyLarge.copy(fontSize = sectionHeading)
+        MaterialTheme.typography.bodyLarge.copy(fontSize = sectionHeading, fontWeight = FontWeight.Medium)
 
     @Composable
     fun bodyStyle(): TextStyle = MaterialTheme.typography.bodyLarge
