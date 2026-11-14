@@ -61,7 +61,7 @@ internal fun TimeTrackingAnalyticsScreen(
         verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Учёт времени", fontSize = AppTypography.screenTitle, fontWeight = FontWeight.Medium)
+            Text("Учёт времени", style = AppTypography.screenTitleStyle())
             TextButton(onClick = onBack) { Text("Назад") }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
