@@ -24,10 +24,11 @@ internal class TimeTrackingRepository(
         _state.value = loadStoredState()
     }
 
-    private fun loadStoredState(): TimeTrackingState = runCatching {
+    private fun loadStoredState(): TimeTrackingState {
         val raw = preferences.getString(KEY_STATE, null) ?: return TimeTrackingState()
-        parseTimeTrackingJson(JSONObject(raw))
-    }.getOrDefault(TimeTrackingState())
+        return runCatching { parseTimeTrackingJson(JSONObject(raw)) }
+            .getOrDefault(TimeTrackingState())
+    }
 
     @Synchronized
     fun save(state: TimeTrackingState) {
