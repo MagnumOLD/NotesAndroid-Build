@@ -311,7 +311,7 @@ private fun CompactOpacitySlider(value: Float, onValueChange: (Float) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screenHorizontal, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Прозрачность", fontSize = AppTypography.sectionLabel, color = MaterialTheme.colorScheme.onSurface)
+        Text("Прозрачность", style = AppTypography.sectionLabelStyle(), color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(AppSpacing.sm))
         Canvas(
             modifier = Modifier.weight(1f).height(28.dp)
@@ -352,7 +352,7 @@ private fun CompactOpacitySlider(value: Float, onValueChange: (Float) -> Unit) {
         Spacer(Modifier.width(AppSpacing.xs))
         Text(
             "${(value.coerceIn(0f, 1f) * 100f).roundToInt()}%",
-            fontSize = AppTypography.metadata,
+            style = AppTypography.metadataStyle(),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -383,7 +383,7 @@ private fun ThemeColorEditorScreen(
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
                     Text(title, fontSize = AppTypography.sectionHeading, fontWeight = FontWeight.Medium)
-                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.helper)
+                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
             Text("Палитра", fontWeight = FontWeight.Medium)
@@ -451,7 +451,7 @@ private fun NoteColorEditorScreen(
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
                     Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], fontSize = AppTypography.sectionHeading, fontWeight = FontWeight.Medium)
-                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.helper)
+                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
             Text("Палитра", fontWeight = FontWeight.Medium)
