@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
@@ -58,7 +59,8 @@ internal fun MainCardHeader(
     pinned: Boolean = false,
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
-    compressed: Boolean = false
+    compressed: Boolean = false,
+    showDragHandle: Boolean = true
 ) {
     val latestOnClick by rememberUpdatedState(onClick)
     val latestOnLongPress by rememberUpdatedState(onLongPress)
@@ -92,12 +94,14 @@ internal fun MainCardHeader(
                 modifier = Modifier.padding(top = 5.dp).size(16.dp)
             )
         }
-        Spacer(Modifier.width(AppSpacing.lg))
-        DragHandleIcon(
-            modifier = Modifier.padding(top = 6.6.dp),
-            color = textColor,
-            compressed = compressed
-        )
+        if (showDragHandle) {
+            Spacer(Modifier.width(AppSpacing.lg))
+            DragHandleIcon(
+                modifier = Modifier.padding(top = 6.6.dp),
+                color = textColor,
+                compressed = compressed
+            )
+        }
     }
 }
 
@@ -369,7 +373,7 @@ internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
 @Composable
 internal fun NoteRow(
     note: Note, dark: Boolean, noteColors: List<Color>, customSelectionColor: Color? = null, pinned: Boolean, selected: Boolean,
-    statusNow: Long, onClick: () -> Unit, onLongPress: () -> Unit,
+    onClick: () -> Unit, onLongPress: () -> Unit,
     colorSwipeEnabled: Boolean, onChangeColor: (Int) -> Unit,
     onMeasuredHeight: (Int) -> Unit = {}
 ) {
@@ -407,7 +411,11 @@ internal fun NoteRow(
         dark = dark,
         selectionColor = customSelectionColor
     )
-    val metadata = if (note.type == RecordType.NOTE) "Заметка" else recordStatusCompactText(note.recordStatus(statusNow))
+    var showCreationDate by remember(note.id) { mutableStateOf(false) }
+    val compactCreationDate = remember(note.id, note.created) {
+        java.text.SimpleDateFormat("dd.MM", java.util.Locale("ru"))
+            .format(java.util.Date(note.created))
+    }
 
     RecordCardSurface(
         background = selectedBackground,
@@ -415,7 +423,7 @@ internal fun NoteRow(
             .onSizeChanged { onMeasuredHeight(it.height) }
     ) {
         Box(
-            Modifier.fillMaxWidth().heightIn(min = CardDimensions.contentHeight)
+            Modifier.fillMaxWidth().heightIn(min = CardDimensions.sideRailMinHeight)
                 .pointerInput(note.id, note.colorIndex, colorSwipeEnabled) {
                     if (colorSwipeEnabled) {
                         var horizontalDistance = 0f
@@ -479,50 +487,81 @@ internal fun NoteRow(
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth()
-                    .heightIn(min = CardDimensions.contentHeight)
                     .padding(
                         start = AppSpacing.screenHorizontal,
-                        end = AppSpacing.screenHorizontal,
+                        end = CardDimensions.sideRailReservedWidth,
                         top = AppSpacing.md,
                         bottom = AppSpacing.md
                     )
+                    .pointerInput(note.id, selected) {
+                        detectTapGestures(
+                            onTap = { onClick() },
+                            onLongPress = { onLongPress() }
+                        )
+                    }
             ) {
                 MainCardHeader(
                     text = firstLine,
                     textColor = rowTextColor,
-                    pinned = pinned,
-                    onClick = onClick,
-                    onLongPress = onLongPress
+                    pinned = false,
+                    showDragHandle = false
                 )
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .pointerInput(note.id, selected) {
-                            detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
-                        },
-                    verticalAlignment = Alignment.CenterVertically
+            }
+
+            Column(
+                modifier = Modifier.align(Alignment.TopEnd)
+                    .padding(
+                        top = CardDimensions.sideRailTopInset,
+                        end = CardDimensions.sideRailEndInset
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.size(CardDimensions.sideRailControlSize),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (note.type != RecordType.NOTE) {
-                        Text(
-                            metadata,
-                            style = AppTypography.metadataStyle(),
-                            color = rowTextColor.copy(alpha = 0.82f),
-                            maxLines = 1
+                    DragHandleIcon(color = rowTextColor)
+                }
+                if (pinned) {
+                    Box(
+                        modifier = Modifier.size(CardDimensions.sideRailControlSize),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppIcon(
+                            NoteIcon.Pin,
+                            contentDescription = "Закреплено",
+                            tint = rowTextColor.copy(alpha = 0.8f),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        formatNoteCreationDate(note.created),
-                        style = AppTypography.metadataStyle(),
-                        color = rowTextColor.copy(alpha = 0.62f),
-                        maxLines = 1
-                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(width = CardDimensions.sideRailWidth, height = CardDimensions.sideRailControlSize)
+                        .clickable { showCreationDate = !showCreationDate },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (showCreationDate) {
+                        Text(
+                            text = compactCreationDate,
+                            style = AppTypography.metadataStyle().copy(fontSize = 9.sp),
+                            color = rowTextColor.copy(alpha = 0.82f),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarToday,
+                            contentDescription = "Показать дату создания",
+                            tint = rowTextColor.copy(alpha = 0.72f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 internal enum class NoteIcon {
     Back, Add, AddBlock, Search, Close, More, Palette, Archive, Trash,
     Upload, Download, Pin, Folder, Undo, Redo, Share
