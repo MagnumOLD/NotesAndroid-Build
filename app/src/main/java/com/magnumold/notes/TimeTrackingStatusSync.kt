@@ -35,8 +35,12 @@ internal fun syncWorkSessionsForTaskChanges(
     var state = currentState
 
     // Deleting a task closes any live session but keeps its title snapshot in history.
-    (oldEntries.keys - newEntries.keys).forEach { removedId ->
+    val removedIds = oldEntries.keys - newEntries.keys
+    removedIds.forEach { removedId ->
         state = TimeTrackingEngine.finish(state, removedId, nowMillis, WorkSessionEndReason.STOP)
+    }
+    if (state.protectionTimer?.taskId in removedIds) {
+        state = state.copy(protectionTimer = null)
     }
 
     newEntries.forEach { (id, entry) ->
