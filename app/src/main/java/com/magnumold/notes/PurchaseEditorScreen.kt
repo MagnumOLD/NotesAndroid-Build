@@ -533,7 +533,7 @@ internal fun PurchaseEditor(
                         if (group) {
                             Box(
                                 modifier = Modifier.fillMaxWidth()
-                                    .heightIn(min = CardDimensions.nestedGroupMinHeight),
+                                    .heightIn(min = CardDimensions.nestedRowMinHeight),
                                 contentAlignment = Alignment.CenterStart
                             ) {
                                 MainCardHeader(
@@ -549,12 +549,7 @@ internal fun PurchaseEditor(
                             val childSelected = child.id in selectedChildIds
                             val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             val dragHandleColor = childTextColor
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .background(Color.Transparent)
-                                    .padding(vertical = AppSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            NestedRecordRow {
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
