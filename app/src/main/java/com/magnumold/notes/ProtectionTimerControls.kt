@@ -61,8 +61,8 @@ internal fun ProtectionTimerControls(
     TimeTrackingSection(title = "Таймер защиты") {
         when {
             timer != null && timer.taskId != taskId -> {
-                Text("Уже запущен: ${timer.subtaskTitle ?: timer.taskTitle}", style = MaterialTheme.typography.bodyMedium)
-                Text("Осталось ${formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis))}", style = MaterialTheme.typography.bodyMedium)
+                Text("Уже запущен: ${timer.subtaskTitle ?: timer.taskTitle}", style = AppTypography.compactBodyStyle())
+                Text("Осталось ${formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis))}", style = AppTypography.compactBodyStyle())
             }
             timer != null -> {
                 Row(
@@ -70,20 +70,20 @@ internal fun ProtectionTimerControls(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Осталось", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Осталось", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium)
                     TextButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) { Text("Остановить") }
                 }
                 Text(
                     if (timer.endMode == ProtectionEndMode.SIGNAL_ONLY) "По окончании — только сигнал"
                     else "По окончании — остановить учёт и поставить на паузу",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTypography.smallBodyStyle(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             else -> {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Длительность, мин", style = MaterialTheme.typography.bodyMedium)
+                    Text("Длительность, мин", style = AppTypography.compactBodyStyle())
                     BasicTextField(
                         value = minutesText,
                         onValueChange = { value -> minutesText = value.filter { it.isDigit() }.take(4) },
@@ -126,11 +126,11 @@ internal fun ProtectionTimerControls(
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = selectedMode == ProtectionEndMode.SIGNAL_ONLY, onClick = { selectedMode = ProtectionEndMode.SIGNAL_ONLY })
-                        Text("Только сигнал", style = MaterialTheme.typography.bodyMedium)
+                        Text("Только сигнал", style = AppTypography.compactBodyStyle())
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = selectedMode == ProtectionEndMode.STOP_AND_PAUSE, onClick = { selectedMode = ProtectionEndMode.STOP_AND_PAUSE })
-                        Text("Остановить учёт и поставить на паузу", style = MaterialTheme.typography.bodyMedium)
+                        Text("Остановить учёт и поставить на паузу", style = AppTypography.compactBodyStyle())
                     }
                 }
             }
@@ -149,7 +149,7 @@ internal fun ProtectionTimerControls(
                     ))
                 }
             )
-            Text("Звуковой сигнал", style = MaterialTheme.typography.bodyMedium)
+            Text("Звуковой сигнал", style = AppTypography.compactBodyStyle())
             TextButton(onClick = onChooseSound) { Text("Выбрать") }
 
         }
