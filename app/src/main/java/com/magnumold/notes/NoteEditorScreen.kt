@@ -47,6 +47,10 @@ import kotlin.math.abs
 internal fun NoteEditor(
     note: Note, dark: Boolean, topBarColor: Color, addButtonColor: Color, selectionColor: Color, autoFocus: Boolean,
     isTaskListItem: Boolean = false,
+    parentTaskId: Long? = null,
+    parentTaskTitle: String? = null,
+    timeTrackingState: TimeTrackingState = TimeTrackingState(),
+    onTimeTrackingStateChange: (TimeTrackingState) -> Unit = {},
     onBack: () -> Unit, onChange: (Note) -> Unit, onDelete: (Boolean) -> Unit, onShare: () -> Unit
 ) {
     val initialText = remember(note.id) { note.blocks.toPlainText() }
@@ -117,6 +121,11 @@ internal fun NoteEditor(
             note = selectedChild, dark = dark, topBarColor = topBarColor,
             addButtonColor = addButtonColor, selectionColor = selectionColor,
             autoFocus = selectedChild.id == autoFocusChildId, isTaskListItem = true,
+            parentTaskId = note.id,
+            parentTaskTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" },
+            timeTrackingState = timeTrackingState,
+            onTimeTrackingStateChange = onTimeTrackingStateChange,
             onBack = {
                 if (!selectedChild.hasContent()) {
                     onChange(note.copy(children = note.children.filterNot { it.id == selectedChild.id }))
@@ -403,6 +412,21 @@ internal fun NoteEditor(
                 // while adjacent tasks exchange positions.
                 item(key = "task_reorder_viewport_anchor") {
                     Spacer(Modifier.height(1.dp))
+                }
+            }
+            if (note.type == RecordType.TASK) {
+                item(key = "work_time_tracking") {
+                    val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                        ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+                    WorkTimeControls(
+                        taskId = note.id,
+                        parentTaskId = parentTaskId,
+                        taskTitle = if (isTaskListItem) parentTaskTitle ?: "Задача" else currentTitle,
+                        subtaskTitle = if (isTaskListItem) currentTitle else null,
+                        state = timeTrackingState,
+                        allowTracking = note.children.isEmpty(),
+                        onStateChange = onTimeTrackingStateChange
+                    )
                 }
             }
             if (note.type != RecordType.NOTE &&
