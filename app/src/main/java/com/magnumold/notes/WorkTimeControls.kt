@@ -30,7 +30,7 @@ internal fun WorkTimeControls(
             Text(
                 if (active != null) "Идёт учёт времени" else if (hasHistory) "Учёт приостановлен" else "Запустится при начале работы",
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
+                style = AppTypography.compactBodyStyle(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (active != null) {
