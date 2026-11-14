@@ -26,7 +26,7 @@ class AppLayoutContractTest {
         assertEquals(40f, CardDimensions.handleTouchTargetSize.value, 0f)
         assertEquals(32f, CardDimensions.sideRailWidth.value, 0f)
         assertEquals(28f, CardDimensions.sideRailControlSize.value, 0f)
-        assertEquals(100f, CardDimensions.sideRailMinHeight.value, 0f)
+        assertEquals(104f, CardDimensions.sideRailMinHeight.value, 0f)
         assertEquals(
             CardDimensions.handleHitTargetTopOffset + CardDimensions.handleTouchTargetSize / 2f,
             CardDimensions.sideRailTopInset + CardDimensions.sideRailControlSize / 2f
