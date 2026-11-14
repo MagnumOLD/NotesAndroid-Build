@@ -755,6 +755,7 @@ internal fun NoteEditor(
                                         }
                                     }
                                 }
+                                Spacer(Modifier.width(9.dp))
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
