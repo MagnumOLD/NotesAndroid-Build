@@ -2,7 +2,6 @@ package com.magnumold.notes
 
 import android.app.AlarmManager
 import android.content.Intent
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -152,12 +151,7 @@ internal fun ProtectionTimerControls(
             )
             Text("Звуковой сигнал", style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onChooseSound) { Text("Выбрать") }
-            TextButton(onClick = {
-                if (state.soundEnabled) {
-                    val uri = state.soundUri?.let(android.net.Uri::parse) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    RingtoneManager.getRingtone(context, uri)?.play()
-                }
-            }, enabled = state.soundEnabled) { Text("Проверить") }
+
         }
     }
 }
