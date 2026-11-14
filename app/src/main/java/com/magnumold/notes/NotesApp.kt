@@ -3,6 +3,7 @@ package com.magnumold.notes
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,6 +24,12 @@ internal fun NotesApp(
                 BackupFileStore(activity.contentResolver) { timeTrackingRepository.load() }
             }
             val timeTrackingState by timeTrackingRepository.state.collectAsStateWithLifecycle()
+            val protectionTimerScheduler = remember(activity) { ProtectionTimerScheduler(activity) }
+            LaunchedEffect(timeTrackingState.protectionTimer) {
+                val timer = timeTrackingState.protectionTimer
+                if (timer == null) protectionTimerScheduler.cancel()
+                else protectionTimerScheduler.schedule(timer)
+            }
             fun closeActiveSessionsForRemoved(records: List<Note>) {
                 if (records.isEmpty()) return
                 val updated = syncWorkSessionsForTaskChanges(
