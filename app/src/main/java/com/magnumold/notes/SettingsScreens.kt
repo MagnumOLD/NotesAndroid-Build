@@ -382,8 +382,8 @@ private fun ThemeColorEditorScreen(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
-                    Text(title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(title, fontSize = AppTypography.sectionHeading, fontWeight = FontWeight.Medium)
+                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.helper)
                 }
             }
             Text("Палитра", fontWeight = FontWeight.Medium)
@@ -450,8 +450,8 @@ private fun NoteColorEditorScreen(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 Box(Modifier.size(52.dp).background(parsedColor ?: color, RoundedCornerShape(10.dp)))
                 Column {
-                    Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index], fontSize = AppTypography.sectionHeading, fontWeight = FontWeight.Medium)
+                    Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.helper)
                 }
             }
             Text("Палитра", fontWeight = FontWeight.Medium)
