@@ -56,7 +56,7 @@ internal fun VaultScreen(
                                 .heightIn(min = CardDimensions.contentHeight)
                                 .padding(
                                     horizontal = AppSpacing.screenHorizontal,
-                                    vertical = AppSpacing.mainCardVerticalInset
+                                    vertical = AppLayoutContract.mainCardVerticalInset
                                 )
                         ) {
                             Text(preview, style = AppTypography.cardPreviewStyle(), maxLines = 2)
