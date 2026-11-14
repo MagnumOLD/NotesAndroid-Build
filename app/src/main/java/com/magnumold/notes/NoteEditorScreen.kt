@@ -731,18 +731,10 @@ internal fun NoteEditor(
                             ) {
                                 var childStatusMenuExpanded by remember(child.id) { mutableStateOf(false) }
                                 Box {
-                                    Box(
-                                        modifier = Modifier.width(22.dp).height(40.dp),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        TaskStatusMarker(childStatus)
-                                        Box(
-                                            modifier = Modifier
-                                                .offset(x = (-18).dp)
-                                                .size(40.dp)
-                                                .clickable { childStatusMenuExpanded = true }
-                                        )
-                                    }
+                                    TaskStatusButton(
+                                        status = childStatus,
+                                        onClick = { childStatusMenuExpanded = true }
+                                    )
                                     DropdownMenu(
                                         expanded = childStatusMenuExpanded,
                                         onDismissRequest = { childStatusMenuExpanded = false }
@@ -763,7 +755,7 @@ internal fun NoteEditor(
                                         }
                                     }
                                 }
-                                Spacer(Modifier.width(4.dp))
+                                Spacer(Modifier.width(9.dp))
                                 Text(
                                     childText,
                                     modifier = Modifier.weight(1f).pointerInput(child.id, selectedChildIds) {
