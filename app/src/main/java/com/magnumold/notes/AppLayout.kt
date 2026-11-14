@@ -259,7 +259,6 @@ internal fun AppPageScaffold(
  * Shared top-bar surface and Material3 behavior for page-level headers.
  * Feature-specific title fields and actions remain supplied through slots.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppPageTopBar(
     backgroundColor: Color,
@@ -267,19 +266,16 @@ internal fun AppPageTopBar(
     actions: @Composable RowScope.() -> Unit = {},
     navigationIcon: @Composable () -> Unit = {}
 ) {
-    val foreground = noteTextColor(backgroundColor)
-    TopAppBar(
-        title = title,
-        navigationIcon = navigationIcon,
-        actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = backgroundColor,
-            scrolledContainerColor = backgroundColor,
-            navigationIconContentColor = foreground,
-            titleContentColor = foreground,
-            actionIconContentColor = foreground
-        )
-    )
+    AppToolbarSurface(backgroundColor = backgroundColor) {
+        navigationIcon()
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            title()
+        }
+        actions()
+    }
 }
 
 @Composable
