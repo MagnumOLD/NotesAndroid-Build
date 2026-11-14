@@ -400,6 +400,10 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                     )
                 }
             }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(chartData.first().first, style = MaterialTheme.typography.labelSmall)
+                Text(chartData.last().first, style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }
