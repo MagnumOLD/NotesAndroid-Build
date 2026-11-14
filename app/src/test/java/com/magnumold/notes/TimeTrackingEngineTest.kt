@@ -27,6 +27,20 @@ class TimeTrackingEngineTest {
         assertEquals(900L, state.activeSessions[1L]?.startedAtMillis)
     }
 
+    @Test fun historyGroupsIntervalsWithGapsUpToTenMinutesWithoutCountingBreaks() {
+        val first = WorkSession("first", 7, 2, "Parent", "Child", 0, 5 * 60_000L, 5 * 60_000L, WorkSessionEndReason.PAUSE)
+        val second = WorkSession("second", 7, 2, "Parent", "Child", 15 * 60_000L, 20 * 60_000L, WorkSessionEndReason.PAUSE)
+        val third = WorkSession("third", 7, 2, "Parent", "Child", 31 * 60_000L, 36 * 60_000L, WorkSessionEndReason.STOP)
+
+        val groups = TimeTrackingEngine.groupSessionsForDisplay(listOf(first, second, third))
+
+        assertEquals(listOf(1, 2), groups.map { it.size }.sorted())
+        val merged = groups.single { it.size == 2 }
+        assertEquals(10 * 60_000L, merged.sumOf { it.durationMillis })
+        assertEquals(0L, merged.first().startedAtMillis)
+        assertEquals(20 * 60_000L, merged.last().endedAtMillis)
+    }
+
     @Test fun taskTitleSnapshotSurvivesIndependentOfTaskRecord() {
         var state = TimeTrackingEngine.start(TimeTrackingState(), 7, null, "Original title", "Child", 10, "s")
         state = TimeTrackingEngine.finish(state, 7, 20, WorkSessionEndReason.TASK_COMPLETED)
