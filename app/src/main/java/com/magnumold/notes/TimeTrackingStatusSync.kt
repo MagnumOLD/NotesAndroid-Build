@@ -47,15 +47,15 @@ internal fun syncWorkSessionsForTaskChanges(
         val note = entry.note
         if (note.type != RecordType.TASK) return@forEach
         val old = oldEntries[id]?.note
-        val wasTrackable = old?.type == RecordType.TASK && oldEntries[id]?.parentId != null && old.timeTrackingEnabled
-        val isTrackable = entry.parentId != null && note.timeTrackingEnabled
+        // All subtasks are tracked automatically. The legacy opt-in field is ignored,
+        // preserving compatibility with previously saved records.
         val oldStatus = old?.status
         val newStatus = note.status
         if (newStatus == RecordStatus.COMPLETED && state.protectionTimer?.taskId == id) {
             state = state.copy(protectionTimer = null)
         }
 
-        if (wasTrackable && (!isTrackable || (oldStatus == RecordStatus.IN_PROGRESS && newStatus != RecordStatus.IN_PROGRESS))) {
+        if (oldEntries[id]?.parentId != null && oldStatus == RecordStatus.IN_PROGRESS && newStatus != RecordStatus.IN_PROGRESS) {
             val reason = when (newStatus) {
                 RecordStatus.COMPLETED -> WorkSessionEndReason.TASK_COMPLETED
                 RecordStatus.PAUSED -> WorkSessionEndReason.PAUSE
@@ -64,8 +64,8 @@ internal fun syncWorkSessionsForTaskChanges(
             state = TimeTrackingEngine.finish(state, id, nowMillis, reason)
         }
 
-        val shouldStart = isTrackable && newStatus == RecordStatus.IN_PROGRESS &&
-            (old == null || !wasTrackable || oldStatus != RecordStatus.IN_PROGRESS)
+        val shouldStart = entry.parentId != null && newStatus == RecordStatus.IN_PROGRESS &&
+            (old == null || oldStatus != RecordStatus.IN_PROGRESS)
         if (shouldStart && id !in state.activeSessions) {
             val ownTitle = title(note)
             val parentId = entry.parentId
