@@ -598,26 +598,15 @@ internal fun NoteEditor(
                         ) {
                             Text("Статус", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                             Spacer(Modifier.weight(1f))
-                            Box {
-                                TextButton(onClick = { statusMenuExpanded = true }) {
-                                    Text(recordStatusText(note.recordStatus()))
+                            Text(
+                                recordStatusText(note.recordStatus()),
+                                color = when (note.recordStatus()) {
+                                    RecordStatus.IN_PROGRESS -> Color(0xFF4CAF50)
+                                    RecordStatus.PAUSED -> Color(0xFFFF9800)
+                                    RecordStatus.COMPLETED -> Color(0xFF2196F3)
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 }
-                                DropdownMenu(
-                                    expanded = statusMenuExpanded,
-                                    onDismissRequest = { statusMenuExpanded = false }
-                                ) {
-                                    listOf(RecordStatus.WAITING, RecordStatus.IN_PROGRESS, RecordStatus.PAUSED, RecordStatus.COMPLETED).forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(recordStatusText(status)) },
-                                            onClick = {
-                                                statusMenuExpanded = false
-                                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED && status != RecordStatus.MISSED
-                                                onChange(note.copy(status = status, deadlineResumeOverride = resumingMissed))
-                                            }
-                                        )
-                                    }
-                                }
-                            }
+                            )
                         }
                     }
                 }
