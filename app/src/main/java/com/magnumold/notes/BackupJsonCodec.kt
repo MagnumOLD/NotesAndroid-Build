@@ -3,7 +3,7 @@ package com.magnumold.notes
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>, val timeTracking: TimeTrackingState = TimeTrackingState())
+internal data class BackupData(val notes: List<Note>, val collections: List<NoteCollection>, val archived: List<VaultNote>, val trash: List<VaultNote>, val timeTracking: TimeTrackingState? = null)
 private fun noteToJson(note: Note): JSONObject {
     val blocks = JSONArray()
     note.blocks.forEach { block ->
@@ -116,7 +116,7 @@ internal fun parseBackupJson(raw: String): BackupData {
     require(root.optInt("version") in 1..7) { "Неподдерживаемая версия файла" }
     val notes = parseNotesArray(root.optJSONArray("notes") ?: error("В файле нет списка заметок"))
     val collections = parseCollectionsArray(root.optJSONArray("collections") ?: JSONArray())
-    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")), parseTimeTrackingJson(root.optJSONObject("timeTracking")))
+    return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")), root.optJSONObject("timeTracking")?.let(::parseTimeTrackingJson))
 }
 
 private fun Note.sameRecordContent(other: Note): Boolean =
