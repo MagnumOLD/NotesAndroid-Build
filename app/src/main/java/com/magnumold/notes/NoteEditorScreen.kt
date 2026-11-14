@@ -451,11 +451,17 @@ internal fun NoteEditor(
                             ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
                         WorkTimeControls(
                             taskId = note.id,
-                            parentTaskId = parentTaskId,
-                            taskTitle = parentTaskTitle ?: "Задача",
-                            subtaskTitle = currentTitle,
                             state = timeTrackingState,
-                            onStateChange = onTimeTrackingStateChange
+                            status = note.recordStatus(),
+                            onStatusChange = { nextStatus ->
+                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                                    nextStatus != RecordStatus.MISSED
+                                onChange(note.copy(
+                                    status = nextStatus,
+                                    deadlineResumeOverride = resumingMissed
+                                ))
+                            },
+                            onOpenHistory = { timeAnalyticsVisible = true }
                         )
                     }
                 }
