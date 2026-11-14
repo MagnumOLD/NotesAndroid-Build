@@ -13,29 +13,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/**
- * Shared flat section used by time-tracking controls.
- * Keeps the same page guides, spacing and subtle separators as NotesAndroid.
- */
+/** Shared flat section; content follows page guides while separators run edge to edge. */
 @Composable
 internal fun TimeTrackingSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = AppSpacing.screenHorizontal)
-            .padding(top = AppSpacing.xs, bottom = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
-    ) {
-        Text(
-            title,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        content()
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .padding(horizontal = AppSpacing.screenHorizontal)
+                .padding(top = AppSpacing.xs, bottom = AppSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
+        ) {
+            Text(
+                title,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            content()
+        }
         HorizontalDivider(
             modifier = Modifier.padding(top = AppSpacing.xs),
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
