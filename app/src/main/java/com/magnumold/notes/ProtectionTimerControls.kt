@@ -1,6 +1,11 @@
 package com.magnumold.notes
 
+import android.app.AlarmManager
+import android.content.Intent
 import android.media.RingtoneManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -108,6 +113,17 @@ internal fun ProtectionTimerControls(
                         )
                         onStateChange(state.copy(protectionTimer = newTimer))
                         minutesText = ""
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val alarms = context.getSystemService(AlarmManager::class.java)
+                            if (!alarms.canScheduleExactAlarms()) {
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                )
+                            }
+                        }
                     }
                 ) { Text("Запустить таймер") }
             }
