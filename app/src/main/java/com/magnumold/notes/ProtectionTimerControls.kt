@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
@@ -56,8 +57,7 @@ internal fun ProtectionTimerControls(
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Таймер защиты от переутомления", style = MaterialTheme.typography.titleSmall)
+    TimeTrackingSection(title = "Таймер защиты от переутомления") {
         when {
             timer != null && timer.taskId != taskId -> {
                 Text("Уже запущен для: ${timer.subtaskTitle ?: timer.taskTitle}")
@@ -74,7 +74,7 @@ internal fun ProtectionTimerControls(
                 OutlinedTextField(
                     value = minutesText,
                     onValueChange = { value -> minutesText = value.filter { it.isDigit() }.take(4) },
-                    modifier = Modifier,
+                    modifier = Modifier.fillMaxWidth(),
                     label = { Text("Продолжительность, минут") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
