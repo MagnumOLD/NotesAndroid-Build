@@ -222,6 +222,7 @@ internal fun PurchaseEditor(
                     selectedCount = selectedChildIds.size,
                     onClearSelection = { selectedChildIds = emptySet() },
                     onDelete = { onDelete(false) },
+                    onOpenStatistics = {},
                     onShare = onShare,
                     onChange = onChange
                 )
