@@ -478,13 +478,14 @@ internal fun NoteRow(
                 }
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(
-                    start = AppSpacing.screenHorizontal,
-                    end = AppSpacing.screenHorizontal,
-                    top = AppSpacing.md,
-                    bottom = AppSpacing.md
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth()
+                    .heightIn(min = CardDimensions.contentHeight)
+                    .padding(
+                        start = AppSpacing.screenHorizontal,
+                        end = AppSpacing.screenHorizontal,
+                        top = AppSpacing.md,
+                        bottom = AppSpacing.md
+                    )
             ) {
                 MainCardHeader(
                     text = firstLine,
@@ -493,6 +494,7 @@ internal fun NoteRow(
                     onClick = onClick,
                     onLongPress = onLongPress
                 )
+                Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth()
                         .pointerInput(note.id, selected) {
