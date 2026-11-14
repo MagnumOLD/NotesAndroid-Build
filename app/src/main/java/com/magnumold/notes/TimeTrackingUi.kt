@@ -10,6 +10,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 /**
  * Shared flat section used by time-tracking controls.
@@ -23,14 +25,20 @@ internal fun TimeTrackingSection(
     Column(
         modifier = Modifier.fillMaxWidth()
             .padding(horizontal = AppSpacing.screenHorizontal)
-            .padding(vertical = AppSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+            .padding(top = AppSpacing.xs, bottom = AppSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
     ) {
-        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(
+            title,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         content()
         HorizontalDivider(
             modifier = Modifier.padding(top = AppSpacing.xs),
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
             thickness = CardDimensions.dividerThickness
         )
     }
