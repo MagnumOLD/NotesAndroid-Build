@@ -439,6 +439,10 @@ internal fun NoteEditor(
                         subtaskTitle = if (isTaskListItem) currentTitle else null,
                         state = timeTrackingState,
                         allowTracking = isTaskListItem,
+                        trackingEnabled = note.timeTrackingEnabled,
+                        onTrackingEnabledChange = { enabled ->
+                            onChange(note.copy(timeTrackingEnabled = enabled))
+                        },
                         onStateChange = onTimeTrackingStateChange
                     )
                 }
