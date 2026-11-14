@@ -9,12 +9,10 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,6 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 @Composable
@@ -57,100 +58,105 @@ internal fun ProtectionTimerControls(
         }
     }
 
-    TimeTrackingSection(title = "Таймер защиты от переутомления") {
+    TimeTrackingSection(title = "Таймер защиты") {
         when {
             timer != null && timer.taskId != taskId -> {
-                Text("Уже запущен для: ${timer.subtaskTitle ?: timer.taskTitle}")
-                Text("Осталось: ${formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis))}")
+                Text("Уже запущен: ${timer.subtaskTitle ?: timer.taskTitle}", style = MaterialTheme.typography.bodyMedium)
+                Text("Осталось ${formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis))}", style = MaterialTheme.typography.bodyMedium)
             }
             timer != null -> {
-                Text("Осталось: ${formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis))}")
-                Text(if (timer.endMode == ProtectionEndMode.SIGNAL_ONLY) "По окончании — только сигнал" else "По окончании — остановить учёт и поставить на паузу")
-                OutlinedButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) {
-                    Text("Остановить таймер")
+                Row(
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Осталось", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    TextButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) { Text("Остановить") }
                 }
+                Text(
+                    if (timer.endMode == ProtectionEndMode.SIGNAL_ONLY) "По окончании — только сигнал"
+                    else "По окончании — остановить учёт и поставить на паузу",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             else -> {
-                OutlinedTextField(
-                    value = minutesText,
-                    onValueChange = { value -> minutesText = value.filter { it.isDigit() }.take(4) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Продолжительность, минут") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = selectedMode == ProtectionEndMode.SIGNAL_ONLY,
-                            onClick = { selectedMode = ProtectionEndMode.SIGNAL_ONLY }
-                        )
-                        Text("Только сигнал")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = selectedMode == ProtectionEndMode.STOP_AND_PAUSE,
-                            onClick = { selectedMode = ProtectionEndMode.STOP_AND_PAUSE }
-                        )
-                        Text("Остановить и поставить на паузу")
-                    }
-                }
-                Button(
-                    enabled = (minutesText.toLongOrNull() ?: 0L) > 0L,
-                    onClick = {
-                        val duration = (minutesText.toLongOrNull() ?: return@Button) * 60_000L
-                        val newTimer = ProtectionTimerEngine.start(
-                            current = state.protectionTimer,
-                            taskId = taskId,
-                            taskTitle = taskTitle,
-                            subtaskTitle = subtaskTitle,
-                            nowMillis = System.currentTimeMillis(),
-                            durationMillis = duration,
-                            endMode = selectedMode,
-                            soundUri = state.soundUri,
-                            soundEnabled = state.soundEnabled,
-                            parentTaskId = parentTaskId
-                        )
-                        onStateChange(state.copy(protectionTimer = newTimer))
-                        minutesText = ""
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            val alarms = context.getSystemService(AlarmManager::class.java)
-                            if (!alarms.canScheduleExactAlarms()) {
-                                context.startActivity(
-                                    Intent(
-                                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-                                        Uri.parse("package:${context.packageName}")
-                                    )
-                                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Длительность, мин", style = MaterialTheme.typography.bodyMedium)
+                    BasicTextField(
+                        value = minutesText,
+                        onValueChange = { value -> minutesText = value.filter { it.isDigit() }.take(4) },
+                        modifier = androidx.compose.ui.Modifier.width(72.dp).padding(start = AppSpacing.sm),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
+                        decorationBox = { innerTextField ->
+                            androidx.compose.foundation.layout.Box {
+                                if (minutesText.isEmpty()) Text("25", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                innerTextField()
                             }
                         }
+                    )
+                    TextButton(
+                        enabled = (minutesText.toLongOrNull() ?: 0L) > 0L,
+                        onClick = {
+                            val duration = (minutesText.toLongOrNull() ?: return@TextButton) * 60_000L
+                            val newTimer = ProtectionTimerEngine.start(
+                                current = state.protectionTimer, taskId = taskId, taskTitle = taskTitle,
+                                subtaskTitle = subtaskTitle, nowMillis = System.currentTimeMillis(),
+                                durationMillis = duration, endMode = selectedMode,
+                                soundUri = state.soundUri, soundEnabled = state.soundEnabled,
+                                parentTaskId = parentTaskId
+                            )
+                            onStateChange(state.copy(protectionTimer = newTimer))
+                            minutesText = ""
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                val alarms = context.getSystemService(AlarmManager::class.java)
+                                if (!alarms.canScheduleExactAlarms()) {
+                                    context.startActivity(Intent(
+                                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                        Uri.parse("package:${context.packageName}")
+                                    ))
+                                }
+                            }
+                        }
+                    ) { Text("Запустить") }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = selectedMode == ProtectionEndMode.SIGNAL_ONLY, onClick = { selectedMode = ProtectionEndMode.SIGNAL_ONLY })
+                        Text("Только сигнал", style = MaterialTheme.typography.bodyMedium)
                     }
-                ) { Text("Запустить таймер") }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = selectedMode == ProtectionEndMode.STOP_AND_PAUSE, onClick = { selectedMode = ProtectionEndMode.STOP_AND_PAUSE })
+                        Text("Остановить учёт и поставить на паузу", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onChooseSound) { Text("Выбрать звук") }
-            TextButton(onClick = {
-                if (state.soundEnabled) {
-                    val uri = state.soundUri?.let(android.net.Uri::parse)
-                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    RingtoneManager.getRingtone(context, uri)?.play()
-                }
-            }, enabled = state.soundEnabled) { Text("Прослушать") }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+        ) {
             androidx.compose.material3.Checkbox(
                 checked = state.soundEnabled,
                 onCheckedChange = { enabled ->
-                    onStateChange(
-                        state.copy(
-                            soundEnabled = enabled,
-                            protectionTimer = state.protectionTimer?.copy(soundEnabled = enabled)
-                        )
-                    )
+                    onStateChange(state.copy(
+                        soundEnabled = enabled,
+                        protectionTimer = state.protectionTimer?.copy(soundEnabled = enabled)
+                    ))
                 }
             )
-            Text("Звуковой сигнал")
+            Text("Звуковой сигнал", style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onChooseSound) { Text("Выбрать") }
+            TextButton(onClick = {
+                if (state.soundEnabled) {
+                    val uri = state.soundUri?.let(android.net.Uri::parse) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    RingtoneManager.getRingtone(context, uri)?.play()
+                }
+            }, enabled = state.soundEnabled) { Text("Проверить") }
         }
     }
 }
