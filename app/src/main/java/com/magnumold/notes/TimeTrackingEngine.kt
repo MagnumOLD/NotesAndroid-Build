@@ -100,6 +100,30 @@ internal object TimeTrackingEngine {
     fun deleteSession(state: TimeTrackingState, sessionId: String): TimeTrackingState =
         state.copy(sessions = state.sessions.filterNot { it.id == sessionId })
 
+    /** Calculates statistics for [startInclusive, endExclusive), retaining overlap per task. */
+    fun statisticsBetween(
+        state: TimeTrackingState,
+        startInclusive: Long,
+        endExclusive: Long,
+        nowMillis: Long
+    ): TimeTrackingPeriodStats {
+        require(endExclusive >= startInclusive)
+        val totals = linkedMapOf<Long, Long>()
+        var count = 0
+        fun include(taskId: Long, start: Long, end: Long) {
+            val overlap = (minOf(end, endExclusive) - maxOf(start, startInclusive)).coerceAtLeast(0L)
+            if (overlap > 0L) {
+                totals[taskId] = (totals[taskId] ?: 0L) + overlap
+                count++
+            }
+        }
+        state.sessions.forEach { include(it.taskId, it.startedAtMillis, it.endedAtMillis) }
+        state.activeSessions.values.forEach {
+            include(it.taskId, it.startedAtMillis, nowMillis.coerceAtLeast(it.startedAtMillis))
+        }
+        return TimeTrackingPeriodStats(totals.values.sum(), totals, count)
+    }
+
     /**
      * Splits sessions at local midnight so daily statistics attribute overnight work
      * to the correct calendar days. Overlapping sessions remain independent.
