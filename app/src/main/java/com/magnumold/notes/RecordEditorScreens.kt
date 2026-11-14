@@ -94,8 +94,7 @@ internal fun ParentRecordHeader(
             if (selectedCount > 0) {
                 Text(
                     "$selectedCount выбрано",
-                    fontSize = AppTypography.body,
-                    fontWeight = FontWeight.Medium,
+                    style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium,
                     color = foreground
                 )
             } else {
