@@ -117,7 +117,10 @@ internal class ProtectionTimerAlertService : Service() {
         builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(if (timer == null) "Таймер защиты" else "Время вышло")
-            .setContentText(timer?.subtaskTitle ?: timer?.taskTitle ?: "Обработка сигнала")
+            .setContentText(
+                if (timer?.subtaskTitle != null) "${timer.taskTitle} — ${timer.subtaskTitle}"
+                else timer?.taskTitle ?: "Обработка сигнала"
+            )
             .setCategory(Notification.CATEGORY_ALARM)
             .setPriority(Notification.PRIORITY_MAX)
             .setOngoing(true)
