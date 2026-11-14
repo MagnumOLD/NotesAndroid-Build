@@ -156,7 +156,7 @@ internal fun NotesHome(
                         .padding(start = AppSpacing.screenHorizontal, end = AppSpacing.toolbarControlInset),
                     verticalAlignment = Alignment.CenterVertically                ) {
                     if (selectionMode) {
-                        Text("${selectedNoteIds.size} выбрано", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
+                        Text("${selectedNoteIds.size} выбрано", style = AppTypography.screenTitleStyle())
                         Spacer(Modifier.weight(1f))
                         val allSelectedPinned = notes.filter { it.id in selectedNoteIds }.all { it.pinned }
                         IconButton(onClick = { onTogglePinned(selectedNoteIds) }) {
@@ -182,7 +182,7 @@ internal fun NotesHome(
                         }
                         IconButton(onClick = { showDeleteConfirmation = true }) { AppIcon(NoteIcon.Trash, contentDescription = "Удалить выбранные заметки") }
                     } else {
-                        Text("Заметки", fontWeight = FontWeight.Medium, fontSize = AppTypography.screenTitle)
+                        Text("Заметки", style = AppTypography.screenTitleStyle())
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onToggleSearch) {
                             AppIcon(if (searchVisible) NoteIcon.Close else NoteIcon.Search, contentDescription = "Поиск")
