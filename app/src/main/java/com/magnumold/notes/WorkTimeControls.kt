@@ -3,6 +3,7 @@ package com.magnumold.notes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -46,15 +47,14 @@ internal fun WorkTimeControls(
     val hasHistory = state.sessions.any { it.taskId == taskId }
     val durationText = formatWorkDuration(totalMillis)
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Фактическое время")
+    TimeTrackingSection(title = "Фактическое время") {
         if (allowTracking) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Checkbox(checked = trackingEnabled, onCheckedChange = onTrackingEnabledChange)
                 Text("Учитывать время")
             }
         }
-        Text(durationText)
+        Text(durationText, style = MaterialTheme.typography.headlineMedium)
         if (allowTracking && trackingEnabled) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (active == null) {
