@@ -321,10 +321,10 @@ internal fun Modifier.appPageContentInsets(): Modifier =
  * contentHeight is a minimum; long first lines can increase the measured row height.
  */
 internal object CardDimensions {
-    // The side rail contains three evenly sized controls: move, pin and date.
-    val sidePanelWidth = 48.dp
-    val sidePanelControlSize = 32.dp
-    val contentHeight = maxOf(AppLayoutContract.mainCardMinHeight, sidePanelControlSize * 3)
+    // Narrow side rail with three compact, evenly positioned control slots.
+    val sidePanelWidth = 32.dp
+    val sidePanelControlSize = 24.dp
+    val contentHeight = AppLayoutContract.mainCardMinHeight
     val dividerThickness = AppLayoutContract.mainCardDividerThickness
     val rowHeight = contentHeight + dividerThickness
 
