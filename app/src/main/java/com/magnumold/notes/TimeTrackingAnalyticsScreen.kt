@@ -93,27 +93,53 @@ internal fun TimeTrackingAnalyticsScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    items(state.sessions.sortedByDescending { it.startedAtMillis }, key = { it.id }) { session ->
+                    items(
+                        TimeTrackingEngine.groupSessionsForDisplay(state.sessions),
+                        key = { group -> group.first().id }
+                    ) { group ->
+                        var intervalsExpanded by remember(group.first().id) { mutableStateOf(false) }
+                        val first = group.first()
+                        val last = group.last()
+                        val groupDuration = group.sumOf { it.durationMillis }
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
                         ) {
-                                Text(session.subtaskTitle ?: session.taskTitle, style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
-                                if (session.subtaskTitle != null) {
-                                    Text(session.taskTitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(first.subtaskTitle ?: first.taskTitle, style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
+                            if (first.subtaskTitle != null) {
+                                Text(first.taskTitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.smallBodyStyle())
+                            }
+                            Text(
+                                "${formatSessionDate(first.startedAtMillis)} — ${formatSessionDate(last.endedAtMillis)}",
+                                style = AppTypography.smallBodyStyle()
+                            )
+                            Text("Фактическое время: ${formatSessionDuration(groupDuration)}", style = AppTypography.smallBodyStyle())
+                            if (group.size > 1) {
+                                TextButton(onClick = { intervalsExpanded = !intervalsExpanded }) {
+                                    Text(if (intervalsExpanded) "Скрыть отрезки" else "Рабочие отрезки: ${group.size}")
                                 }
-                                Text(
-                                    "${formatSessionDate(session.startedAtMillis)} — ${formatSessionDate(session.endedAtMillis)}",
-                                    style = AppTypography.smallBodyStyle()
-                                )
-                                Text("Длительность: ${formatSessionDuration(session.durationMillis)}", style = AppTypography.smallBodyStyle())
-                                Text("Завершение: ${session.endReason.toRussianLabel()}", style = AppTypography.smallBodyStyle())
-                                Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-                                    TextButton(onClick = { editing = session }) { Text("Изменить") }
-                                    TextButton(onClick = {
-                                        onStateChange(TimeTrackingEngine.deleteSession(state, session.id))
-                                    }) { Text("Удалить") }
+                            }
+                            if (group.size == 1 || intervalsExpanded) {
+                                group.forEachIndexed { index, session ->
+                                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                                        if (group.size > 1) {
+                                            Text(
+                                                "Отрезок ${index + 1}: ${formatSessionDuration(session.durationMillis)}",
+                                                style = AppTypography.smallBodyStyle(),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        } else {
+                                            Text("Завершение: ${session.endReason.toRussianLabel()}", style = AppTypography.smallBodyStyle())
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                                            TextButton(onClick = { editing = session }) { Text("Изменить") }
+                                            TextButton(onClick = {
+                                                onStateChange(TimeTrackingEngine.deleteSession(state, session.id))
+                                            }) { Text("Удалить") }
+                                        }
+                                    }
                                 }
+                            }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
                         }
                     }
