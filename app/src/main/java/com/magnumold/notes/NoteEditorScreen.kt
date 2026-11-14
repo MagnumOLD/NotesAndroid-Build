@@ -357,10 +357,18 @@ internal fun NoteEditor(
             }
         }
     ) { padding ->
-        LazyColumn(
+        Column(
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) {
+            if (note.type == RecordType.TASK && !isTaskListItem) {
+                ParentWorkTimeSummary(
+                    parentTaskId = note.id,
+                    state = timeTrackingState
+                )
+            }
+            LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.weight(1f).fillMaxWidth()
                 .pointerInput(note.id) {
                     awaitEachGesture {
                         val down = awaitFirstDown(
@@ -515,14 +523,6 @@ internal fun NoteEditor(
                             }
                         )
                     }
-                }
-            }
-            if (note.type == RecordType.TASK && !isTaskListItem) {
-                item(key = "parent_work_time_summary") {
-                    ParentWorkTimeSummary(
-                        parentTaskId = note.id,
-                        state = timeTrackingState,
-                    )
                 }
             }
             if (note.type != RecordType.NOTE &&
@@ -755,6 +755,7 @@ internal fun NoteEditor(
                         }
                     }
                 }
+            }
             }
         }
     }
