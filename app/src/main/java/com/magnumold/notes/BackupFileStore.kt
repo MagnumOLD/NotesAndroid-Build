@@ -12,7 +12,7 @@ import android.net.Uri
 internal class BackupFileStore(
     private val contentResolver: ContentResolver
 ) {
-    fun writeBackup(uri: Uri, snapshot: PersistenceSnapshot) {
+    fun writeBackup(uri: Uri, snapshot: PersistenceSnapshot, timeTracking: TimeTrackingState = TimeTrackingState()) {
         val output = contentResolver.openOutputStream(uri)
             ?: error("Не удалось открыть файл")
         output.use {
@@ -20,7 +20,8 @@ internal class BackupFileStore(
                 snapshot.notes,
                 snapshot.collections,
                 snapshot.archived,
-                snapshot.trash
+                snapshot.trash,
+                timeTracking
             )
             it.write(json.toByteArray(Charsets.UTF_8))
         }
