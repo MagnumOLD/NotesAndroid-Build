@@ -21,6 +21,27 @@ class AppLayoutContractTest {
     }
 
     @Test
+    fun cardHandlesAndNestedRowsShareOneGeometryContract() {
+        assertEquals(16f, CardDimensions.handleVisualWidth.value, 0f)
+        assertEquals(40f, CardDimensions.handleTouchTargetSize.value, 0f)
+
+        val visibleHandleCenterInset =
+            AppSpacing.screenHorizontal.value + CardDimensions.handleVisualWidth.value / 2f
+        val mainTouchTargetCenterInset =
+            CardDimensions.handleHitTargetRightInset.value + CardDimensions.handleTouchTargetSize.value / 2f
+        assertEquals(visibleHandleCenterInset, mainTouchTargetCenterInset, 0f)
+
+        assertEquals(
+            (CardDimensions.handleTouchTargetSize.value - CardDimensions.handleVisualWidth.value) / 2f,
+            CardDimensions.nestedHandleHitTargetRightOverhang.value,
+            0f
+        )
+        assertEquals(16f, CardDimensions.nestedRowVerticalInset.value, 0f)
+        assertEquals(40f, CardDimensions.nestedRowContentMinHeight.value, 0f)
+        assertEquals(72f, CardDimensions.nestedRowMinHeight.value, 0f)
+    }
+
+    @Test
     fun compatibilityTokensResolveToTheCanonicalContract() {
         assertEquals(AppLayoutContract.pageHorizontalInset, AppSpacing.screenHorizontal)
         assertEquals(AppLayoutContract.toolbarHeight, AppPageLayout.toolbarHeight)
