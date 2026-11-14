@@ -34,17 +34,13 @@ class TimeTrackingStatusSyncTest {
         assertEquals("Child", state.activeSessions[11L]?.subtaskTitle)
     }
 
-    @Test fun trackingIsOptionalAndCanBeEnabledWhileTaskIsInProgress() {
-        val before = task(
+    @Test fun everySubtaskIsTrackedRegardlessOfLegacyOptInValue() {
+        val parent = task(
             10, "Parent", RecordStatus.IN_PROGRESS,
             listOf(task(11, "Child", RecordStatus.IN_PROGRESS, trackingEnabled = false))
         )
-        val disabled = syncWorkSessionsForTaskChanges(emptyList(), listOf(before), TimeTrackingState(), 100L)
-        assertTrue(disabled.activeSessions.isEmpty())
-
-        val after = before.copy(children = listOf(before.children.single().copy(timeTrackingEnabled = true)))
-        val enabled = syncWorkSessionsForTaskChanges(listOf(before), listOf(after), disabled, 200L)
-        assertEquals(setOf(11L), enabled.activeSessions.keys)
+        val state = syncWorkSessionsForTaskChanges(emptyList(), listOf(parent), TimeTrackingState(), 100L)
+        assertEquals(setOf(11L), state.activeSessions.keys)
     }
 
     @Test fun pausingSubtaskSavesSessionWithPauseReason() {
