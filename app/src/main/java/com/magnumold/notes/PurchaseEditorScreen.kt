@@ -387,7 +387,7 @@ internal fun PurchaseEditor(
                         }
                     }
                 },
-            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else 4.dp),
+            verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
             contentPadding = AppPageLayout.editorListContentPadding
         ) {
             if (note.type == RecordType.PURCHASE && !isPurchaseListItem) {
