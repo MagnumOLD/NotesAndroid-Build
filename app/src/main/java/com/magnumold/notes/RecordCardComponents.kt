@@ -371,7 +371,7 @@ internal fun TaskStatusButton(status: RecordStatus, onClick: () -> Unit) {
 internal fun NoteRow(
     note: Note, dark: Boolean, noteColors: List<Color>, customSelectionColor: Color? = null, pinned: Boolean, selected: Boolean,
     showCreationDate: Boolean, onToggleCreationDate: () -> Unit, onTogglePinned: () -> Unit,
-    statusNow: Long, onClick: () -> Unit, onLongPress: () -> Unit,
+    onClick: () -> Unit, onLongPress: () -> Unit,
     colorSwipeEnabled: Boolean, onChangeColor: (Int) -> Unit,
     onMeasuredHeight: (Int) -> Unit = {}
 ) {
@@ -547,6 +547,7 @@ internal fun NoteRow(
                             if (showCreationDate) {
                                 Text(
                                     text = formatNoteCreationDate(note.created),
+                                    modifier = Modifier.fillMaxWidth(),
                                     color = rowTextColor.copy(alpha = 0.72f),
                                     fontSize = 8.sp,
                                     lineHeight = 9.sp,
