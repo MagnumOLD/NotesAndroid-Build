@@ -51,6 +51,9 @@ internal fun syncWorkSessionsForTaskChanges(
         val isTrackable = entry.parentId != null && note.timeTrackingEnabled
         val oldStatus = old?.recordStatus(nowMillis)
         val newStatus = note.recordStatus(nowMillis)
+        if (newStatus == RecordStatus.COMPLETED && state.protectionTimer?.taskId == id) {
+            state = state.copy(protectionTimer = null)
+        }
 
         if (wasTrackable && (!isTrackable || (oldStatus == RecordStatus.IN_PROGRESS && newStatus != RecordStatus.IN_PROGRESS))) {
             val reason = when (newStatus) {
