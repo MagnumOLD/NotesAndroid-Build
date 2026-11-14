@@ -48,6 +48,20 @@ class TimeTrackingJsonCodecTest {
         assertEquals(original, restored)
     }
 
+    @Test fun sharedBackupKeepsPerSubtaskTrackingPreference() {
+        val task = Note(
+            id = 10L,
+            title = "",
+            blocks = listOf(NoteBlock("Subtask")),
+            updated = 1L,
+            type = RecordType.TASK,
+            timeTrackingEnabled = true
+        )
+        val json = createBackupJson(listOf(task), emptyList(), emptyList(), emptyList())
+        val restored = parseBackupJson(json)
+        assertEquals(true, restored.notes.single().timeTrackingEnabled)
+    }
+
     @Test fun missingTrackingObjectIsNotTreatedAsAnImportedEmptyHistory() {
         val backup = parseBackupJson(
             """{"format":"notes_backup","version":6,"notes":[],"collections":[]}"""
