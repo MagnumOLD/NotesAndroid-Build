@@ -90,7 +90,7 @@ internal fun ProtectionTimerControls(
                         modifier = androidx.compose.ui.Modifier.width(72.dp).padding(start = AppSpacing.sm),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, style = AppTypography.bodyStyle()),
+                        textStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface),
                         decorationBox = { innerTextField ->
                             androidx.compose.foundation.layout.Box {
                                 if (minutesText.isEmpty()) Text("25", color = MaterialTheme.colorScheme.onSurfaceVariant)
