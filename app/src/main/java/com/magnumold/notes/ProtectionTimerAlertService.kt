@@ -53,6 +53,7 @@ internal class ProtectionTimerAlertService : Service() {
             sendTaskStatusChanged()
         } else {
             repository.update { it.copy(protectionTimer = null) }
+            sendTaskStatusChanged()
         }
 
         if (timer.soundEnabled) {
@@ -69,6 +70,7 @@ internal class ProtectionTimerAlertService : Service() {
                 TimeTrackingEngine.finish(state, taskId, System.currentTimeMillis(), WorkSessionEndReason.STOP)
                     .copy(protectionTimer = null)
             }
+            sendTaskStatusChanged()
         }
         stopAlertAndService()
     }
