@@ -56,14 +56,20 @@ internal fun TimeTrackingAnalyticsScreen(
     var editing by remember { mutableStateOf<WorkSession?>(null) }
     var adding by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier.fillMaxSize().appPageContentInsets(),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Учёт времени", style = AppTypography.screenTitleStyle())
-            TextButton(onClick = onBack) { Text("Назад") }
+    AppPageScaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            AppPageTopBar(
+                backgroundColor = MaterialTheme.colorScheme.surface,
+                navigationIcon = { androidx.compose.material3.IconButton(onClick = onBack) { AppIcon(NoteIcon.Back, "Назад") } },
+                title = { Text("Учёт времени", style = AppTypography.screenTitleStyle()) }
+            )
         }
+    ) { padding ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(padding).appPageContentInsets(),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+        ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             TextButton(onClick = { tab = 0 }) {
                 Text("История", color = if (tab == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -140,6 +146,7 @@ internal fun TimeTrackingAnalyticsScreen(
                 adding = false
             }
         )
+    }
     }
 }
 
