@@ -60,7 +60,13 @@ internal fun NotesHome(
     var renameCollectionName by remember { mutableStateOf("") }
     var deleteCollectionId by remember { mutableStateOf<Long?>(null) }
     var createMenuExpanded by remember { mutableStateOf(false) }
-    var showCreationDates by remember { mutableStateOf(false) }
+    var deadlineClock by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(60_000L)
+            deadlineClock = System.currentTimeMillis()
+        }
+    }
     var draggingIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var dragBaseRows by remember { mutableStateOf<Map<String, DragRow>>(emptyMap()) }
     var reorderSession by remember { mutableStateOf<ReorderSession?>(null) }
@@ -454,9 +460,7 @@ internal fun NotesHome(
                                     NoteRow(
                                         note = note, dark = dark, noteColors = noteColors,
                                         customSelectionColor = selectedNoteBackground, pinned = note.pinned, selected = isSelected,
-                                        showCreationDate = showCreationDates,
-                                        onToggleCreationDate = { showCreationDates = !showCreationDates },
-                                        onTogglePinned = { onTogglePinned(setOf(note.id)) },
+                                        statusNow = deadlineClock,
                                         onClick = {
                                             if (selectionMode) selectedNoteIds = if (isSelected) selectedNoteIds - note.id else selectedNoteIds + note.id
                                             else onOpen(note.id)
