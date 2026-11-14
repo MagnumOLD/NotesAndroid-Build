@@ -474,10 +474,7 @@ internal fun PurchaseEditor(
                         keyboardController?.show()
                     }
                 }
-                val editorTextStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = AppTypography.bodyStyle()
-                )
+                val editorTextStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface)
                 BasicTextField(
                     value = fieldValue,
                     onValueChange = {
