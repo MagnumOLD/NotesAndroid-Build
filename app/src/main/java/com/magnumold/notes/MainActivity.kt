@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity() {
             if (marker > lastExternalTaskStatusUpdate) {
                 recordsViewModel.refreshFromRepository()
                 lastExternalTaskStatusUpdate = marker
-                if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
             }
         }
+        if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
     }
 
     override fun onStop() {
