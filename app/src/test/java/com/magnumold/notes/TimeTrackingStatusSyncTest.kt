@@ -6,8 +6,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TimeTrackingStatusSyncTest {
-    private fun task(id: Long, text: String, status: RecordStatus, children: List<Note> = emptyList()) =
-        Note(id, "", listOf(NoteBlock(text)), 1L, type = RecordType.TASK, status = status, children = children)
+    private fun task(
+        id: Long,
+        text: String,
+        status: RecordStatus,
+        children: List<Note> = emptyList(),
+        trackingEnabled: Boolean = true
+    ) = Note(
+        id, "", listOf(NoteBlock(text)), 1L,
+        type = RecordType.TASK, status = status,
+        timeTrackingEnabled = trackingEnabled, children = children
+    )
 
     @Test fun startingParentDoesNotStartItsOwnStopwatch() {
         val parent = task(10, "Parent", RecordStatus.IN_PROGRESS)
@@ -23,6 +32,19 @@ class TimeTrackingStatusSyncTest {
         assertEquals(10L, state.activeSessions[11L]?.parentTaskId)
         assertEquals("Parent", state.activeSessions[11L]?.taskTitle)
         assertEquals("Child", state.activeSessions[11L]?.subtaskTitle)
+    }
+
+    @Test fun trackingIsOptionalAndCanBeEnabledWhileTaskIsInProgress() {
+        val before = task(
+            10, "Parent", RecordStatus.IN_PROGRESS,
+            listOf(task(11, "Child", RecordStatus.IN_PROGRESS, trackingEnabled = false))
+        )
+        val disabled = syncWorkSessionsForTaskChanges(emptyList(), listOf(before), TimeTrackingState(), 100L)
+        assertTrue(disabled.activeSessions.isEmpty())
+
+        val after = before.copy(children = listOf(before.children.single().copy(timeTrackingEnabled = true)))
+        val enabled = syncWorkSessionsForTaskChanges(listOf(before), listOf(after), disabled, 200L)
+        assertEquals(setOf(11L), enabled.activeSessions.keys)
     }
 
     @Test fun pausingSubtaskSavesSessionWithPauseReason() {
