@@ -25,6 +25,26 @@ internal class NotesRepository(private val preferences: SharedPreferences) {
             .apply()
     }
 
+    fun updateTaskStatus(taskId: Long, status: RecordStatus): Boolean {
+        val current = loadSnapshot()
+        var found = false
+        fun updateTree(items: List<Note>): List<Note> = items.map { note ->
+            val updatedChildren = updateTree(note.children)
+            if (note.id == taskId && note.type == RecordType.TASK) {
+                found = true
+                note.copy(status = status, deadlineResumeOverride = false, children = updatedChildren)
+            } else if (updatedChildren != note.children) {
+                note.copy(children = updatedChildren)
+            } else note
+        }
+        val updatedNotes = updateTree(current.notes)
+        val updatedCollections = current.collections.map { collection ->
+            collection.copy(notes = updateTree(collection.notes))
+        }
+        if (found) saveSnapshot(current.copy(notes = updatedNotes, collections = updatedCollections))
+        return found
+    }
+
     private fun loadNotes(): List<Note> = runCatching {
         parseNotesArray(JSONArray(preferences.getString("notes", "[]") ?: "[]"))
     }.getOrDefault(emptyList())
