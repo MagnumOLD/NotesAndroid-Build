@@ -40,12 +40,12 @@ internal data class Note(
     val id: Long, val title: String, val blocks: List<NoteBlock>, val updated: Long,
     val colorIndex: Int = 0, val pinned: Boolean = false, val created: Long = updated,
     val type: RecordType = RecordType.NOTE, val status: RecordStatus = RecordStatus.WAITING,
-    val timeTrackingEnabled: Boolean = false,
     val dateMode: RecordDateMode? = null, val dateAt: Long? = null,
     val titleEnabled: Boolean = false, val titleText: String = "",
     val descriptionEnabled: Boolean = false, val descriptionText: String = "",
     val deadlineResumeOverride: Boolean = false, val children: List<Note> = emptyList(),
-    val statusBeforeAutoCompletion: RecordStatus? = null
+    val statusBeforeAutoCompletion: RecordStatus? = null,
+    val timeTrackingEnabled: Boolean = false
 )
 
 internal data class NoteCollection(val id: Long, val name: String, val notes: List<Note> = emptyList())
