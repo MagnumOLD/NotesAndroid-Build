@@ -65,6 +65,7 @@ internal fun ParentRecordHeader(
     selectedCount: Int,
     onClearSelection: () -> Unit,
     onDelete: () -> Unit,
+    onOpenStatistics: () -> Unit,
     onShare: () -> Unit,
     onChange: (Note) -> Unit
 ) {
@@ -172,13 +173,23 @@ internal fun ParentRecordHeader(
                         expanded = actionsMenuExpanded,
                         onDismissRequest = { actionsMenuExpanded = false }
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Поделиться") },
-                            onClick = {
-                                actionsMenuExpanded = false
-                                onShare()
-                            }
-                        )
+                        if (note.type == RecordType.TASK) {
+                            DropdownMenuItem(
+                                text = { Text("Статистика") },
+                                onClick = {
+                                    actionsMenuExpanded = false
+                                    onOpenStatistics()
+                                }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Поделиться") },
+                                onClick = {
+                                    actionsMenuExpanded = false
+                                    onShare()
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Удалить") },
                             onClick = {
