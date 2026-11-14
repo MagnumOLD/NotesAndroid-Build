@@ -504,7 +504,8 @@ internal fun NoteEditor(
                     item(key = "protection_timer") {
                         val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
                             ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                        ProtectionTimerControls(
+                        Column(modifier = Modifier.padding(top = AppSpacing.xxs)) {
+                            ProtectionTimerControls(
                             taskId = note.id,
                             taskTitle = parentTaskTitle ?: "Задача",
                             subtaskTitle = currentTitle,
@@ -525,7 +526,8 @@ internal fun NoteEditor(
                                 }
                                 ringtonePicker.launch(intent)
                             }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -534,7 +536,8 @@ internal fun NoteEditor(
                 item(key = "record_options") {
                     Column(
                         modifier = Modifier.fillMaxWidth()
-                            .appPageHorizontalInsets(),
+                            .appPageHorizontalInsets()
+                            .padding(top = AppSpacing.xxs),
                         verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                     ) {
                         if (note.titleEnabled && isTaskListItem) {
@@ -664,6 +667,7 @@ internal fun NoteEditor(
                     },
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
+                        .padding(top = AppSpacing.xxs)
                         .focusRequester(bodyFocusRequester)
                         .heightIn(min = AppEditorDimensions.bodyMinHeight)
                         .onFocusChanged { state ->
@@ -730,7 +734,9 @@ internal fun NoteEditor(
                             val childSelected = child.id in selectedChildIds
                             val childTextColor = if (childStatus == RecordStatus.COMPLETED) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             val dragHandleColor = childTextColor
-                            NestedRecordRow {
+                            NestedRecordRow(
+                                topInset = if (index == 0) AppSpacing.sm else CardDimensions.nestedRowVerticalInset
+                            ) {
                                 TaskStatusMarker(status = childStatus)
                                 Spacer(Modifier.width(AppRowDimensions.taskStatusToTextGap))
                                 Text(
