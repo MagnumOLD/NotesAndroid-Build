@@ -60,7 +60,9 @@ internal data class ActiveWorkSession(
 internal data class TimeTrackingState(
     val sessions: List<WorkSession> = emptyList(),
     val activeSessions: Map<Long, ActiveWorkSession> = emptyMap(),
-    val protectionTimer: ProtectionTimer? = null
+    val protectionTimer: ProtectionTimer? = null,
+    val soundUri: String? = null,
+    val soundEnabled: Boolean = true
 )
 
 internal enum class ProtectionEndMode {
