@@ -67,13 +67,8 @@ internal class ProtectionTimerBootReceiver : BroadcastReceiver() {
             context.getSharedPreferences("time_tracking", Context.MODE_PRIVATE)
         )
         val timer = repository.load().protectionTimer ?: return
-        if (timer.endsAtMillis <= System.currentTimeMillis()) {
-            val serviceIntent = Intent(context, ProtectionTimerAlertService::class.java)
-                .setAction(ProtectionTimerContract.ACTION_ALARM)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(serviceIntent)
-            else context.startService(serviceIntent)
-        } else {
-            ProtectionTimerScheduler(context).schedule(timer)
-        }
+        // Scheduling even an already-expired alarm lets AlarmManager deliver it
+        // through the same receiver path as a normal expiry after reboot.
+        ProtectionTimerScheduler(context).schedule(timer)
     }
 }
