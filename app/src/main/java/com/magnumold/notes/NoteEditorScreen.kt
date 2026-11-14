@@ -503,10 +503,7 @@ internal fun NoteEditor(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.taskTitleMinHeight),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                                textStyle = TextStyle(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = AppTypography.screenTitleStyle()
-                                ),
+                                textStyle = AppTypography.screenTitleStyle().copy(color = MaterialTheme.colorScheme.onSurface),
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                                 decorationBox = { inner ->
                                     Box(contentAlignment = Alignment.CenterStart) {
@@ -527,10 +524,7 @@ internal fun NoteEditor(
                                 value = note.descriptionText,
                                 onValueChange = { onChange(note.copy(descriptionText = it)) },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.descriptionMinHeight),
-                                textStyle = TextStyle(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = AppTypography.bodyStyle()
-                                ),
+                                textStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface),
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                                 decorationBox = { inner ->
                                     Box(
@@ -631,10 +625,7 @@ internal fun NoteEditor(
                         keyboardController?.show()
                     }
                 }
-                val editorTextStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = AppTypography.bodyStyle()
-                )
+                val editorTextStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface)
                 BasicTextField(
                     value = fieldValue,
                     onValueChange = {
