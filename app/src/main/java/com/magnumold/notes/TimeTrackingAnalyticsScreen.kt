@@ -16,7 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -36,6 +36,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -57,11 +59,11 @@ internal fun TimeTrackingAnalyticsScreen(
     var adding by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxSize().padding(horizontal = AppSpacing.screenHorizontal).padding(vertical = AppSpacing.screenVertical),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Учёт времени", style = MaterialTheme.typography.titleLarge)
+            Text("Учёт времени", fontSize = 18.sp, fontWeight = FontWeight.Medium)
             TextButton(onClick = onBack) { Text("Назад") }
         }
         TabRow(selectedTabIndex = tab) {
@@ -80,14 +82,13 @@ internal fun TimeTrackingAnalyticsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     items(state.sessions.sortedByDescending { it.startedAtMillis }, key = { it.id }) { session ->
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
+                            verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                        ) {
                                 Text(session.subtaskTitle ?: session.taskTitle, style = MaterialTheme.typography.titleSmall)
                                 if (session.subtaskTitle != null) {
                                     Text(session.taskTitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -98,13 +99,13 @@ internal fun TimeTrackingAnalyticsScreen(
                                 )
                                 Text("Длительность: ${formatSessionDuration(session.durationMillis)}")
                                 Text("Завершение: ${session.endReason.toRussianLabel()}", style = MaterialTheme.typography.bodySmall)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                                     TextButton(onClick = { editing = session }) { Text("Изменить") }
                                     TextButton(onClick = {
                                         onStateChange(TimeTrackingEngine.deleteSession(state, session.id))
                                     }) { Text("Удалить") }
                                 }
-                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
                         }
                     }
                 }
@@ -297,11 +298,13 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
 
     Column(
         modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
             listOf("День", "Неделя", "Месяц", "Диапазон").forEach { value ->
-                OutlinedButton(onClick = { period = value }) { Text(value) }
+                TextButton(onClick = { period = value }) {
+                    Text(value, color = if (period == value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
         if (period == "Диапазон") {
