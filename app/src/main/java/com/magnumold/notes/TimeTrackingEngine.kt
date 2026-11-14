@@ -65,6 +65,35 @@ internal object TimeTrackingEngine {
         }
     }
 
+    /**
+     * Groups consecutive work intervals for history display only. Stored intervals,
+     * elapsed-time totals, and statistics remain exact, so breaks are never counted.
+     * A gap of exactly ten minutes is included in the same displayed work session.
+     */
+    fun groupSessionsForDisplay(
+        sessions: List<WorkSession>,
+        mergeGapMillis: Long = 10 * 60 * 1_000L
+    ): List<List<WorkSession>> {
+        require(mergeGapMillis >= 0L)
+        return sessions.groupBy { it.taskId }.values.flatMap { taskSessions ->
+            val sorted = taskSessions.sortedBy { it.startedAtMillis }
+            val groups = mutableListOf<List<WorkSession>>()
+            var current = mutableListOf(sorted.first())
+            sorted.drop(1).forEach { next ->
+                val previous = current.last()
+                val gap = next.startedAtMillis - previous.endedAtMillis
+                if (gap <= mergeGapMillis) {
+                    current.add(next)
+                } else {
+                    groups.add(current.toList())
+                    current = mutableListOf(next)
+                }
+            }
+            groups.add(current.toList())
+            groups
+        }.sortedByDescending { it.first().startedAtMillis }
+    }
+
     fun taskDurationMillis(state: TimeTrackingState, taskId: Long, nowMillis: Long): Long {
         val saved = state.sessions.asSequence()
             .filter { it.taskId == taskId }
