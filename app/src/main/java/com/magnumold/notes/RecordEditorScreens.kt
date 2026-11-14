@@ -170,7 +170,7 @@ internal fun ParentRecordHeader(
                     ) {
                         if (note.type == RecordType.TASK) {
                             DropdownMenuItem(
-                                text = { Text("Статистика") },
+                                text = { Text("История и статистика") },
                                 onClick = {
                                     actionsMenuExpanded = false
                                     onOpenStatistics()
