@@ -69,6 +69,8 @@ internal fun NoteEditor(
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
     var timeAnalyticsVisible by remember(note.id) { mutableStateOf(false) }
+    var manualSessionDialogVisible by remember(note.id) { mutableStateOf(false) }
+    var subtaskMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var statusMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var dateModeMenuExpanded by remember(note.id) { mutableStateOf(false) }
     var datePickerVisible by remember(note.id) { mutableStateOf(false) }
@@ -278,8 +280,29 @@ internal fun NoteEditor(
                     title = if (isTaskListItem) "Подзадача" else "Заметка",
                     actions = {
                         if (isTaskListItem) {
-                            IconButton(onClick = { taskDetailsExpanded = !taskDetailsExpanded }) {
-                                Icon(Icons.Outlined.MoreVert, contentDescription = if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус")
+                            Box {
+                                IconButton(onClick = { subtaskMenuExpanded = true }) {
+                                    Icon(Icons.Outlined.MoreVert, contentDescription = "Действия")
+                                }
+                                DropdownMenu(
+                                    expanded = subtaskMenuExpanded,
+                                    onDismissRequest = { subtaskMenuExpanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(if (taskDetailsExpanded) "Скрыть дату и статус" else "Показать дату и статус") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            taskDetailsExpanded = !taskDetailsExpanded
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("История и статистика") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            timeAnalyticsVisible = true
+                                        }
+                                    )
+                                }
                             }
                         }
                         if (!isTaskListItem && note.type != RecordType.NOTE) {
@@ -461,7 +484,7 @@ internal fun NoteEditor(
                                     deadlineResumeOverride = resumingMissed
                                 ))
                             },
-                            onOpenHistory = { timeAnalyticsVisible = true }
+                            onAddManualSession = { manualSessionDialogVisible = true }
                         )
                     }
                 }
@@ -499,7 +522,6 @@ internal fun NoteEditor(
                     ParentWorkTimeSummary(
                         parentTaskId = note.id,
                         state = timeTrackingState,
-                        onOpenHistory = { timeAnalyticsVisible = true }
                     )
                 }
             }
@@ -759,5 +781,23 @@ internal fun NoteEditor(
         ) {
             DatePicker(state = datePickerState)
         }
+    if (manualSessionDialogVisible && isTaskListItem) {
+        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+        AddWorkSessionDialog(
+            taskId = note.id,
+            parentTaskId = parentTaskId,
+            taskTitle = parentTaskTitle ?: "Задача",
+            subtaskTitle = currentTitle,
+            onDismiss = { manualSessionDialogVisible = false },
+            onSave = { session ->
+                onTimeTrackingStateChange(
+                    TimeTrackingEngine.addManualSession(timeTrackingState, session)
+                )
+                manualSessionDialogVisible = false
+            }
+        )
+    }
+
     }
 }
