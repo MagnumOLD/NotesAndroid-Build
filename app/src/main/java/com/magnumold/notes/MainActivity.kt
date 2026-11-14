@@ -13,12 +13,14 @@ import androidx.lifecycle.ViewModelProvider
 
 class MainActivity : ComponentActivity() {
     private lateinit var recordsViewModel: NotesViewModel
+    private lateinit var timeTrackingRepository: TimeTrackingRepository
     private val taskStatusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (::recordsViewModel.isInitialized &&
                 intent?.action == ProtectionTimerContract.ACTION_TASK_STATUS_CHANGED
             ) {
                 recordsViewModel.refreshFromRepository()
+                if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
             }
         }
     }
@@ -32,6 +34,12 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             registerReceiver(taskStatusReceiver, filter)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::recordsViewModel.isInitialized) recordsViewModel.refreshFromRepository()
+        if (::timeTrackingRepository.isInitialized) timeTrackingRepository.reload()
     }
 
     override fun onStop() {
@@ -58,7 +66,7 @@ class MainActivity : ComponentActivity() {
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
-        val timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
+        timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
         recordsViewModel = ViewModelProvider(
             this,
             NotesViewModelFactory(repository, timeTrackingRepository)
