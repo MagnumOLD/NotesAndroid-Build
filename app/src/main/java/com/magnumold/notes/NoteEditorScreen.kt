@@ -344,7 +344,7 @@ internal fun NoteEditor(
                             requireUnconsumed = false,
                             pass = PointerEventPass.Initial
                         )
-                        val handleWidth = 40.dp.toPx()
+                        val handleWidth = AppRowDimensions.controlTouchTarget.toPx()
                         if (down.position.x < size.width - (handleWidth - CardDimensions.nestedHandleHitTargetRightOverhang.toPx() + AppSpacing.screenHorizontal.toPx()) ||
                             childReorderSession != null
                         ) return@awaitEachGesture
@@ -353,7 +353,7 @@ internal fun NoteEditor(
                             down.position.y >= it.offset &&
                                 down.position.y < it.offset + it.size
                         } ?: return@awaitEachGesture
-                        val handleHeight = 40.dp.toPx()
+                        val handleHeight = AppRowDimensions.controlTouchTarget.toPx()
                         val handleTop = item.offset + (item.size - handleHeight) / 2f
                         if (down.position.y < handleTop || down.position.y > handleTop + handleHeight) {
                             return@awaitEachGesture
@@ -434,7 +434,7 @@ internal fun NoteEditor(
                         }
                     }
                 },
-            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else 4.dp),
+            verticalArrangement = Arrangement.spacedBy(if (selectedChildIds.isNotEmpty()) 0.dp else AppSpacing.xxs),
             contentPadding = AppPageLayout.editorListContentPadding
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
@@ -500,7 +500,7 @@ internal fun NoteEditor(
                             BasicTextField(
                                 value = note.titleText,
                                 onValueChange = { onChange(note.copy(titleText = it)) },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.taskTitleMinHeight),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                                 textStyle = TextStyle(
@@ -530,7 +530,7 @@ internal fun NoteEditor(
                             BasicTextField(
                                 value = note.descriptionText,
                                 onValueChange = { onChange(note.copy(descriptionText = it)) },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.descriptionMinHeight),
                                 textStyle = TextStyle(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = AppTypography.body,
@@ -539,7 +539,7 @@ internal fun NoteEditor(
                                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                                 decorationBox = { inner ->
                                     Box(
-                                        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.descriptionMinHeight),
                                         contentAlignment = Alignment.TopStart
                                     ) {
                                         if (note.descriptionText.isEmpty()) {
@@ -651,7 +651,7 @@ internal fun NoteEditor(
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
                         .focusRequester(bodyFocusRequester)
-                        .heightIn(min = 160.dp)
+                        .heightIn(min = AppEditorDimensions.bodyMinHeight)
                         .onFocusChanged { state ->
                             if (!state.isFocused && editingBlockId == editorBlockId) editingBlockId = null
                         },
@@ -659,7 +659,7 @@ internal fun NoteEditor(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
                         Box(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.bodyMinHeight),
                             contentAlignment = Alignment.TopStart
                         ) {
                             if (fieldValue.text.isEmpty()) {
