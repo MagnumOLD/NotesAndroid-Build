@@ -117,6 +117,13 @@ internal object AppPageLayout {
     val toolbarHeight = AppLayoutContract.toolbarHeight
 }
 
+/** Semantic minimum sizes used inside record editors; visual values stay unchanged. */
+internal object AppEditorDimensions {
+    val taskTitleMinHeight = 48.dp
+    val descriptionMinHeight = 72.dp
+    val bodyMinHeight = 160.dp
+}
+
 internal object AppCollectionRowDimensions {
     val height = AppLayoutContract.collectionRowHeight
 }
