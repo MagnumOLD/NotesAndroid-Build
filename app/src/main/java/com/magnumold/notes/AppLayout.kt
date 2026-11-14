@@ -345,7 +345,7 @@ internal object CardDimensions {
     val sideRailEndInset =
         handleHitTargetRightInset + (handleTouchTargetSize - sideRailWidth) / 2f
     val sideRailReservedWidth = sideRailWidth + sideRailEndInset
-    val sideRailMinHeight = maxOf(100.dp, sideRailTopInset + sideRailControlSize * 3f)
+    val sideRailMinHeight = maxOf(104.dp, sideRailTopInset + sideRailControlSize * 3f + 6.dp)
     // The nested hit target is centered on the same visible glyph at the row's right edge.
     val nestedHandleHitTargetRightOverhang =
         (handleTouchTargetSize - handleVisualWidth) / 2f
