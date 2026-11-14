@@ -497,7 +497,6 @@ internal fun NoteRow(
                     }
                     .padding(
                         start = AppSpacing.screenHorizontal,
-                        end = CardDimensions.sideRailReservedWidth,
                         top = AppSpacing.md,
                         bottom = AppSpacing.md
                     )
