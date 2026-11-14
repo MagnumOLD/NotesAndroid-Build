@@ -328,8 +328,10 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
         val taskIds = (stats.taskTotalsMillis.keys + previous.taskTotalsMillis.keys).toSet()
         taskIds.forEach { id ->
             val title = state.sessions.firstOrNull { it.taskId == id }?.let {
-                it.subtaskTitle ?: it.taskTitle
-            } ?: state.activeSessions[id]?.let { it.subtaskTitle ?: it.taskTitle } ?: "Задача"
+                if (it.subtaskTitle == null) it.taskTitle else "${it.taskTitle} / ${it.subtaskTitle}"
+            } ?: state.activeSessions[id]?.let {
+                if (it.subtaskTitle == null) it.taskTitle else "${it.taskTitle} / ${it.subtaskTitle}"
+            } ?: "Задача"
             val current = stats.taskTotalsMillis[id] ?: 0L
             val old = previous.taskTotalsMillis[id] ?: 0L
             val difference = current - old
