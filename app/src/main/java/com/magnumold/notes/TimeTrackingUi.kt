@@ -28,7 +28,7 @@ internal fun TimeTrackingSection(
         ) {
             Text(
                 title,
-                fontSize = AppTypography.sectionLabel,
+                style = AppTypography.sectionLabelStyle(),
                 lineHeight = AppTypography.sectionLabelLineHeight,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
