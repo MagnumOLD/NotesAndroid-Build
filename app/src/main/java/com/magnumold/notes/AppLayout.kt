@@ -53,7 +53,11 @@ internal object AppSpacing {
 internal object AppTypography {
     val screenTitle = 18.sp
     val editorTitle = 18.sp
+    val sectionHeading = 17.sp
     val body = 16.sp
+    val cardPreview = 16.sp
+    val cardPreviewLineHeight = 22.sp
+    val helper = 13.sp
     val bodyLineHeight = 24.sp
     val sectionLabel = 14.sp
     val sectionLabelLineHeight = 20.sp
