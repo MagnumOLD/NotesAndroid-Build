@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -83,6 +84,8 @@ internal object AppRowDimensions {
 @Composable
 internal fun AppToolbarSurface(
     backgroundColor: Color,
+    startInset: Dp = AppSpacing.toolbarControlInset,
+    endInset: Dp = AppSpacing.toolbarControlInset,
     content: @Composable RowScope.() -> Unit
 ) {
     Surface(
@@ -93,7 +96,7 @@ internal fun AppToolbarSurface(
             modifier = Modifier.fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .height(AppPageLayout.toolbarHeight)
-                .padding(horizontal = AppSpacing.toolbarControlInset),
+                .padding(start = startInset, end = endInset),
             verticalAlignment = Alignment.CenterVertically,
             content = content
         )
