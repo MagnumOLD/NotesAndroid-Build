@@ -11,9 +11,11 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 
 internal class ProtectionTimerAlertService : Service() {
     private var ringtone: Ringtone? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -53,7 +55,10 @@ internal class ProtectionTimerAlertService : Service() {
             repository.update { it.copy(protectionTimer = null) }
         }
 
-        if (timer.soundEnabled) playAlarmSound(timer.soundUri)
+        if (timer.soundEnabled) {
+            acquireWakeLock()
+            playAlarmSound(timer.soundUri)
+        }
         startForeground(NOTIFICATION_ID, buildNotification(timer, actionPendingIntent(timer)))
     }
 
@@ -162,6 +167,23 @@ internal class ProtectionTimerAlertService : Service() {
         ringtone = null
     }
 
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        val powerManager = getSystemService(PowerManager::class.java)
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "NotesAndroid:ProtectionTimer"
+        ).apply {
+            setReferenceCounted(false)
+            acquire(10L * 60L * 1_000L)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.let { if (it.isHeld) it.release() }
+        wakeLock = null
+    }
+
     private fun timeRepository() = TimeTrackingRepository(
         getSharedPreferences("time_tracking", MODE_PRIVATE)
     )
@@ -197,6 +219,7 @@ internal class ProtectionTimerAlertService : Service() {
 
     private fun stopAlertAndService() {
         stopRingtone()
+        releaseWakeLock()
         getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID)
         finishService()
     }
@@ -213,6 +236,7 @@ internal class ProtectionTimerAlertService : Service() {
 
     override fun onDestroy() {
         stopRingtone()
+        releaseWakeLock()
         super.onDestroy()
     }
 
