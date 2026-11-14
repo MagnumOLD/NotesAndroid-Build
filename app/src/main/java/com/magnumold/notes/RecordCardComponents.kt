@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.PauseCircleOutline
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Redo
@@ -275,6 +276,7 @@ internal fun DragHandleIcon(
 internal fun recordStatusCompactText(status: RecordStatus): String = when (status) {
     RecordStatus.WAITING -> "Ожидает"
     RecordStatus.IN_PROGRESS -> "В работе"
+    RecordStatus.PAUSED -> "На паузе"
     RecordStatus.COMPLETED -> "Выполнено"
     RecordStatus.CANCELLED -> "Отменено"
     RecordStatus.MISSED -> "Просрочено"
@@ -283,6 +285,7 @@ internal fun recordStatusCompactText(status: RecordStatus): String = when (statu
 internal fun recordStatusText(status: RecordStatus): String = when (status) {
     RecordStatus.WAITING -> "Ожидает выполнения"
     RecordStatus.IN_PROGRESS -> "В процессе"
+    RecordStatus.PAUSED -> "На паузе"
     RecordStatus.COMPLETED -> "Выполнено"
     RecordStatus.CANCELLED -> "Отменено"
     RecordStatus.MISSED -> "Пропущено"
@@ -294,6 +297,7 @@ internal fun TaskStatusMarker(status: RecordStatus) {
     val tint = when (status) {
         RecordStatus.WAITING -> MaterialTheme.colorScheme.onSurfaceVariant
         RecordStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+        RecordStatus.PAUSED -> MaterialTheme.colorScheme.tertiary
         RecordStatus.COMPLETED -> Color(0xFF30A46C)
         RecordStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
         RecordStatus.MISSED -> MaterialTheme.colorScheme.error
@@ -301,6 +305,7 @@ internal fun TaskStatusMarker(status: RecordStatus) {
     val icon = when (status) {
         RecordStatus.WAITING -> Icons.Outlined.Schedule
         RecordStatus.IN_PROGRESS -> Icons.Outlined.PlayCircleOutline
+        RecordStatus.PAUSED -> Icons.Outlined.PauseCircleOutline
         RecordStatus.COMPLETED -> Icons.Outlined.CheckCircle
         RecordStatus.CANCELLED -> Icons.Outlined.Block
         RecordStatus.MISSED -> Icons.Outlined.WarningAmber
@@ -308,6 +313,7 @@ internal fun TaskStatusMarker(status: RecordStatus) {
     val description = when (status) {
         RecordStatus.WAITING -> "Ожидает"
         RecordStatus.IN_PROGRESS -> "В процессе"
+        RecordStatus.PAUSED -> "На паузе"
         RecordStatus.COMPLETED -> "Выполнено"
         RecordStatus.CANCELLED -> "Отменено"
         RecordStatus.MISSED -> "Просрочено"
