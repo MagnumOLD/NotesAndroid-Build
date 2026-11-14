@@ -32,6 +32,7 @@ internal fun ProtectionTimerControls(
     taskId: Long,
     taskTitle: String,
     subtaskTitle: String,
+    parentTaskId: Long?,
     state: TimeTrackingState,
     onStateChange: (TimeTrackingState) -> Unit,
     onChooseSound: () -> Unit
@@ -119,7 +120,8 @@ internal fun ProtectionTimerControls(
                             durationMillis = duration,
                             endMode = selectedMode,
                             soundUri = state.soundUri,
-                            soundEnabled = state.soundEnabled
+                            soundEnabled = state.soundEnabled,
+                            parentTaskId = parentTaskId
                         )
                         onStateChange(state.copy(protectionTimer = newTimer))
                         minutesText = ""
