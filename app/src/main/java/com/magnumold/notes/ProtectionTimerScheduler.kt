@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.SystemClock
 
 internal object ProtectionTimerContract {
     const val ACTION_ALARM = "com.magnumold.notes.action.PROTECTION_TIMER_ALARM"
@@ -66,7 +67,28 @@ internal class ProtectionTimerBootReceiver : BroadcastReceiver() {
         val repository = TimeTrackingRepository(
             context.getSharedPreferences("time_tracking", Context.MODE_PRIVATE)
         )
-        val timer = repository.load().protectionTimer ?: return
+        var state = repository.load()
+        val now = System.currentTimeMillis()
+        val bootTime = now - SystemClock.elapsedRealtime()
+        // Split work sessions at the reboot boundary: the stopwatch resumes,
+        // but time while the device was powered off is never counted as work.
+        state.activeSessions.values.toList().forEach { active ->
+            if (active.startedAtMillis < bootTime) {
+                state = TimeTrackingEngine.finish(
+                    state, active.taskId, bootTime, WorkSessionEndReason.STOP
+                )
+                state = TimeTrackingEngine.start(
+                    state = state,
+                    taskId = active.taskId,
+                    parentTaskId = active.parentTaskId,
+                    taskTitle = active.taskTitle,
+                    subtaskTitle = active.subtaskTitle,
+                    nowMillis = bootTime
+                )
+            }
+        }
+        if (state != repository.load()) repository.save(state)
+        val timer = state.protectionTimer ?: return
         // Scheduling even an already-expired alarm lets AlarmManager deliver it
         // through the same receiver path as a normal expiry after reboot.
         ProtectionTimerScheduler(context).schedule(timer)
