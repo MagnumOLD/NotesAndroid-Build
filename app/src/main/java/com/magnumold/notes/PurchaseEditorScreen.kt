@@ -425,7 +425,7 @@ internal fun PurchaseEditor(
                         }
                         if (isPurchaseListItem && purchaseDetailsExpanded) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = AppTypography.sectionLabel)
+                                Text("Дата", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.sectionLabelStyle())
                                 Spacer(Modifier.weight(1f))
                                 Box {
                                     TextButton(onClick = { dateModeMenuExpanded = true }) {
@@ -476,8 +476,7 @@ internal fun PurchaseEditor(
                 }
                 val editorTextStyle = TextStyle(
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = AppTypography.body,
-                    lineHeight = AppTypography.bodyLineHeight
+                    style = AppTypography.bodyStyle()
                 )
                 BasicTextField(
                     value = fieldValue,
@@ -520,7 +519,7 @@ internal fun PurchaseEditor(
                             "Пока нет товаров",
                             modifier = Modifier.fillMaxWidth().appPageHorizontalInsets().padding(vertical = AppSpacing.md),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = AppTypography.sectionLabel
+                            style = AppTypography.sectionLabelStyle()
                         )
                     }
                 }
@@ -575,8 +574,7 @@ internal fun PurchaseEditor(
                                         )
                                     },
                                     color = childTextColor,
-                                    fontSize = AppTypography.body,
-                                    lineHeight = AppTypography.bodyLineHeight,
+                                    style = AppTypography.bodyStyle(),
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
