@@ -37,8 +37,8 @@ class AppLayoutContractTest {
             0f
         )
         assertEquals(16f, CardDimensions.nestedRowVerticalInset.value, 0f)
-        assertEquals(40f, CardDimensions.nestedRowContentMinHeight.value, 0f)
-        assertEquals(72f, CardDimensions.nestedRowMinHeight.value, 0f)
+        assertEquals(56f, CardDimensions.nestedRowContentMinHeight.value, 0f)
+        assertEquals(88f, CardDimensions.nestedRowMinHeight.value, 0f)
     }
 
     @Test

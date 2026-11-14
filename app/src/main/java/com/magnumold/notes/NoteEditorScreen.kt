@@ -744,7 +744,7 @@ internal fun NoteEditor(
                                         )
                                     },
                                     color = childTextColor,
-                                    style = AppTypography.bodyStyle(),
+                                    style = AppTypography.cardPreviewStyle(),
                                     textDecoration = if (childStatus == RecordStatus.COMPLETED)
                                         TextDecoration.LineThrough else TextDecoration.None
                                 )
