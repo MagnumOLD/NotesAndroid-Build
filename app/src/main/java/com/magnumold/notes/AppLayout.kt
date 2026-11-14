@@ -321,28 +321,31 @@ internal fun Modifier.appPageContentInsets(): Modifier =
  * contentHeight is a minimum; long first lines can increase the measured row height.
  */
 internal object CardDimensions {
-    // Narrow side rail with three compact, evenly positioned control slots.
-    val sidePanelWidth = 32.dp
-    val sidePanelControlSize = 24.dp
     val contentHeight = AppLayoutContract.mainCardMinHeight
     val dividerThickness = AppLayoutContract.mainCardDividerThickness
     val rowHeight = contentHeight + dividerThickness
 
-    // The move handle occupies the top 32dp slot of the right-side rail.
+    // Align the visible handle with the first title line.
+    // Keep a 40dp touch target centered on that visual position.
     val headerFirstLineHeight = AppLayoutContract.mainCardHeaderFirstLineHeight
-    val handleTouchTargetSize = sidePanelControlSize
-    val handleHitTargetTopOffset = 0.dp
+    val handleTouchTargetSize = AppLayoutContract.controlTouchTarget
+    val handleHitTargetTopOffset =
+        AppSpacing.md + (headerFirstLineHeight - handleTouchTargetSize) / 2f
+    // Keep the 40dp hit target centered on the handle, whose right edge now
+    // aligns directly with the card metadata/date guide.
     val handleVisualWidth = AppLayoutContract.dragHandleVisualWidth
-    val handleHitTargetRightInset = (sidePanelWidth - handleTouchTargetSize) / 2f
+    val handleHitTargetRightInset =
+        AppSpacing.screenHorizontal - (handleTouchTargetSize - handleVisualWidth) / 2f
     // The nested hit target is centered on the same visible glyph at the row's right edge.
-    // Nested editor rows retain their original 40dp hit-target geometry.
     val nestedHandleHitTargetRightOverhang =
-        (AppLayoutContract.controlTouchTarget - handleVisualWidth) / 2f
+        (handleTouchTargetSize - handleVisualWidth) / 2f
     val nestedRowVerticalInset = AppLayoutContract.nestedRowVerticalInset
     val nestedRowContentMinHeight = AppLayoutContract.nestedRowContentMinHeight
     val nestedRowMinHeight = AppLayoutContract.nestedRowMinHeight
     val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
 }
+
+
 
 
 internal fun formatNoteCreationDate(timestamp: Long): String {
