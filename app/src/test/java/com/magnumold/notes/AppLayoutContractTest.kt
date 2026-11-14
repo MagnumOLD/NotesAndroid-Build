@@ -21,20 +21,18 @@ class AppLayoutContractTest {
     }
 
     @Test
-    fun sideRailAndNestedRowsKeepTheirOwnGeometryContracts() {
+    fun cardHandlesAndNestedRowsShareOneGeometryContract() {
         assertEquals(16f, CardDimensions.handleVisualWidth.value, 0f)
-        assertEquals(32f, CardDimensions.sidePanelWidth.value, 0f)
-        assertEquals(24f, CardDimensions.sidePanelControlSize.value, 0f)
-        assertEquals(88f, CardDimensions.contentHeight.value, 0f)
-        assertEquals(24f, CardDimensions.handleTouchTargetSize.value, 0f)
+        assertEquals(40f, CardDimensions.handleTouchTargetSize.value, 0f)
 
-        val visibleHandleCenterInset = CardDimensions.sidePanelWidth.value / 2f
+        val visibleHandleCenterInset =
+            AppSpacing.screenHorizontal.value + CardDimensions.handleVisualWidth.value / 2f
         val mainTouchTargetCenterInset =
             CardDimensions.handleHitTargetRightInset.value + CardDimensions.handleTouchTargetSize.value / 2f
         assertEquals(visibleHandleCenterInset, mainTouchTargetCenterInset, 0f)
 
         assertEquals(
-            (AppLayoutContract.controlTouchTarget.value - CardDimensions.handleVisualWidth.value) / 2f,
+            (CardDimensions.handleTouchTargetSize.value - CardDimensions.handleVisualWidth.value) / 2f,
             CardDimensions.nestedHandleHitTargetRightOverhang.value,
             0f
         )
