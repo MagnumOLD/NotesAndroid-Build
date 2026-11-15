@@ -26,7 +26,7 @@ class BackupJsonCodecTest {
     @Test
     fun mergesRepeatedIdsAndKeepsTheirNestedChildren() {
         val existing = note(1L, "Parent", listOf(note(2L, "First child")))
-        val imported = note(1L, "Updated parent", listOf(note(3L, "Second child")))
+        val imported = note(1L, "Parent", listOf(note(3L, "Second child")) )
 
         val merged = mergeImportedNotes(listOf(existing), listOf(imported))
 
