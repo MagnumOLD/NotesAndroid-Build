@@ -32,7 +32,7 @@ internal class DocumentAssetStore(
 
     init {
         require(maxAssetBytes > 0) { "Maximum asset size must be positive" }
-        require(directoryName.isNotBlank() && '/' !in directoryName && '\\\\' !in directoryName) {
+        require(directoryName.isNotBlank() && '/' !in directoryName) {
             "Asset directory name must be a single path segment"
         }
     }
