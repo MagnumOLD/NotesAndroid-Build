@@ -200,4 +200,25 @@ class NoteEditorTextMappingTest {
         assertEquals(androidx.compose.ui.text.TextRange(25), mapped)
     }
 
+
+    @Test
+    fun emojiIsTreatedAsOneInsertedCharacterForUndoGrouping() {
+        val emoji = describeTextEdit("", "🙂", 0, 0)!!
+        assertTrue(emoji.simpleCharacterChange)
+        assertEquals(
+            UndoHistoryAction.APPEND,
+            decideUndoHistoryAction(UndoGroupingState(), emoji).action
+        )
+    }
+
+    @Test
+    fun autocorrectReplacementIsKeptAsOneUndoAction() {
+        val correction = describeTextEdit("Привт", "Привет", 5, 5)!!
+        assertFalse(correction.simpleCharacterChange)
+        assertEquals(
+            UndoHistoryAction.APPEND,
+            decideUndoHistoryAction(UndoGroupingState(), correction).action
+        )
+    }
+
 }
