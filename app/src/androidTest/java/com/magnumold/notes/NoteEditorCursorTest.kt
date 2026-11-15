@@ -60,7 +60,7 @@ class NoteEditorCursorTest {
         }
 
         val editor = composeRule.onNodeWithTag("note-editor-body")
-        // Tap near the bottom edge, far below the visible text content.
+        // Tap the center of the expanded editor, below the one-line note content.
         editor.performTouchInput {
             click(center)
         }
