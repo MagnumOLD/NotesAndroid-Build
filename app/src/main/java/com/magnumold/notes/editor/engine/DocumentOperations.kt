@@ -71,6 +71,9 @@ internal class DocumentHistory(
     var current: EditorDocument = initial
         private set
 
+    val canUndo: Boolean get() = undoStack.isNotEmpty()
+    val canRedo: Boolean get() = redoStack.isNotEmpty()
+
     init { require(maxEntries > 0) }
 
     fun breakCoalescing() {

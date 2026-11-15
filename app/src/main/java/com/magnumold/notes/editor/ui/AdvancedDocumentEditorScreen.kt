@@ -83,6 +83,7 @@ import com.magnumold.notes.editor.model.TableBlock
  * It is intentionally not wired into NotesApp yet: the legacy note/task screen
  * remains the production route until persistence, migration and UI gates pass.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun AdvancedDocumentEditorScreen(
     document: EditorDocument,
@@ -92,18 +93,10 @@ internal fun AdvancedDocumentEditorScreen(
     val controller = remember(document.id) { EditorSessionController(document) }
     var editorState by remember(document.id) { mutableStateOf(controller.state) }
 
-    LaunchedEffect(document.id, document.updatedAt) {
-        if (document != editorState.document && document.id == editorState.document.id) {
-            // External persistence updates are accepted only when they differ from our last emission.
-            if (document.blocks != editorState.document.blocks) {
-                editorState = EditorSessionController(document).state
-            }
-        }
-    }
-
     fun publish(next: com.magnumold.notes.editor.engine.EditorSessionState) {
+        val previousDocument = editorState.document
         editorState = next
-        onDocumentChange(next.document)
+        if (next.document != previousDocument) onDocumentChange(next.document)
     }
 
     fun insert(block: DocumentBlock) {
@@ -122,9 +115,9 @@ internal fun AdvancedDocumentEditorScreen(
                 actions = {
                     IconButton(
                         onClick = { publish(controller.undo()) },
-                        enabled = editorState.document != document || editorState.selection.anchor >= 0
+                        enabled = controller.canUndo
                     ) { Icon(Icons.Outlined.Undo, contentDescription = "Отменить") }
-                    IconButton(onClick = { publish(controller.redo()) }) {
+                    IconButton(onClick = { publish(controller.redo()) }, enabled = controller.canRedo) {
                         Icon(Icons.Outlined.Redo, contentDescription = "Повторить")
                     }
                 }

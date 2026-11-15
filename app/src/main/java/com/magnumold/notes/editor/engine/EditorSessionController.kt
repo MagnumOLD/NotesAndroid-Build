@@ -36,6 +36,9 @@ internal class EditorSessionController(
 ) {
     private val history = DocumentHistory(initialDocument, historyLimit)
 
+    val canUndo: Boolean get() = history.canUndo
+    val canRedo: Boolean get() = history.canRedo
+
     var state: EditorSessionState = EditorSessionState(
         document = initialDocument,
         activeBlockId = initialDocument.blocks.firstOrNull { it.editableRichText() || it.hasEditableItems() }?.id,
