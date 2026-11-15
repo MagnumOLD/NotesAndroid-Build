@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.magnumold.notes.editor.migration.LegacyNoteDocumentMigrator
 import com.magnumold.notes.editor.model.plainText
 import com.magnumold.notes.editor.model.ImageBlock
+import com.magnumold.notes.editor.model.AttachmentBlock
 import com.magnumold.notes.editor.ui.PersistentAdvancedDocumentEditorRoute
 import com.magnumold.notes.editor.storage.DocumentAssetStore
 import com.magnumold.notes.editor.storage.DocumentRepository
@@ -38,6 +39,28 @@ internal fun NotesApp(
                 val timer = timeTrackingState.protectionTimer
                 if (timer == null) protectionTimerScheduler.cancel()
                 else protectionTimerScheduler.schedule(timer)
+            }
+            fun deleteDocumentTree(note: Note) {
+                if (note.type == RecordType.NOTE) richDocumentRepository.delete(note.id.toString())
+                note.children.forEach(::deleteDocumentTree)
+            }
+            fun cleanupUnusedDocumentAssets() {
+                val stored = richDocumentRepository.loadAll()
+                // Never collect assets while a corrupt document might still reference them.
+                if (stored.corruptDocumentIds.isNotEmpty()) return
+                val draftResult = richDocumentRepository.loadRecoveryDraft()
+                if (draftResult.isFailure) return
+                val draft = draftResult.getOrNull()
+                val referenced = (stored.documents + listOfNotNull(draft)).flatMap { document ->
+                    document.blocks.mapNotNull { block ->
+                        when (block) {
+                            is ImageBlock -> block.assetId
+                            is AttachmentBlock -> block.assetId
+                            else -> null
+                        }
+                    }
+                }.toSet()
+                documentAssetStore.prune(referenced)
             }
             fun closeActiveSessionsForRemoved(records: List<Note>) {
                 if (records.isEmpty()) return
@@ -114,8 +137,16 @@ internal fun NotesApp(
                         onBack = { navigation.closeVault() },
                         onRestore = { entry -> recordsViewModel.restoreVaultEntry(entry, fromArchive = navigation.vaultScreen == "archive") },
                         onMoveToTrash = { entry -> recordsViewModel.moveArchivedToTrash(entry) },
-                        onDeleteForever = { entry -> recordsViewModel.deleteFromTrash(entry) },
-                        onEmptyTrash = { recordsViewModel.emptyTrash() },
+                        onDeleteForever = { entry ->
+                            deleteDocumentTree(entry.note)
+                            recordsViewModel.deleteFromTrash(entry)
+                            cleanupUnusedDocumentAssets()
+                        },
+                        onEmptyTrash = {
+                            trash.forEach { deleteDocumentTree(it.note) }
+                            recordsViewModel.emptyTrash()
+                            cleanupUnusedDocumentAssets()
+                        },
                         themeColors = activeThemeColors
                     )
                 } else if (settingsVisible && selected == null) {
@@ -225,6 +256,7 @@ internal fun NotesApp(
                             if (currentNote?.hasContent() != true) {
                                 richDocumentRepository.delete(selected.id.toString())
                                 recordsViewModel.removeActiveRecord(activeCollectionId, selected.id)
+                                cleanupUnusedDocumentAssets()
                             }
                             navigation.closeEditor()
                         },
