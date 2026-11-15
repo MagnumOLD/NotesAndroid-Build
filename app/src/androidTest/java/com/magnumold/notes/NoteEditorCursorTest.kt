@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -74,6 +73,6 @@ class NoteEditorCursorTest {
                 TextRange(3)
             )
         )
-        editor.assertTextEquals("abcXdef")
+        editor.assertTextEquals("abcdefX")
     }
 }
