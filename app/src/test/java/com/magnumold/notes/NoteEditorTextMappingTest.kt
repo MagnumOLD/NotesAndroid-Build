@@ -221,4 +221,15 @@ class NoteEditorTextMappingTest {
         )
     }
 
+    @Test
+    fun delayedOlderEditorEchoIsIgnoredButCurrentEchoIsAccepted() {
+        val older = listOf(NoteBlock("Привет", id = "older"))
+        val current = listOf(NoteBlock("Привет мир", id = "current"))
+        val published = listOf(older, current)
+
+        assertTrue(isStaleLocalEditorEcho(older, published, "Привет мир"))
+        assertFalse(isStaleLocalEditorEcho(current, published, "Привет мир"))
+        assertFalse(isStaleLocalEditorEcho(listOf(NoteBlock("Внешнее")), published, "Привет мир"))
+    }
+
 }
