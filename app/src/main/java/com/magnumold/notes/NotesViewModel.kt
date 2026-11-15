@@ -95,13 +95,15 @@ internal class NotesViewModel(
     fun importBackup(json: String): Int = importBackupData(parseBackupJson(json))
 
     fun importBackupData(imported: BackupData): Int {
+        // Prepare the complete record merge before changing the independent time-tracking store.
+        // If malformed or conflicting backup data makes the merge fail, neither store is touched.
+        val current = _snapshot.value
+        val merged = RecordOperations.mergeBackup(current, imported)
+        val importedCount = RecordOperations.recordCount(merged) - RecordOperations.recordCount(current)
+
+        // Persist time tracking first: if this fails, the visible record snapshot remains unchanged.
         imported.timeTracking?.let(timeTrackingRepository::restoreBackup)
-        var importedCount = 0
-        updateSnapshot { current ->
-            val merged = RecordOperations.mergeBackup(current, imported)
-            importedCount = RecordOperations.recordCount(merged) - RecordOperations.recordCount(current)
-            merged
-        }
+        _snapshot.value = merged
         return importedCount
     }
 
