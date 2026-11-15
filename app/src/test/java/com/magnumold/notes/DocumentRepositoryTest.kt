@@ -17,7 +17,8 @@ import org.robolectric.RuntimeEnvironment
 class DocumentRepositoryTest {
     private fun repository(name: String): DocumentRepository {
         val context = RuntimeEnvironment.getApplication() as Context
-        return DocumentRepository(context.getSharedPreferences(name, Context.MODE_PRIVATE))
+        context.deleteDirForTest(name)
+        return DocumentRepository(context, name)
     }
 
     private fun document(id: String, text: String) = EditorDocument(
@@ -28,7 +29,7 @@ class DocumentRepositoryTest {
     )
 
     @Test
-    fun savesLoadsAndDeletesDocumentsWithoutAffectingOtherDocuments() {
+    fun savesLoadsListsAndDeletesDocumentsIndependently() {
         val store = repository("document-store-test")
         val first = document("note/one", "First")
         val second = document("note two", "Second")
@@ -59,19 +60,42 @@ class DocumentRepositoryTest {
     }
 
     @Test
+    fun primarySaveClearsOnlyMatchingRecoveryDraft() {
+        val store = repository("document-draft-safety-test")
+        val draft = document("draft-2", "Unsaved")
+        store.saveRecoveryDraft(draft)
+
+        store.save(draft)
+
+        assertNull(store.loadRecoveryDraft().getOrNull())
+        assertEquals(draft, store.load(draft.id).getOrNull())
+    }
+
+    @Test
     fun corruptDocumentIsReportedAndRawEntryIsNotDiscarded() {
-        val context = RuntimeEnvironment.getApplication() as Context
-        val preferences = context.getSharedPreferences("document-corrupt-test", Context.MODE_PRIVATE)
-        val store = DocumentRepository(preferences)
+        val store = repository("document-corrupt-test")
         val valid = document("valid", "Keep me")
         store.save(valid)
 
-        // Corrupt the payload while retaining the repository's index.
-        preferences.edit().putString("editor_document_v1_dmFsaWQ", "{broken").commit()
+        store.documentFileForTest("valid").writeText("{broken")
 
         val snapshot = store.loadAll()
         assertTrue(snapshot.documents.isEmpty())
         assertEquals(listOf("valid"), snapshot.corruptDocumentIds)
-        assertEquals("{broken", preferences.getString("editor_document_v1_dmFsaWQ", null))
+        assertEquals("{broken", store.documentFileForTest("valid").readText())
+    }
+
+    @Test
+    fun documentIdsCannotEscapeTheStorageDirectory() {
+        val store = repository("document-path-test")
+        val unusual = document("../../outside/file", "Safe")
+        store.save(unusual)
+
+        assertEquals(unusual, store.load(unusual.id).getOrNull())
+        assertEquals(1, store.loadAll().documents.size)
+    }
+
+    private fun Context.deleteDirForTest(name: String) {
+        java.io.File(filesDir, name).deleteRecursively()
     }
 }
