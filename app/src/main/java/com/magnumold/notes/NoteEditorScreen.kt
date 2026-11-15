@@ -25,7 +25,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.TextFieldValue
@@ -52,6 +51,161 @@ private data class NoteEditorHistoryEntry(
     val selection: TextRange
 )
 
+internal enum class TextEditDirection { INSERT, DELETE, REPLACE }
+
+internal enum class UndoHistoryAction { APPEND, REPLACE_CURRENT, SKIP }
+
+internal data class TextEditDelta(
+    val direction: TextEditDirection,
+    val start: Int,
+    val inserted: String,
+    val removed: String,
+    val simpleCharacterChange: Boolean,
+    val backwardDelete: Boolean = false
+)
+
+internal data class UndoGroupingState(
+    val direction: TextEditDirection? = null,
+    val caret: Int = -1,
+    val previousWasBoundary: Boolean = false,
+    val previousDeletedWordCharacter: Boolean? = null,
+    val previousDeleteWasBackward: Boolean = false
+)
+
+internal data class UndoGroupingDecision(
+    val action: UndoHistoryAction,
+    val nextState: UndoGroupingState
+)
+
+internal fun describeTextEdit(
+    oldText: String,
+    newText: String,
+    oldSelectionStart: Int,
+    oldSelectionEnd: Int
+): TextEditDelta? {
+    if (oldText == newText) return null
+    var prefix = 0
+    val commonLimit = minOf(oldText.length, newText.length)
+    while (prefix < commonLimit && oldText[prefix] == newText[prefix]) prefix++
+
+    var suffix = 0
+    while (
+        suffix < oldText.length - prefix &&
+        suffix < newText.length - prefix &&
+        oldText[oldText.length - suffix - 1] == newText[newText.length - suffix - 1]
+    ) suffix++
+
+    val removed = oldText.substring(prefix, oldText.length - suffix)
+    val inserted = newText.substring(prefix, newText.length - suffix)
+    val collapsed = oldSelectionStart == oldSelectionEnd
+    val simpleInsert = removed.isEmpty() &&
+        inserted.codePointCount(0, inserted.length) == 1 &&
+        collapsed && oldSelectionStart == prefix
+    val simpleDelete = inserted.isEmpty() &&
+        removed.codePointCount(0, removed.length) == 1 &&
+        collapsed && oldSelectionStart in prefix..(oldText.length - suffix)
+
+    val direction = when {
+        removed.isEmpty() -> TextEditDirection.INSERT
+        inserted.isEmpty() -> TextEditDirection.DELETE
+        else -> TextEditDirection.REPLACE
+    }
+    return TextEditDelta(
+        direction = direction,
+        start = prefix,
+        inserted = inserted,
+        removed = removed,
+        simpleCharacterChange = simpleInsert || simpleDelete,
+        backwardDelete = simpleDelete && oldSelectionStart > prefix
+    )
+}
+
+private fun isWordCodePoint(value: String): Boolean {
+    if (value.isEmpty()) return false
+    val codePoint = value.codePointAt(0)
+    return Character.isLetterOrDigit(codePoint) || codePoint == '_'.code
+}
+
+private fun isWhitespaceCodePoint(value: String): Boolean =
+    value.isNotEmpty() && Character.isWhitespace(value.codePointAt(0))
+
+internal fun decideUndoHistoryAction(
+    previous: UndoGroupingState,
+    edit: TextEditDelta
+): UndoGroupingDecision {
+    if (!edit.simpleCharacterChange) {
+        return UndoGroupingDecision(UndoHistoryAction.APPEND, UndoGroupingState())
+    }
+
+    return when (edit.direction) {
+        TextEditDirection.INSERT -> {
+            val contiguous = previous.direction == TextEditDirection.INSERT &&
+                previous.caret == edit.start
+            val whitespace = isWhitespaceCodePoint(edit.inserted)
+            val boundary = !isWordCodePoint(edit.inserted)
+            val action = when {
+                whitespace && contiguous -> UndoHistoryAction.SKIP
+                contiguous && !previous.previousWasBoundary -> UndoHistoryAction.REPLACE_CURRENT
+                else -> UndoHistoryAction.APPEND
+            }
+            UndoGroupingDecision(
+                action,
+                UndoGroupingState(
+                    direction = TextEditDirection.INSERT,
+                    caret = edit.start + edit.inserted.length,
+                    previousWasBoundary = boundary
+                )
+            )
+        }
+        TextEditDirection.DELETE -> {
+            val deletedWordCharacter = isWordCodePoint(edit.removed)
+            val contiguousPosition = if (edit.backwardDelete) {
+                previous.caret == edit.start + 1
+            } else {
+                previous.caret == edit.start
+            }
+            val contiguous = previous.direction == TextEditDirection.DELETE &&
+                previous.previousDeletedWordCharacter == deletedWordCharacter &&
+                previous.previousDeleteWasBackward == edit.backwardDelete &&
+                contiguousPosition
+            UndoGroupingDecision(
+                if (contiguous) UndoHistoryAction.REPLACE_CURRENT else UndoHistoryAction.APPEND,
+                UndoGroupingState(
+                    direction = TextEditDirection.DELETE,
+                    caret = edit.start,
+                    previousDeletedWordCharacter = deletedWordCharacter,
+                    previousDeleteWasBackward = edit.backwardDelete
+                )
+            )
+        }
+        TextEditDirection.REPLACE ->
+            UndoGroupingDecision(UndoHistoryAction.APPEND, UndoGroupingState())
+    }
+}
+
+internal fun mapTextSelection(oldText: String, newText: String, selection: TextRange): TextRange {
+    var prefix = 0
+    val commonLimit = minOf(oldText.length, newText.length)
+    while (prefix < commonLimit && oldText[prefix] == newText[prefix]) prefix++
+
+    var suffix = 0
+    while (
+        suffix < oldText.length - prefix &&
+        suffix < newText.length - prefix &&
+        oldText[oldText.length - suffix - 1] == newText[newText.length - suffix - 1]
+    ) suffix++
+
+    val oldSuffixStart = oldText.length - suffix
+    val shift = newText.length - oldText.length
+    fun mapOffset(offset: Int): Int = when {
+        offset <= prefix -> offset
+        offset >= oldSuffixStart -> offset + shift
+        else -> prefix
+    }.coerceIn(0, newText.length)
+
+    return TextRange(mapOffset(selection.start), mapOffset(selection.end))
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 internal fun NoteEditor(
@@ -64,9 +218,6 @@ internal fun NoteEditor(
     onBack: () -> Unit, onChange: (Note) -> Unit, onDelete: (Boolean) -> Unit, onShare: () -> Unit
 ) {
     val initialText = remember(note.id) { note.blocks.toPlainText() }
-    val editorBlockId = remember(note.id) {
-        note.blocks.firstOrNull()?.id ?: java.util.UUID.randomUUID().toString()
-    }
     var fieldValue by remember(note.id) { mutableStateOf(TextFieldValue(initialText)) }
     var editorBlocks by remember(note.id) { mutableStateOf(note.blocks) }
     var history by remember(note.id) {
@@ -104,9 +255,8 @@ internal fun NoteEditor(
     var autoFocusChildId by remember(note.id) { mutableStateOf<Long?>(null) }
     var parentAutoFocusConsumed by remember(note.id) { mutableStateOf(false) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
-    var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
-    var typingGroupStartedAt by remember(note.id) { mutableLongStateOf(0L) }
-    var lastTextEditAt by remember(note.id) { mutableLongStateOf(0L) }
+    var undoGroupingState by remember(note.id) { mutableStateOf(UndoGroupingState()) }
+    var locallyPublishedBlocks by remember(note.id) { mutableStateOf(emptyList<List<NoteBlock>>()) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     val latestTaskNote = rememberUpdatedState(note)
@@ -133,10 +283,26 @@ internal fun NoteEditor(
     }
 
     LaunchedEffect(note.id, note.blocks) {
-        editorBlocks = note.blocks
-        val latestText = note.blocks.toPlainText()
-        if (fieldValue.text != latestText) {
-            fieldValue = TextFieldValue(latestText, selection = TextRange(latestText.length))
+        val incomingBlocks = note.blocks
+        val incomingText = incomingBlocks.toPlainText()
+        val isLocalEcho = locallyPublishedBlocks.any { it == incomingBlocks }
+
+        // A parent-state echo can arrive after the user has already typed more.
+        // Ignore older snapshots published by this editor instead of moving the
+        // cursor to the end and replacing the current in-memory document.
+        if (isLocalEcho) {
+            if (incomingText == fieldValue.text) editorBlocks = incomingBlocks
+            return@LaunchedEffect
+        }
+        if (incomingBlocks == editorBlocks) return@LaunchedEffect
+
+        val mappedSelection = mapTextSelection(fieldValue.text, incomingText, fieldValue.selection)
+        editorBlocks = incomingBlocks
+        if (fieldValue.text != incomingText) {
+            fieldValue = TextFieldValue(incomingText, selection = mappedSelection)
+            history = listOf(NoteEditorHistoryEntry(incomingBlocks, mappedSelection))
+            historyIndex = 0
+            undoGroupingState = UndoGroupingState()
         }
     }
 
@@ -242,6 +408,7 @@ internal fun NoteEditor(
 
     fun publish(blocks: List<NoteBlock>, selection: TextRange? = null) {
         editorBlocks = blocks
+        locallyPublishedBlocks = (locallyPublishedBlocks + listOf(blocks)).takeLast(80)
         val latestText = blocks.toPlainText()
         if (fieldValue.text != latestText || selection != null) {
             val requestedSelection = selection ?: TextRange(latestText.length)
@@ -260,45 +427,52 @@ internal fun NoteEditor(
         publish(entry.blocks, entry.selection)
     }
 
-    fun record(blocks: List<NoteBlock>) {
-        val entry = NoteEditorHistoryEntry(blocks, fieldValue.selection)
-        val next = (history.take(historyIndex + 1) + listOf(entry)).takeLast(80)
-        history = next
-        historyIndex = history.lastIndex
-        publish(entry)
-    }
-
-    fun updateText(value: TextFieldValue) {
+    fun updateText(previous: TextFieldValue, value: TextFieldValue) {
         if (editorBlocks.toPlainText() == value.text) {
             if (historyIndex in history.indices) {
                 val next = history.toMutableList()
-                next[historyIndex] = next[historyIndex].copy(selection = value.selection)
+                val storedText = next[historyIndex].blocks.toPlainText()
+                val safeSelection = TextRange(
+                    value.selection.start.coerceIn(0, storedText.length),
+                    value.selection.end.coerceIn(0, storedText.length)
+                )
+                next[historyIndex] = next[historyIndex].copy(selection = safeSelection)
                 history = next
             }
+            // Moving the caret or changing a selection ends the current word group.
+            undoGroupingState = UndoGroupingState()
             return
         }
 
         val changed = editorBlocks.withEditedPlainText(value.text)
         val entry = NoteEditorHistoryEntry(changed, value.selection)
-        val now = android.os.SystemClock.uptimeMillis()
-        // Keep undo steps bounded during long continuous typing sessions.
-        val continuesTypingGroup =
-            editingBlockId == editorBlockId &&
-                now - lastTextEditAt <= 700L &&
-                now - typingGroupStartedAt <= 1600L
+        val delta = describeTextEdit(
+            oldText = previous.text,
+            newText = value.text,
+            oldSelectionStart = previous.selection.start,
+            oldSelectionEnd = previous.selection.end
+        )
+        val decision = delta?.let { decideUndoHistoryAction(undoGroupingState, it) }
+            ?: UndoGroupingDecision(UndoHistoryAction.APPEND, UndoGroupingState())
 
-        if (!continuesTypingGroup) {
-            val next = (history.take(historyIndex + 1) + listOf(entry)).takeLast(80)
-            history = next
-            historyIndex = history.lastIndex
-            typingGroupStartedAt = now
-        } else {
-            val next = history.toMutableList()
-            next[historyIndex] = entry
-            history = next
+        when (decision.action) {
+            UndoHistoryAction.APPEND -> {
+                history = (history.take(historyIndex + 1) + listOf(entry)).takeLast(80)
+                historyIndex = history.lastIndex
+            }
+            UndoHistoryAction.REPLACE_CURRENT -> {
+                if (historyIndex in history.indices) {
+                    val next = history.toMutableList()
+                    next[historyIndex] = entry
+                    history = next
+                } else {
+                    history = listOf(entry)
+                    historyIndex = 0
+                }
+            }
+            UndoHistoryAction.SKIP -> Unit
         }
-        lastTextEditAt = now
-        editingBlockId = editorBlockId
+        undoGroupingState = decision.nextState
         publish(changed)
     }
 
@@ -362,7 +536,7 @@ internal fun NoteEditor(
                         IconButton(
                             onClick = {
                                 if (historyIndex > 0) {
-                                    editingBlockId = null
+                                    undoGroupingState = UndoGroupingState()
                                     historyIndex--
                                     publish(history[historyIndex])
                                 }
@@ -372,7 +546,7 @@ internal fun NoteEditor(
                         IconButton(
                             onClick = {
                                 if (historyIndex < history.lastIndex) {
-                                    editingBlockId = null
+                                    undoGroupingState = UndoGroupingState()
                                     historyIndex++
                                     publish(history[historyIndex])
                                 }
@@ -706,18 +880,16 @@ internal fun NoteEditor(
                 val editorTextStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface)
                 BasicTextField(
                     value = fieldValue,
-                    onValueChange = {
-                        fieldValue = it
-                        updateText(it)
+                    onValueChange = { value ->
+                        val previous = fieldValue
+                        fieldValue = value
+                        updateText(previous, value)
                     },
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
                         .padding(top = AppSpacing.xxs)
                         .focusRequester(bodyFocusRequester)
                         .heightIn(min = AppEditorDimensions.bodyMinHeight)
-                        .onFocusChanged { state ->
-                            if (!state.isFocused && editingBlockId == editorBlockId) editingBlockId = null
-                        },
                     textStyle = editorTextStyle,
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
