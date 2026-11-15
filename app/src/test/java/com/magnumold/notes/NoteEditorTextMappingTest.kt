@@ -232,4 +232,24 @@ class NoteEditorTextMappingTest {
         assertFalse(isStaleLocalEditorEcho(listOf(NoteBlock("Внешнее")), published, "Привет мир"))
     }
 
+    @Test
+    fun repeatedWhitespaceDoesNotCreateEmptyUndoSteps() {
+        val first = describeTextEdit("", "x", 0, 0)!!
+        val firstDecision = decideUndoHistoryAction(UndoGroupingState(), first)
+
+        val firstSpace = describeTextEdit("x", "x ", 1, 1)!!
+        val firstSpaceDecision = decideUndoHistoryAction(firstDecision.nextState, firstSpace)
+        assertEquals(UndoHistoryAction.SKIP, firstSpaceDecision.action)
+
+        val secondSpace = describeTextEdit("x ", "x  ", 2, 2)!!
+        val secondSpaceDecision = decideUndoHistoryAction(firstSpaceDecision.nextState, secondSpace)
+        assertEquals(UndoHistoryAction.SKIP, secondSpaceDecision.action)
+
+        val nextWord = describeTextEdit("x  ", "x  y", 3, 3)!!
+        assertEquals(
+            UndoHistoryAction.APPEND,
+            decideUndoHistoryAction(secondSpaceDecision.nextState, nextWord).action
+        )
+    }
+
 }
