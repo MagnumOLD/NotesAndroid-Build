@@ -96,6 +96,34 @@ class AdvancedDocumentEditorScreenTest {
     }
 
     @Test
+    fun keepsAllCharactersAcrossSequentialInputEvents() {
+        val initial = EditorDocument(
+            id = "ui-sequential-input-document",
+            createdAt = 1L,
+            updatedAt = 1L,
+            blocks = listOf(ParagraphBlock(content = RichText("")))
+        )
+        var emitted: EditorDocument? = null
+
+        composeRule.setContent {
+            MaterialTheme {
+                AdvancedDocumentEditorScreen(
+                    document = initial,
+                    onDocumentChange = { emitted = it },
+                    onBack = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Начните писать…").performTextInput("Привет")
+        composeRule.onNodeWithText("Привет").performTextInput(" мир")
+        composeRule.onNodeWithText("Привет мир").performTextInput("!")
+        composeRule.runOnIdle {
+            assertEquals("Привет мир!", emitted?.plainText())
+        }
+    }
+
+    @Test
     fun rendersImportedAttachmentCard() {
         val initial = EditorDocument(
             id = "ui-attachment-document",
