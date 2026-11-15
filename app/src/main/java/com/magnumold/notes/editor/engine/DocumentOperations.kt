@@ -51,39 +51,59 @@ internal object DocumentOperations {
     }
 }
 
-/** Snapshot-based history for structural commands. Text typing coalescing is layered on top later. */
+private data class HistoryEntry(
+    val snapshot: EditorDocument,
+    val inverse: DocumentCommand
+)
+
+/**
+ * Structural commands are individual history entries. Consecutive text replacements
+ * for the same editing target share one entry, so one Undo reverses a typing run.
+ */
 internal class DocumentHistory(
     initial: EditorDocument,
     private val maxEntries: Int = 100
 ) {
-    private val undoStack = ArrayDeque<Pair<EditorDocument, DocumentCommand>>()
+    private val undoStack = ArrayDeque<HistoryEntry>()
     private val redoStack = ArrayDeque<Pair<EditorDocument, DocumentCommand>>()
+    private var openCoalescingKey: String? = null
+
     var current: EditorDocument = initial
         private set
 
     init { require(maxEntries > 0) }
 
-    fun execute(command: DocumentCommand): EditorDocument {
+    fun breakCoalescing() {
+        openCoalescingKey = null
+    }
+
+    fun execute(command: DocumentCommand, coalescingKey: String? = null): EditorDocument {
         val result = DocumentOperations.apply(current, command)
-        undoStack.addLast(current to result.inverse)
-        while (undoStack.size > maxEntries) undoStack.removeFirst()
+        val canCoalesce = coalescingKey != null && coalescingKey == openCoalescingKey
+        if (!canCoalesce) {
+            undoStack.addLast(HistoryEntry(current, result.inverse))
+            while (undoStack.size > maxEntries) undoStack.removeFirst()
+        }
+        openCoalescingKey = coalescingKey
         current = result.document
         redoStack.clear()
         return current
     }
 
     fun undo(): EditorDocument? {
+        breakCoalescing()
         val entry = undoStack.removeLastOrNull() ?: return null
-        val result = DocumentOperations.apply(current, entry.second)
-        redoStack.addLast(entry.first to commandForTransition(result.document, current))
+        val result = DocumentOperations.apply(current, entry.inverse)
+        redoStack.addLast(entry.snapshot to commandForTransition(result.document, current))
         current = result.document
         return current
     }
 
     fun redo(): EditorDocument? {
+        breakCoalescing()
         val entry = redoStack.removeLastOrNull() ?: return null
         val result = DocumentOperations.apply(current, entry.second)
-        undoStack.addLast(entry.first to commandForTransition(result.document, current))
+        undoStack.addLast(HistoryEntry(entry.first, commandForTransition(result.document, current)))
         current = result.document
         return current
     }
