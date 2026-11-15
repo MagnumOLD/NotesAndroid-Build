@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
@@ -104,6 +105,7 @@ internal fun AdvancedDocumentEditorScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("advanced-document-editor"),
         topBar = {
             TopAppBar(
                 title = { Text(document.metadata.title.ifBlank { "Документ" }) },
