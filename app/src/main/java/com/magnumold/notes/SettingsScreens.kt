@@ -107,7 +107,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -208,7 +207,7 @@ internal fun SettingsScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             if (personalizationVisible) {
-                ListItem(headlineContent = { Text("Внешний вид", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
+                ListItem(headlineContent = { Text("Внешний вид", style = AppTypography.emphasisBodyStyle()) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
                 ListItem(
                     headlineContent = { Text("Светлая тема") },
                     trailingContent = { RadioButton(selected = themeMode == "light", onClick = { onThemeModeChange("light") }) },
@@ -226,7 +225,7 @@ internal fun SettingsScreen(
                     modifier = Modifier.clickable { onThemeModeChange("custom") }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
-                ListItem(headlineContent = { Text(if (themeMode == "custom") "Настройка своей темы" else "Настройка цветов темы", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
+                ListItem(headlineContent = { Text(if (themeMode == "custom") "Настройка своей темы" else "Настройка цветов темы", style = AppTypography.emphasisBodyStyle()) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
                 val themeRows = buildList {
                     if (themeMode == "custom") add(Triple("background", "Фон приложения", themeColors.background))
                     add(Triple("topBar", "Панель приложения", themeColors.topBar))
@@ -247,7 +246,7 @@ internal fun SettingsScreen(
                     Text(if (themeMode == "custom") "Сбросить свою тему" else "Сбросить цвета темы")
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
-                ListItem(headlineContent = { Text("Цвета заметок", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
+                ListItem(headlineContent = { Text("Цвета заметок", style = AppTypography.emphasisBodyStyle()) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
                 noteColors.forEachIndexed { index, color ->
                     ListItem(
                         headlineContent = { Text(listOf("Бирюзовый", "Оранжевый", "Жёлтый", "Зелёный", "Розовый", "Фиолетовый")[index]) },
@@ -269,7 +268,7 @@ internal fun SettingsScreen(
                     modifier = Modifier.clickable { personalizationVisible = true }.padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
-                ListItem(headlineContent = { Text("Хранение", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
+                ListItem(headlineContent = { Text("Хранение", style = AppTypography.emphasisBodyStyle()) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
                 ListItem(
                     headlineContent = { Text("Архив") },
                     supportingContent = { Text("Отложенные заметки") },
@@ -283,7 +282,7 @@ internal fun SettingsScreen(
                     modifier = Modifier.clickable(onClick = onOpenTrash).padding(horizontal = AppSpacing.settingsListItemOuterInset)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
-                ListItem(headlineContent = { Text("Данные", fontWeight = FontWeight.Medium) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
+                ListItem(headlineContent = { Text("Данные", style = AppTypography.emphasisBodyStyle()) }, modifier = Modifier.padding(horizontal = AppSpacing.settingsListItemOuterInset))
                 ListItem(
                     headlineContent = { Text("Экспорт заметок") },
                     supportingContent = { Text("Сохранить резервную копию в JSON-файл") },
@@ -391,7 +390,7 @@ private fun ThemeColorEditorScreen(
                     Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
-            Text("Палитра", fontWeight = FontWeight.Medium)
+            Text("Палитра", style = AppTypography.emphasisBodyStyle())
             Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 colorPickerPresets.chunked(6).forEach { rowColors ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -407,7 +406,7 @@ private fun ThemeColorEditorScreen(
                     }
                 }
             }
-            Text("HEX-код", fontWeight = FontWeight.Medium)
+            Text("HEX-код", style = AppTypography.emphasisBodyStyle())
             OutlinedTextField(value = hex,
                 onValueChange = { hex = it.filter { c -> c in "0123456789abcdefABCDEF" }.take(6).uppercase() },
                 modifier = Modifier.fillMaxWidth(), singleLine = true, prefix = { Text("#") }, placeholder = { Text("RRGGBB") })
@@ -457,7 +456,7 @@ private fun NoteColorEditorScreen(
                     Text("Предпросмотр цвета", color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.helperStyle())
                 }
             }
-            Text("Палитра", fontWeight = FontWeight.Medium)
+            Text("Палитра", style = AppTypography.emphasisBodyStyle())
             Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 colorPickerPresets.chunked(6).forEach { rowColors ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -473,7 +472,7 @@ private fun NoteColorEditorScreen(
                     }
                 }
             }
-            Text("HEX-код", fontWeight = FontWeight.Medium)
+            Text("HEX-код", style = AppTypography.emphasisBodyStyle())
             OutlinedTextField(value = hex,
                 onValueChange = { value -> hex = value.filter { it in "0123456789abcdefABCDEF" }.take(6).uppercase() },
                 modifier = Modifier.fillMaxWidth(), singleLine = true, prefix = { Text("#") }, placeholder = { Text("RRGGBB") })
