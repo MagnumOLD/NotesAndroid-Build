@@ -899,7 +899,10 @@ internal fun NoteEditor(
                         keyboardController?.show()
                     }
                 }
-                val editorTextStyle = AppTypography.bodyStyle().copy(color = MaterialTheme.colorScheme.onSurface)
+                val editorTextStyle = AppTypography.bodyStyle().copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = AppTypography.cardPreviewLineHeight
+                )
                 BasicTextField(
                     value = fieldValue,
                     onValueChange = { value ->
