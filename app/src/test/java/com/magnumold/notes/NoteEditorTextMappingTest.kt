@@ -37,6 +37,18 @@ class NoteEditorTextMappingTest {
     }
 
     @Test
+    fun newlyAddedParagraphKeepsItsIdAcrossSubsequentEdits() {
+        val original = listOf(NoteBlock("First", id = "first"))
+        val withSecond = original.withEditedPlainText("First\n\nSecond")
+        val secondId = withSecond[1].id
+
+        val editedAgain = withSecond.withEditedPlainText("First\n\nUpdated second")
+
+        assertEquals(secondId, editedAgain[1].id)
+        assertEquals("Updated second", editedAgain[1].text)
+    }
+
+    @Test
     fun removingChecklistMarkerTurnsParagraphIntoPlainText() {
         val original = listOf(NoteBlock("Buy milk", isChecklist = true, id = "check"))
 
