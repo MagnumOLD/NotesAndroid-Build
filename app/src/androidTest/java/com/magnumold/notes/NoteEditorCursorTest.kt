@@ -31,7 +31,6 @@ class NoteEditorCursorTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-
     @Test
     fun tappingBlankAreaBelowNoteTextKeepsTypingAvailable() {
         var note by mutableStateOf(
@@ -61,6 +60,7 @@ class NoteEditorCursorTest {
         }
 
         val editor = composeRule.onNodeWithTag("note-editor-body")
+        // Tap near the bottom edge, far below the visible text content.
         editor.performTouchInput {
             click(Offset(x = size.width / 2f, y = size.height - 8f))
         }
