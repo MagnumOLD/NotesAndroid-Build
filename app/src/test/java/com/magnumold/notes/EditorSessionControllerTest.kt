@@ -2,6 +2,7 @@ package com.magnumold.notes
 
 import com.magnumold.notes.editor.engine.EditorSessionController
 import com.magnumold.notes.editor.model.ChecklistBlock
+import com.magnumold.notes.editor.model.CodeBlock
 import com.magnumold.notes.editor.model.ChecklistItem
 import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.HeadingBlock
@@ -120,6 +121,18 @@ class EditorSessionControllerTest {
         assertEquals("nested item", resultNested.content.text)
         assertEquals(true, resultNested.checked)
         assertEquals("nested task", (session.undo().document.blocks.single() as ChecklistBlock).items.single().children.single().content.text)
+    }
+
+    @Test fun codeBlockCanBeEditedAndUndoRedoRestoresItsContent() {
+        val code = CodeBlock(code = "val answer = 41")
+        val session = EditorSessionController(document(code))
+        session.activateBlock(code.id)
+        session.setSelection(14, 16)
+
+        val edited = session.replaceSelection("42")
+        assertEquals("val answer = 42", (edited.document.blocks.single() as CodeBlock).code)
+        assertEquals("val answer = 41", (session.undo().document.blocks.single() as CodeBlock).code)
+        assertEquals("val answer = 42", (session.redo().document.blocks.single() as CodeBlock).code)
     }
 
     @Test fun consecutiveTypingIsOneUndoStepAndCursorMovementSplitsGroups() {

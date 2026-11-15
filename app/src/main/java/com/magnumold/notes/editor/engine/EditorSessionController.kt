@@ -1,6 +1,7 @@
 package com.magnumold.notes.editor.engine
 
 import com.magnumold.notes.editor.model.CalloutBlock
+import com.magnumold.notes.editor.model.CodeBlock
 import com.magnumold.notes.editor.model.ChecklistBlock
 import com.magnumold.notes.editor.model.ChecklistItem
 import com.magnumold.notes.editor.model.DocumentBlock
@@ -232,6 +233,7 @@ private fun DocumentBlock.richTextOrNull(): RichText? = when (this) {
     is HeadingBlock -> content
     is QuoteBlock -> content
     is CalloutBlock -> content
+    is CodeBlock -> RichText(code)
     else -> null
 }
 
@@ -246,6 +248,7 @@ private fun DocumentBlock.withRichTextForTarget(itemId: String?, value: RichText
     is HeadingBlock -> copy(content = value)
     is QuoteBlock -> copy(content = value)
     is CalloutBlock -> copy(content = value)
+    is CodeBlock -> copy(code = value.text)
     is ListBlock -> copy(items = updateListItem(items, requireNotNull(itemId), value))
     is ChecklistBlock -> copy(items = updateChecklistItem(items, requireNotNull(itemId), value))
     else -> this

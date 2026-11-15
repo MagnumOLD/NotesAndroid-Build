@@ -218,9 +218,12 @@ private fun DocumentBlockEditor(
             }
         }
         is CodeBlock -> Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp)) {
-            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(block.language ?: "Код", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(block.code.ifBlank { "Пустой блок кода" }, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
+                RichTextEditorField(
+                    block.id, null, RichText(block.code), controller, onStateChange, 14.sp,
+                    fontFamily = FontFamily.Monospace
+                )
             }
         }
         is TableBlock -> Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -253,7 +256,8 @@ private fun RichTextEditorField(
     controller: EditorSessionController,
     onStateChange: (com.magnumold.notes.editor.engine.EditorSessionState) -> Unit,
     fontSize: androidx.compose.ui.unit.TextUnit,
-    fontWeight: FontWeight = FontWeight.Normal
+    fontWeight: FontWeight = FontWeight.Normal,
+    fontFamily: FontFamily = FontFamily.Default
 ) {
     var selection by remember(blockId, itemId) { mutableStateOf(TextRange(richText.text.length)) }
     LaunchedEffect(richText.text) {
@@ -293,6 +297,7 @@ private fun RichTextEditorField(
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = fontSize,
             fontWeight = fontWeight,
+            fontFamily = fontFamily,
             lineHeight = fontSize * 1.45f
         ),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
