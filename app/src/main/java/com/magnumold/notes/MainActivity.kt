@@ -10,11 +10,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.magnumold.notes.editor.migration.LegacyDocumentMigrationCoordinator
+import com.magnumold.notes.editor.migration.LegacyDocumentMigrationRunner
+import com.magnumold.notes.editor.migration.MigrationBackupStore
+import com.magnumold.notes.editor.storage.DocumentRepository
 
 class MainActivity : ComponentActivity() {
     private lateinit var recordsViewModel: NotesViewModel
     private lateinit var timeTrackingRepository: TimeTrackingRepository
     private var lastExternalTaskStatusUpdate: Long = 0L
+    private val migrationState = MutableStateFlow(MigrationStartupState())
+    private lateinit var migrationRunner: LegacyDocumentMigrationRunner
+    private lateinit var migrationNotesRepository: NotesRepository
     private val taskStatusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (::recordsViewModel.isInitialized &&
@@ -81,20 +95,54 @@ class MainActivity : ComponentActivity() {
         ))
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val repository = NotesRepository(getPreferences(Context.MODE_PRIVATE))
+        migrationNotesRepository = repository
+        val documentRepository = DocumentRepository(applicationContext)
+        val migrationBackupStore = MigrationBackupStore(applicationContext)
+        migrationRunner = LegacyDocumentMigrationRunner(
+            getSharedPreferences("editor_migration", Context.MODE_PRIVATE),
+            LegacyDocumentMigrationCoordinator(documentRepository, migrationBackupStore)
+        )
         lastExternalTaskStatusUpdate = getPreferences(Context.MODE_PRIVATE)
             .getLong("external_task_status_update", 0L)
         timeTrackingRepository = TimeTrackingRepository(getSharedPreferences("time_tracking", Context.MODE_PRIVATE))
+        runLegacyDocumentMigration()
         recordsViewModel = ViewModelProvider(
             this,
             NotesViewModelFactory(repository, timeTrackingRepository)
         )[NotesViewModel::class.java]
         setContent {
-            NotesApp(
-                activity = this@MainActivity,
-                recordsViewModel = recordsViewModel,
-                timeTrackingRepository = timeTrackingRepository,
-                savedThemeMode = savedThemeMode,
-                initialThemeColorSets = initialThemeColorSets
+            val migration by migrationState.collectAsStateWithLifecycle()
+            if (migration.isReady) {
+                NotesApp(
+                    activity = this@MainActivity,
+                    recordsViewModel = recordsViewModel,
+                    timeTrackingRepository = timeTrackingRepository,
+                    savedThemeMode = savedThemeMode,
+                    initialThemeColorSets = initialThemeColorSets
+                )
+            } else {
+                MigrationStartupScreen(
+                    state = migration,
+                    onRetry = ::runLegacyDocumentMigration
+                )
+            }
+        }
+    }
+
+    private fun runLegacyDocumentMigration() {
+        migrationState.value = MigrationStartupState(isRunning = true)
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    migrationRunner.runIfNeeded(
+                        migrationNotesRepository.loadSnapshot(),
+                        timeTrackingRepository.load()
+                    )
+                }
+            }
+            migrationState.value = result.fold(
+                onSuccess = { MigrationStartupState(isReady = true) },
+                onFailure = { MigrationStartupState(error = it.message ?: "Не удалось подготовить документы") }
             )
         }
     }
