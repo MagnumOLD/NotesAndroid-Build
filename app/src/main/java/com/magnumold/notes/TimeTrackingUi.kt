@@ -36,10 +36,7 @@ internal fun TimeTrackingSection(
             ) {
                 Text(
                     title,
-                    style = AppTypography.sectionLabelStyle().copy(
-                        lineHeight = AppTypography.sectionLabelLineHeight,
-                        fontWeight = FontWeight.Medium
-                    ),
+                    style = AppTypography.sectionLabelEmphasisStyle(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.weight(1f))
