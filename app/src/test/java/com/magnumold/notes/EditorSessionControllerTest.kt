@@ -46,6 +46,22 @@ class EditorSessionControllerTest {
         assertEquals(2, state.selection.focus)
     }
 
+    @Test fun inlineFormattingCanBeAppliedAndRemovedFromTheSelectedRange() {
+        val paragraph = ParagraphBlock(content = RichText("abcdef"))
+        val session = EditorSessionController(document(paragraph))
+        session.activateBlock(paragraph.id)
+        session.setSelection(1, 4)
+
+        assertEquals(false, session.isInlineStyleActive(InlineStyle.BOLD))
+        session.applyInlineStyle(InlineStyle.BOLD, true)
+        assertEquals(true, session.isInlineStyleActive(InlineStyle.BOLD))
+        session.applyInlineStyle(InlineStyle.BOLD, false)
+
+        val edited = session.state.document.blocks.single() as ParagraphBlock
+        assertEquals(emptyList<InlineSpan>(), edited.content.spans)
+        assertEquals(false, session.isInlineStyleActive(InlineStyle.BOLD))
+    }
+
     @Test fun selectionIsClampedAfterTextChangesAndUndoRestoresText() {
         val paragraph = ParagraphBlock(content = RichText("abc"))
         val session = EditorSessionController(document(paragraph))

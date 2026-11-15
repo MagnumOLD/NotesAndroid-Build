@@ -113,6 +113,20 @@ internal class EditorSessionController(
         return state
     }
 
+    fun isInlineStyleActive(style: com.magnumold.notes.editor.model.InlineStyle): Boolean {
+        val range = state.selection.asRange()
+        if (range.length == 0) return false
+        var coveredUntil = range.start
+        activeRichText()?.spans.orEmpty()
+            .asSequence()
+            .filter { style in it.styles && it.end > range.start && it.start < range.end }
+            .sortedBy { it.start }
+            .forEach { span ->
+                if (span.start <= coveredUntil) coveredUntil = maxOf(coveredUntil, span.end)
+            }
+        return coveredUntil >= range.end
+    }
+
     fun replaceSelection(replacement: String): EditorSessionState {
         val block = activeBlock() ?: return state
         val content = activeRichText() ?: return state

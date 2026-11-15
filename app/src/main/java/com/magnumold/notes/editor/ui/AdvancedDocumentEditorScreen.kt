@@ -105,6 +105,10 @@ internal fun AdvancedDocumentEditorScreen(
         publish(controller.execute(DocumentCommand.Insert(editorState.document.blocks.size, block)))
     }
 
+    fun toggleInlineStyle(style: InlineStyle) {
+        publish(controller.applyInlineStyle(style, enabled = !controller.isInlineStyleActive(style)))
+    }
+
     Scaffold(
         modifier = Modifier.testTag("advanced-document-editor").imePadding(),
         topBar = {
@@ -133,13 +137,13 @@ internal fun AdvancedDocumentEditorScreen(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { publish(controller.applyInlineStyle(InlineStyle.BOLD, true)) }) {
+                    IconButton(onClick = { toggleInlineStyle(InlineStyle.BOLD) }) {
                         Icon(Icons.Outlined.FormatBold, contentDescription = "Жирный")
                     }
-                    IconButton(onClick = { publish(controller.applyInlineStyle(InlineStyle.ITALIC, true)) }) {
+                    IconButton(onClick = { toggleInlineStyle(InlineStyle.ITALIC) }) {
                         Icon(Icons.Outlined.FormatItalic, contentDescription = "Курсив")
                     }
-                    IconButton(onClick = { publish(controller.applyInlineStyle(InlineStyle.UNDERLINE, true)) }) {
+                    IconButton(onClick = { toggleInlineStyle(InlineStyle.UNDERLINE) }) {
                         Icon(Icons.Outlined.FormatUnderlined, contentDescription = "Подчёркнутый")
                     }
                     Spacer(Modifier.width(8.dp))
