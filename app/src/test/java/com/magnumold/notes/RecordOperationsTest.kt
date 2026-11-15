@@ -64,4 +64,64 @@ class RecordOperationsTest {
         assertEquals(once.trash.map { it.note.id }.toSet(), twice.trash.map { it.note.id }.toSet())
         assertTrue(twice.archived.size == 2 && twice.trash.size == 2)
     }
+    private fun allIds(snapshot: PersistenceSnapshot): List<Long> {
+        val ids = mutableListOf<Long>()
+        fun collect(note: Note) {
+            ids += note.id
+            note.children.forEach(::collect)
+        }
+        snapshot.notes.forEach(::collect)
+        snapshot.collections.forEach { it.notes.forEach(::collect) }
+        snapshot.archived.forEach { collect(it.note) }
+        snapshot.trash.forEach { collect(it.note) }
+        return ids
+    }
+
+    @Test
+    fun backupImportRemapsCollisionsAcrossActiveCollectionsArchiveAndTrash() {
+        val current = PersistenceSnapshot(
+            notes = listOf(note(10L, "Active")),
+            collections = listOf(NoteCollection(1L, "Saved", listOf(note(20L, "Collection")))),
+            archived = listOf(vault(note(30L, "Archived"))),
+            trash = emptyList()
+        )
+        val backup = BackupData(
+            notes = emptyList(),
+            collections = emptyList(),
+            archived = listOf(vault(note(10L, "Different archived record"))),
+            trash = listOf(vault(note(20L, "Different trashed record")))
+        )
+
+        val merged = RecordOperations.mergeBackup(current, backup)
+
+        assertEquals(2, merged.archived.size + merged.trash.size)
+        assertTrue(merged.archived.single().note.id != 10L)
+        assertTrue(merged.trash.single().note.id != 20L)
+        assertEquals(allIds(merged).size, allIds(merged).toSet().size)
+    }
+
+    @Test
+    fun backupImportRemapsNestedIdsAgainstEverySection() {
+        val current = PersistenceSnapshot(
+            notes = listOf(note(1L, "Active parent", listOf(note(2L, "Active child")))),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+        val backup = BackupData(
+            notes = emptyList(),
+            collections = listOf(
+                NoteCollection(7L, "Imported", listOf(note(3L, "Collection parent", listOf(note(2L, "Conflicting child")))))
+            ),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+
+        val merged = RecordOperations.mergeBackup(current, backup)
+
+        val importedChildId = merged.collections.single().notes.single().children.single().id
+        assertTrue(importedChildId != 2L)
+        assertEquals(allIds(merged).size, allIds(merged).toSet().size)
+    }
+
 }
