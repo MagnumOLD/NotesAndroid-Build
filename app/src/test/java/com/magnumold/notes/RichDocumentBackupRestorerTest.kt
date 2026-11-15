@@ -219,4 +219,45 @@ class RichDocumentBackupRestorerTest {
         }
     }
 
+    @Test
+    fun failedAssetInstallRollsBackEarlierAssetsBeforeSavingDocuments() {
+        val context = context()
+        val docs = File(context.filesDir, "restore-docs-f").apply { deleteRecursively() }
+        val assets = File(context.filesDir, "restore-assets-f").apply { deleteRecursively() }
+        val repository = DocumentRepository(context, "restore-docs-f")
+        val assetStore = DocumentAssetStore(context, maxAssetBytes = 1L, directoryName = "restore-assets-f")
+        val firstId = "550e8400-e29b-41d4-a716-446655440003"
+        val secondId = "550e8400-e29b-41d4-a716-446655440004"
+        val firstFile = File(context.cacheDir, "restore-first-f").apply { writeBytes(byteArrayOf(1)) }
+        val secondFile = File(context.cacheDir, "restore-second-f").apply { writeBytes(byteArrayOf(2, 3)) }
+        val document = EditorDocument(
+            id = "atomic-restore",
+            createdAt = 1L,
+            updatedAt = 2L,
+            blocks = listOf(ImageBlock(assetId = firstId), ImageBlock(assetId = secondId))
+        )
+        try {
+            assertThrows(IllegalArgumentException::class.java) {
+                RichDocumentBackupRestorer(repository, assetStore).restore(
+                    RichDocumentBackupArchive.Payload(
+                        "{}",
+                        listOf(document),
+                        listOf(
+                            RichDocumentBackupArchive.StagedAsset(firstId, firstFile),
+                            RichDocumentBackupArchive.StagedAsset(secondId, secondFile)
+                        )
+                    )
+                )
+            }
+
+            assertTrue(repository.load("atomic-restore").getOrNull() == null)
+            assertEquals(0, assets.listFiles().orEmpty().size)
+        } finally {
+            docs.deleteRecursively()
+            assets.deleteRecursively()
+            firstFile.delete()
+            secondFile.delete()
+        }
+    }
+
 }
