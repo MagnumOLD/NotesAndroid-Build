@@ -61,7 +61,7 @@ internal class LegacyDocumentMigrationCoordinator(
             } ?: error("Migrated document ${expectedDocument.id} is missing")
         }
         require(verified == expected) { "Migrated document validation failed" }
-        require(verified.map(EditorDocument::plainText) == expected.map(EditorDocument::plainText)) {
+        require(verified.map { it.plainText() } == expected.map { it.plainText() }) {
             "Migrated document text validation failed"
         }
 

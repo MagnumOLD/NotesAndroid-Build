@@ -69,7 +69,12 @@ internal class MigrationBackupStore(
         return verified
     }
 
-    fun readVerifiedBackup(): MigrationBackupInfo {
+    fun readVerifiedBackup(): MigrationBackupInfo = readVerifiedEnvelope().second
+
+    /** Returns the original versioned backup JSON after checksum and schema validation. */
+    fun readBackupPayload(): String = readVerifiedEnvelope().first
+
+    private fun readVerifiedEnvelope(): Pair<String, MigrationBackupInfo> {
         val root = JSONObject(readAtomically())
         require(root.getString("format") == BACKUP_FORMAT) { "Invalid migration backup format" }
         require(root.getInt("version") == BACKUP_VERSION) { "Unsupported migration backup version" }
@@ -79,7 +84,7 @@ internal class MigrationBackupStore(
         require(sha256(payload) == expectedSha) { "Migration backup checksum mismatch" }
         parseBackupJson(payload)
         require(fingerprint(payload) == expectedFingerprint) { "Migration backup fingerprint mismatch" }
-        return MigrationBackupInfo(BACKUP_FILE_NAME, expectedSha, expectedFingerprint)
+        return payload to MigrationBackupInfo(BACKUP_FILE_NAME, expectedSha, expectedFingerprint)
     }
 
     private fun fingerprint(payload: String): String {
