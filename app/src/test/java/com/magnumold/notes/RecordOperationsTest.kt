@@ -125,4 +125,28 @@ class RecordOperationsTest {
         assertEquals(allIds(merged).size, allIds(merged).toSet().size)
     }
 
+    @Test
+    fun repeatedCrossSectionCollisionImportIsIdempotent() {
+        val current = PersistenceSnapshot(
+            notes = listOf(note(100L, "Existing active")),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+        val backup = BackupData(
+            notes = emptyList(),
+            collections = emptyList(),
+            archived = listOf(vault(note(100L, "Imported archived copy"))),
+            trash = emptyList()
+        )
+
+        val once = RecordOperations.mergeBackup(current, backup)
+        val twice = RecordOperations.mergeBackup(once, backup)
+
+        assertEquals(2, once.notes.size + once.archived.size)
+        assertEquals(once.archived.map { it.note.id }, twice.archived.map { it.note.id })
+        assertEquals(allIds(once).toSet(), allIds(twice).toSet())
+        assertEquals(allIds(twice).size, allIds(twice).toSet().size)
+    }
+
 }
