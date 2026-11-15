@@ -46,12 +46,16 @@ Tables contain rows and cells; each cell owns text and inline spans. Images and 
 6. Repository, recovery, and migration.
 7. Integration, regression tests, performance, and APK verification.
 
-## Extended backup format (implementation in progress)
-- Legacy JSON backups (versions 1–7) remain readable and the existing JSON export path is unchanged.
-- A separate ZIP archive format stores the legacy snapshot, versioned rich-document JSON files, and only binary assets referenced by those documents.
-- The ZIP manifest enumerates document and asset IDs. Import parsing is staged in a private temporary directory and validates manifest membership, duplicate IDs, document identity, asset references, path safety, per-entry/total size limits, and the ZIP central directory before returning a payload.
-- The archive codec and stream-level BackupFileStore APIs are implemented and unit-tested independently. They are **not yet wired into the visible export/import pickers**.
-- Do not integrate the advanced editor into the live notes list until ZIP export and restore are connected end-to-end, with collision handling, rollback/transaction tests, and backward-compatibility tests for JSON v1–v7.
+## Extended backup format (implementation status)
+- The Settings export action now creates a ZIP archive containing the legacy record snapshot, time-tracking state, rich-document JSON, and referenced binary assets.
+- The import picker accepts both ZIP archives and legacy JSON backups (versions 1–7).
+- ZIP parsing stages files privately and validates the manifest, duplicate IDs, document identity, asset references, path safety, per-entry/total size limits, and ZIP central directory before any live-store changes.
+- Restore copies each asset to app-private storage under a fresh ID, rewrites image/attachment references, and remaps colliding document IDs rather than overwriting existing documents.
+- If document or asset installation fails, newly installed files are rolled back. Legacy records are merged only after ZIP payload validation and rich-document installation.
+- The migration startup gate creates a checksum-verified backup before migrating NOTE records. The user can retry a failed migration or continue using the legacy editor without setting the migration-complete marker.
+- Migration backups are fingerprinted per legacy snapshot; a changed snapshot gets a separate backup rather than overwriting an earlier recovery point.
+- Automated tests cover archive round-trip, truncated archives, missing assets, restore collisions, and asset-reference remapping. Full CI and emulator validation remain required.
+- Advanced editor routing into the live note list is still gated; task routes and the existing editor remain unchanged until integration tests are complete.
 
 ## Non-goals for the first release
 Desktop word-processor pagination, columns, equation editor, real-time collaboration, and arbitrary plugin execution.

@@ -95,4 +95,26 @@ class LegacyDocumentMigrationCoordinatorTest {
 
         LegacyDocumentMigrationCoordinator(repository, backup).migrate(snapshot)
     }
+    @Test
+    fun changedLegacySnapshotGetsItsOwnBackupWithoutOverwritingPreviousOne() {
+        val context = context()
+        val directoryName = "migration-versioned-backups"
+        java.io.File(context.filesDir, directoryName).deleteRecursively()
+        val store = MigrationBackupStore(context, directoryName)
+        val firstSnapshot = PersistenceSnapshot(
+            notes = listOf(note(71, "First snapshot")),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+        val secondSnapshot = firstSnapshot.copy(notes = listOf(note(71, "Updated snapshot")))
+
+        val first = store.ensureBackup(firstSnapshot)
+        val second = store.ensureBackup(secondSnapshot)
+
+        assertTrue(first.fileName != second.fileName)
+        assertTrue(java.io.File(context.filesDir, directoryName + "/" + first.fileName).isFile)
+        assertTrue(java.io.File(context.filesDir, directoryName + "/" + second.fileName).isFile)
+    }
+
 }
