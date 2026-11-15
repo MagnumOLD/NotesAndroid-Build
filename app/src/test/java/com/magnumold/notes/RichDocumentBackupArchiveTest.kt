@@ -91,9 +91,11 @@ class RichDocumentBackupArchiveTest {
     fun rejectsTruncatedOrNonZipInput() {
         val root = createTempDir(prefix = "rich-backup-invalid")
         try {
+            val staging = File(root, "staging")
             assertThrows(Exception::class.java) {
-                RichDocumentBackupArchive.read(ByteArrayInputStream("not a zip".toByteArray()), File(root, "staging"))
+                RichDocumentBackupArchive.read(ByteArrayInputStream("not a zip".toByteArray()), staging)
             }
+            assertEquals(0, staging.listFiles().orEmpty().size)
         } finally {
             root.deleteRecursively()
         }
