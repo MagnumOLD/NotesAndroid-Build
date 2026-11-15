@@ -46,6 +46,7 @@ class AdvancedDocumentEditorScreenTest {
         composeRule.runOnIdle {
             assertEquals(2, emitted?.blocks?.size)
             assert(emitted?.blocks?.last() is HeadingBlock)
+            assertEquals(1, (emitted?.blocks?.last() as HeadingBlock).level)
         }
     }
 }
