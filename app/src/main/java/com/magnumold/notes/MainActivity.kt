@@ -123,7 +123,12 @@ class MainActivity : ComponentActivity() {
             } else {
                 MigrationStartupScreen(
                     state = migration,
-                    onRetry = ::runLegacyDocumentMigration
+                    onRetry = ::runLegacyDocumentMigration,
+                    onContinueLegacy = {
+                        // A migration problem must not make the existing notes app unusable.
+                        // This only opens the legacy editor; the migration marker stays unset.
+                        migrationState.value = MigrationStartupState(isReady = true)
+                    }
                 )
             }
         }

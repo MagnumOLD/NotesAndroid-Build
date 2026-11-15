@@ -24,7 +24,8 @@ internal data class MigrationStartupState(
 @Composable
 internal fun MigrationStartupScreen(
     state: MigrationStartupState,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onContinueLegacy: () -> Unit
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
@@ -47,6 +48,7 @@ internal fun MigrationStartupScreen(
                     textAlign = TextAlign.Center
                 )
                 Button(onClick = onRetry) { Text("Повторить") }
+                Button(onClick = onContinueLegacy) { Text("Продолжить со старым редактором") }
             }
         }
     }

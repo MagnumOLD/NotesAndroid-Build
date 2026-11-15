@@ -29,7 +29,8 @@ internal class MigrationBackupStore(
         if (!exists()) check(mkdirs()) { "Unable to create migration backup directory" }
         check(isDirectory) { "Migration backup path is not a directory" }
     }
-    private val backupFile = AtomicFile(java.io.File(directory, BACKUP_FILE_NAME))
+    private fun backupFile(fingerprint: String) =
+        AtomicFile(java.io.File(directory, "$BACKUP_FILE_PREFIX$fingerprint.json"))
 
     fun ensureBackup(
         snapshot: PersistenceSnapshot,
@@ -40,12 +41,13 @@ internal class MigrationBackupStore(
         )
         val currentFingerprint = fingerprint(currentPayload)
 
-        if (backupFile.baseFile.exists() ||
-            backupFile.baseFile.resolveSibling(backupFile.baseFile.name + ".bak").exists()
+        val targetFile = backupFile(currentFingerprint)
+        if (targetFile.baseFile.exists() ||
+            targetFile.baseFile.resolveSibling(targetFile.baseFile.name + ".bak").exists()
         ) {
-            val existing = readVerifiedBackup()
+            val existing = readVerifiedEnvelope(targetFile).second
             require(existing.fingerprint == currentFingerprint) {
-                "An existing migration backup belongs to a different legacy snapshot"
+                "Migration backup fingerprint mismatch"
             }
             return existing
         }
@@ -61,21 +63,30 @@ internal class MigrationBackupStore(
             .put("payload", currentPayload)
             .toString()
 
-        writeAtomically(envelope)
-        val verified = readVerifiedBackup()
+        writeAtomically(targetFile, envelope)
+        val verified = readVerifiedEnvelope(targetFile).second
         require(verified.sha256 == sha && verified.fingerprint == currentFingerprint) {
             "Migration backup verification failed"
         }
         return verified
     }
 
-    fun readVerifiedBackup(): MigrationBackupInfo = readVerifiedEnvelope().second
+    fun readVerifiedBackup(): MigrationBackupInfo = readVerifiedEnvelope(latestBackupFile()).second
 
-    /** Returns the original versioned backup JSON after checksum and schema validation. */
-    fun readBackupPayload(): String = readVerifiedEnvelope().first
+    /** Returns the newest verified versioned snapshot after checksum and schema validation. */
+    fun readBackupPayload(): String = readVerifiedEnvelope(latestBackupFile()).first
 
-    private fun readVerifiedEnvelope(): Pair<String, MigrationBackupInfo> {
-        val root = JSONObject(readAtomically())
+    private fun latestBackupFile(): AtomicFile {
+        val file = directory.listFiles()
+            .orEmpty()
+            .filter { it.isFile && it.name.startsWith(BACKUP_FILE_PREFIX) && it.name.endsWith(".json") }
+            .maxByOrNull { it.lastModified() }
+            ?: error("Migration backup does not exist")
+        return AtomicFile(file)
+    }
+
+    private fun readVerifiedEnvelope(file: AtomicFile): Pair<String, MigrationBackupInfo> {
+        val root = JSONObject(readAtomically(file))
         require(root.getString("format") == BACKUP_FORMAT) { "Invalid migration backup format" }
         require(root.getInt("version") == BACKUP_VERSION) { "Unsupported migration backup version" }
         val payload = root.getString("payload")
@@ -84,7 +95,7 @@ internal class MigrationBackupStore(
         require(sha256(payload) == expectedSha) { "Migration backup checksum mismatch" }
         parseBackupJson(payload)
         require(fingerprint(payload) == expectedFingerprint) { "Migration backup fingerprint mismatch" }
-        return payload to MigrationBackupInfo(BACKUP_FILE_NAME, expectedSha, expectedFingerprint)
+        return payload to MigrationBackupInfo(file.baseFile.name, expectedSha, expectedFingerprint)
     }
 
     private fun fingerprint(payload: String): String {
@@ -98,26 +109,26 @@ internal class MigrationBackupStore(
             .digest(value.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
 
-    private fun readAtomically(): String =
-        backupFile.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
+    private fun readAtomically(file: AtomicFile): String =
+        file.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
 
-    private fun writeAtomically(value: String) {
+    private fun writeAtomically(file: AtomicFile, value: String) {
         var stream: FileOutputStream? = null
         try {
-            stream = backupFile.startWrite()
+            stream = file.startWrite()
             stream.write(value.toByteArray(Charsets.UTF_8))
             stream.flush()
             stream.fd.sync()
-            backupFile.finishWrite(stream)
+            file.finishWrite(stream)
         } catch (error: Throwable) {
-            if (stream != null) backupFile.failWrite(stream)
+            if (stream != null) file.failWrite(stream)
             throw error
         }
     }
 
     private companion object {
         const val DEFAULT_DIRECTORY = "editor_migration_backup"
-        const val BACKUP_FILE_NAME = "legacy-records-backup.json"
+        const val BACKUP_FILE_PREFIX = "legacy-records-backup-"
         const val BACKUP_FORMAT = "notes_legacy_migration_backup"
         const val BACKUP_VERSION = 1
     }
