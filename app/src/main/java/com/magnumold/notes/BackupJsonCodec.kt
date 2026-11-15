@@ -148,7 +148,8 @@ private fun stableImportedRecordId(note: Note, salt: Int): Long {
 private fun mergeNoteLists(
     existing: List<Note>,
     imported: List<Note>,
-    knownRecords: MutableMap<Long, Note>
+    knownRecords: MutableMap<Long, Note>,
+    taskIdRemaps: MutableMap<Long, Long>
 ): List<Note> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
@@ -157,7 +158,7 @@ private fun mergeNoteLists(
         }
         if (sameIndex >= 0) {
             val current = result[sameIndex]
-            val mergedChildren = mergeNoteLists(current.children, incoming.children, knownRecords)
+            val mergedChildren = mergeNoteLists(current.children, incoming.children, knownRecords, taskIdRemaps)
             val updated = current.copy(children = mergedChildren)
             result[sameIndex] = updated
             knownRecords[updated.id] = updated
@@ -189,8 +190,11 @@ private fun mergeNoteLists(
         val safeBlocks = if (safeId == incoming.id) incoming.blocks else incoming.blocks.map {
             it.copy(id = java.util.UUID.randomUUID().toString())
         }
-        val safeChildren = mergeNoteLists(emptyList(), incoming.children, knownRecords)
+        val safeChildren = mergeNoteLists(emptyList(), incoming.children, knownRecords, taskIdRemaps)
         val safeNote = incoming.copy(id = safeId, blocks = safeBlocks, children = safeChildren)
+        if (incoming.type == RecordType.TASK && safeId != incoming.id) {
+            taskIdRemaps.putIfAbsent(incoming.id, safeId)
+        }
         result.add(safeNote)
         knownRecords[safeId] = safeNote
     }
@@ -200,7 +204,8 @@ private fun mergeNoteLists(
 private fun mergeVaultEntries(
     existing: List<VaultNote>,
     imported: List<VaultNote>,
-    knownRecords: MutableMap<Long, Note>
+    knownRecords: MutableMap<Long, Note>,
+    taskIdRemaps: MutableMap<Long, Long>
 ): List<VaultNote> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
@@ -211,12 +216,12 @@ private fun mergeVaultEntries(
             val current = result[localIndex]
             result[localIndex] = current.copy(
                 note = current.note.copy(
-                    children = mergeNoteLists(current.note.children, incoming.note.children, knownRecords)
+                    children = mergeNoteLists(current.note.children, incoming.note.children, knownRecords, taskIdRemaps)
                 )
             )
             return@forEach
         }
-        val merged = mergeNoteLists(emptyList(), listOf(incoming.note), knownRecords).singleOrNull()
+        val merged = mergeNoteLists(emptyList(), listOf(incoming.note), knownRecords, taskIdRemaps).singleOrNull()
         if (merged != null && result.none { it.note.id == merged.id }) {
             result.add(incoming.copy(note = merged))
         }
@@ -227,28 +232,35 @@ private fun mergeVaultEntries(
 private fun mergeCollectionLists(
     existing: List<NoteCollection>,
     imported: List<NoteCollection>,
-    knownRecords: MutableMap<Long, Note>
+    knownRecords: MutableMap<Long, Note>,
+    taskIdRemaps: MutableMap<Long, Long>
 ): List<NoteCollection> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
         val sameName = result.indexOfFirst { it.name.equals(incoming.name, true) }
         if (sameName >= 0) {
             result[sameName] = result[sameName].copy(
-                notes = mergeNoteLists(result[sameName].notes, incoming.notes, knownRecords)
+                notes = mergeNoteLists(result[sameName].notes, incoming.notes, knownRecords, taskIdRemaps)
             )
         } else {
             var id = incoming.id
             val usedCollectionIds = result.mapTo(mutableSetOf()) { it.id }
             while (id in usedCollectionIds) id++
-            result.add(incoming.copy(id = id, notes = mergeNoteLists(emptyList(), incoming.notes, knownRecords)))
+            result.add(incoming.copy(id = id, notes = mergeNoteLists(emptyList(), incoming.notes, knownRecords, taskIdRemaps)))
         }
     }
     return result
 }
 
+internal data class BackupMergeResult(
+    val snapshot: PersistenceSnapshot,
+    val taskIdRemaps: Map<Long, Long>
+)
+
 /** Merges every backup section against one shared namespace of record IDs. */
-internal fun mergeBackupRecords(current: PersistenceSnapshot, imported: BackupData): PersistenceSnapshot {
+internal fun mergeBackupRecords(current: PersistenceSnapshot, imported: BackupData): BackupMergeResult {
     val knownRecords = mutableMapOf<Long, Note>()
+    val taskIdRemaps = mutableMapOf<Long, Long>()
     fun remember(note: Note) {
         knownRecords.putIfAbsent(note.id, note)
         note.children.forEach(::remember)
@@ -258,12 +270,13 @@ internal fun mergeBackupRecords(current: PersistenceSnapshot, imported: BackupDa
     current.archived.forEach { remember(it.note) }
     current.trash.forEach { remember(it.note) }
 
-    return current.copy(
-        notes = mergeNoteLists(current.notes, imported.notes, knownRecords),
-        collections = mergeCollectionLists(current.collections, imported.collections, knownRecords),
-        archived = mergeVaultEntries(current.archived, imported.archived, knownRecords),
-        trash = mergeVaultEntries(current.trash, imported.trash, knownRecords)
+    val merged = current.copy(
+        notes = mergeNoteLists(current.notes, imported.notes, knownRecords, taskIdRemaps),
+        collections = mergeCollectionLists(current.collections, imported.collections, knownRecords, taskIdRemaps),
+        archived = mergeVaultEntries(current.archived, imported.archived, knownRecords, taskIdRemaps),
+        trash = mergeVaultEntries(current.trash, imported.trash, knownRecords, taskIdRemaps)
     )
+    return BackupMergeResult(merged, taskIdRemaps)
 }
 
 
