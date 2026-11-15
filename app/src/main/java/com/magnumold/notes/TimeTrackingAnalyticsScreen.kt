@@ -372,14 +372,14 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 singleLine = true
             )
         }
-        Text("Фактическое время", style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
-        Text(formatSessionDuration(stats.totalMillis), style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium)
+        Text("Фактическое время", style = AppTypography.emphasisCompactBodyStyle())
+        Text(formatSessionDuration(stats.totalMillis), style = AppTypography.emphasisBodyStyle())
         Text("Рабочих сессий: ${stats.sessionCount}")
         Text(
             "По сравнению с предыдущим периодом: ${if (delta >= 0) "+" else "−"}${formatSessionDuration(kotlin.math.abs(delta))}",
             color = if (delta >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
-        Text("Изменение по задачам", style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
+        Text("Изменение по задачам", style = AppTypography.emphasisCompactBodyStyle())
         val taskIds = (stats.taskTotalsMillis.keys + previous.taskTotalsMillis.keys).toSet()
         data class BreakdownRow(
             val id: Long,
@@ -414,7 +414,7 @@ private fun ColumnScope.TimeTrackingStatisticsContent(state: TimeTrackingState) 
                 )
             }
         }
-        Text("Изменение по дням", style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
+        Text("Изменение по дням", style = AppTypography.emphasisCompactBodyStyle())
         val chartData = dailyTotals.filter { (day, _) ->
             val dayStart = parseSessionDay(day) ?: 0L
             dayStart < range.second && dayStart + 86_400_000L > range.first
