@@ -131,6 +131,10 @@ internal fun AdvancedDocumentEditorScreen(
     val scope = rememberCoroutineScope()
     val controller = remember(document.id) { EditorSessionController(document) }
     var editorState by remember(document.id) { mutableStateOf(controller.state) }
+    // Toolbar lambdas are separate restart scopes; derive history flags from the
+    // observable editor state so they refresh after text edits and undo/redo.
+    val canUndo = remember(editorState) { controller.canUndo }
+    val canRedo = remember(editorState) { controller.canRedo }
     var showLinkDialog by remember(document.id) { mutableStateOf(false) }
     var newLinkLabel by remember(document.id) { mutableStateOf("") }
     var newLinkUrl by remember(document.id) { mutableStateOf("https://") }
@@ -199,9 +203,9 @@ internal fun AdvancedDocumentEditorScreen(
                 actions = {
                     IconButton(
                         onClick = { publish(controller.undo()) },
-                        enabled = controller.canUndo
+                        enabled = canUndo
                     ) { Icon(Icons.Outlined.Undo, contentDescription = "Отменить") }
-                    IconButton(onClick = { publish(controller.redo()) }, enabled = controller.canRedo) {
+                    IconButton(onClick = { publish(controller.redo()) }, enabled = canRedo) {
                         Icon(Icons.Outlined.Redo, contentDescription = "Повторить")
                     }
                     IconButton(onClick = { overflowExpanded = true }) {
