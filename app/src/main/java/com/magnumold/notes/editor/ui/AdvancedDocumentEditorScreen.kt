@@ -48,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -92,7 +93,9 @@ import com.magnumold.notes.editor.model.QuoteBlock
 import com.magnumold.notes.editor.model.RichText
 import com.magnumold.notes.editor.model.TableBlock
 import com.magnumold.notes.editor.storage.DocumentAssetStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -109,6 +112,7 @@ internal fun AdvancedDocumentEditorScreen(
 ) {
     val context = LocalContext.current
     val assetStore = remember(context) { DocumentAssetStore(context.applicationContext) }
+    val scope = rememberCoroutineScope()
     val controller = remember(document.id) { EditorSessionController(document) }
     var editorState by remember(document.id) { mutableStateOf(controller.state) }
 
@@ -123,26 +127,31 @@ internal fun AdvancedDocumentEditorScreen(
     }
 
     fun importSelectedAsset(uri: android.net.Uri) {
-        runCatching {
-            val name = context.contentResolver.query(
-                uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) cursor.getString(0) else null
-            }?.takeIf { it.isNotBlank() } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "Вложение"
-            val asset = assetStore.import(uri, name)
-            val block = if (asset.mimeType?.startsWith("image/") == true) {
-                ImageBlock(assetId = asset.assetId)
-            } else {
-                AttachmentBlock(
-                    assetId = asset.assetId,
-                    fileName = asset.fileName,
-                    mimeType = asset.mimeType,
-                    sizeBytes = asset.sizeBytes
-                )
+        scope.launch {
+            try {
+                val block = withContext(Dispatchers.IO) {
+                    val name = context.contentResolver.query(
+                        uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else null
+                    }?.takeIf { it.isNotBlank() } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "Вложение"
+                    val asset = assetStore.import(uri, name)
+                    if (asset.mimeType?.startsWith("image/") == true) {
+                        ImageBlock(assetId = asset.assetId)
+                    } else {
+                        AttachmentBlock(
+                            assetId = asset.assetId,
+                            fileName = asset.fileName,
+                            mimeType = asset.mimeType,
+                            sizeBytes = asset.sizeBytes
+                        )
+                    }
+                }
+                insert(block)
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Toast.makeText(context, error.message ?: "Не удалось добавить файл", Toast.LENGTH_LONG).show()
             }
-            insert(block)
-        }.onFailure { error ->
-            Toast.makeText(context, error.message ?: "Не удалось добавить файл", Toast.LENGTH_LONG).show()
         }
     }
 
