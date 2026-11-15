@@ -113,18 +113,25 @@ internal fun rememberBackupActions(
                                     legacy.archived.map { it.note } +
                                     legacy.trash.map { it.note }
                             )
-                            val report = RichDocumentBackupRestorer(
+                            val restorer = RichDocumentBackupRestorer(
                                 documentRepository,
                                 documentAssetStore
-                            ).restore(
+                            )
+                            val report = restorer.restore(
                                 payload,
                                 reservedNoteIds = currentIds,
                                 incomingNoteIds = incomingIds
                             )
-                            val importedRecords = recordsViewModel.importBackupData(
-                                legacy.remapNoteIds(report.remappedDocumentIds)
-                            )
-                            "Импортировано записей: $importedRecords, документов: ${report.importedDocuments}"
+                            try {
+                                val importedRecords = recordsViewModel.importBackupData(
+                                    legacy.remapNoteIds(report.remappedDocumentIds)
+                                )
+                                "Импортировано записей: $importedRecords, документов: ${report.importedDocuments}"
+                            } catch (error: Throwable) {
+                                // A legacy-store failure must not leave rich documents/assets half-imported.
+                                restorer.rollback(report)
+                                throw error
+                            }
                         } else {
                             val importedCount = recordsViewModel.importBackup(backupFileStore.readBackup(uri))
                             "Импортировано заметок: $importedCount"
