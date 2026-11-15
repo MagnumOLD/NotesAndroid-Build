@@ -155,7 +155,7 @@ private fun mergeNoteLists(
         }
 
         val collision = incoming.id in usedIds
-        val safeId = if (collision) nextAvailableRecordId(usedIds) else incoming.id.also(usedIds::add)
+        val safeId = if (collision) nextAvailableRecordId(usedIds) else incoming.id.also { usedIds.add(it) }
         val safeBlocks = if (collision) incoming.blocks.map {
             it.copy(id = java.util.UUID.randomUUID().toString())
         } else incoming.blocks
