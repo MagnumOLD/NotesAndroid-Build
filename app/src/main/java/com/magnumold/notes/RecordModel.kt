@@ -68,36 +68,68 @@ internal fun List<NoteBlock>.toPlainText(): String = joinToString("\n\n") { bloc
  * reflected in the model rather than silently discarded.
  */
 internal fun List<NoteBlock>.withEditedPlainText(value: String): List<NoteBlock> {
-    val paragraphs = value.split("\\n\\n")
+    val paragraphs = value.split("\n\n")
     val oldParagraphs = map { block ->
         (if (block.isChecklist) (if (block.checked) "☑ " else "☐ ") else "") + block.text
     }
 
-    // First align unchanged paragraphs in order. This prevents inserting a
-    // paragraph near the beginning from stealing IDs from all following blocks.
-    val matchedOldIndex = IntArray(paragraphs.size) { -1 }
-    val usedOldIndices = BooleanArray(size)
-    var lastMatchedOldIndex = -1
-    paragraphs.forEachIndexed { newIndex, paragraph ->
-        val candidate = (lastMatchedOldIndex + 1 until oldParagraphs.size)
-            .firstOrNull { oldIndex -> !usedOldIndices[oldIndex] && oldParagraphs[oldIndex] == paragraph }
-        if (candidate != null) {
-            matchedOldIndex[newIndex] = candidate
-            usedOldIndices[candidate] = true
-            lastMatchedOldIndex = candidate
+    // Find unchanged paragraphs in order using a longest-common-subsequence
+    // alignment. These anchors keep IDs stable when paragraphs are inserted
+    // or removed before them.
+    val oldCount = oldParagraphs.size
+    val newCount = paragraphs.size
+    val lcs = Array(oldCount + 1) { IntArray(newCount + 1) }
+    for (oldIndex in oldCount - 1 downTo 0) {
+        for (newIndex in newCount - 1 downTo 0) {
+            lcs[oldIndex][newIndex] =
+                if (oldParagraphs[oldIndex] == paragraphs[newIndex]) {
+                    1 + lcs[oldIndex + 1][newIndex + 1]
+                } else {
+                    maxOf(lcs[oldIndex + 1][newIndex], lcs[oldIndex][newIndex + 1])
+                }
         }
     }
 
-    // For paragraphs whose text was edited, retain the block at the same
-    // position only when that block was not already aligned elsewhere.
-    paragraphs.indices.forEach { newIndex ->
-        if (matchedOldIndex[newIndex] == -1 &&
-            newIndex < size &&
-            !usedOldIndices[newIndex]
-        ) {
-            matchedOldIndex[newIndex] = newIndex
-            usedOldIndices[newIndex] = true
+    val matchedOldIndex = IntArray(newCount) { -1 }
+    val usedOldIndices = BooleanArray(oldCount)
+    val anchors = mutableListOf<Pair<Int, Int>>()
+    var oldIndex = 0
+    var newIndex = 0
+    while (oldIndex < oldCount && newIndex < newCount) {
+        when {
+            oldParagraphs[oldIndex] == paragraphs[newIndex] -> {
+                anchors += oldIndex to newIndex
+                oldIndex++
+                newIndex++
+            }
+            lcs[oldIndex + 1][newIndex] >= lcs[oldIndex][newIndex + 1] -> oldIndex++
+            else -> newIndex++
         }
+    }
+
+    anchors.forEach { (oldMatch, newMatch) ->
+        matchedOldIndex[newMatch] = oldMatch
+        usedOldIndices[oldMatch] = true
+    }
+
+    // Between unchanged anchors, a one-for-one replacement is treated as an
+    // edit of the existing block. Unequal gaps are left unmatched rather than
+    // assigning metadata to the wrong paragraph.
+    var previousOld = -1
+    var previousNew = -1
+    (anchors + listOf(oldCount to newCount)).forEach { (nextOld, nextNew) ->
+        val oldGap = nextOld - previousOld - 1
+        val newGap = nextNew - previousNew - 1
+        if (oldGap == newGap) {
+            for (offset in 1..oldGap) {
+                val oldMatch = previousOld + offset
+                val newMatch = previousNew + offset
+                matchedOldIndex[newMatch] = oldMatch
+                usedOldIndices[oldMatch] = true
+            }
+        }
+        previousOld = nextOld
+        previousNew = nextNew
     }
 
     return paragraphs.mapIndexed { index, paragraph ->
