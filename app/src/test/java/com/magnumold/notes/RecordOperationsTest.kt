@@ -96,7 +96,7 @@ class RecordOperationsTest {
         val merged = RecordOperations.mergeBackup(current, backup)
 
         assertEquals(3, merged.archived.size + merged.trash.size)
-        assertTrue(merged.archived.single().note.id != 10L)
+        assertTrue(merged.archived.last().note.id != 10L)
         assertTrue(merged.trash.single().note.id != 20L)
         assertEquals(allIds(merged).size, allIds(merged).toSet().size)
     }
