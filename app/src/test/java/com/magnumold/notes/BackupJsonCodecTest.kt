@@ -77,4 +77,55 @@ class BackupJsonCodecTest {
         org.junit.Assert.assertNotEquals(11L, merged.last().id)
     }
 
+    @Test
+    fun importsEverySupportedLegacyJsonVersionOneThroughSix() {
+        (1..6).forEach { version ->
+            val raw = """
+                {
+                  "format": "notes_backup",
+                  "version": $version,
+                  "notes": [
+                    {
+                      "id": 700$version,
+                      "blocks": [{"text": "Legacy version $version"}]
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            val imported = parseBackupJson(raw)
+
+            assertEquals(1, imported.notes.size)
+            assertEquals(700L + version, imported.notes.single().id)
+            assertEquals("Legacy version $version", imported.notes.single().blocks.single().text)
+            assertEquals(emptyList<NoteCollection>(), imported.collections)
+            assertEquals(emptyList<VaultNote>(), imported.archived)
+            assertEquals(emptyList<VaultNote>(), imported.trash)
+        }
+    }
+
+    @Test
+    fun importsCurrentVersionSevenExportThroughTheRealParser() {
+        val source = note(77L, "Version seven").copy(
+            pinned = true,
+            colorIndex = 4,
+            children = listOf(note(78L, "Nested item"))
+        )
+        val json = createBackupJson(
+            items = listOf(source),
+            collections = listOf(NoteCollection(9L, "Saved", listOf(note(79L, "Collection note")))),
+            archived = listOf(VaultNote(note(80L, "Archived"), null, 0, 100L)),
+            trash = listOf(VaultNote(note(81L, "Trashed"), null, 0, 101L))
+        )
+
+        val imported = parseBackupJson(json)
+
+        assertEquals(source.id, imported.notes.single().id)
+        assertEquals(source.blocks, imported.notes.single().blocks)
+        assertEquals(78L, imported.notes.single().children.single().id)
+        assertEquals("Saved", imported.collections.single().name)
+        assertEquals(80L, imported.archived.single().note.id)
+        assertEquals(81L, imported.trash.single().note.id)
+    }
+
 }
