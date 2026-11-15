@@ -52,9 +52,21 @@ internal object RichDocumentBackupArchive {
             "A document refers to a missing asset"
         }
         val selectedAssets = referencedAssets.sorted()
-        val documentEntries = documents.sortedBy { it.id }.map { document ->
-            encodedId(document.id) + ".json"
+        val serializedDocuments = documents.sortedBy { it.id }.map { document ->
+            document to DocumentJsonCodec.encode(document).toByteArray(StandardCharsets.UTF_8)
         }
+        val legacyBytes = legacySnapshotJson.toByteArray(StandardCharsets.UTF_8)
+        require(legacyBytes.size <= MAX_ENTRY_BYTES) { "Legacy snapshot exceeds backup entry size limit" }
+        require(serializedDocuments.all { it.second.size <= MAX_ENTRY_BYTES }) {
+            "A document exceeds backup entry size limit"
+        }
+        require(selectedAssets.all { assetFiles.getValue(it).length() <= MAX_ENTRY_BYTES }) {
+            "An asset exceeds backup entry size limit"
+        }
+        val totalBytes = legacyBytes.size.toLong() +
+            serializedDocuments.sumOf { it.second.size.toLong() } +
+            selectedAssets.sumOf { assetFiles.getValue(it).length() }
+        require(totalBytes <= MAX_TOTAL_BYTES) { "Backup exceeds total uncompressed size limit" }
         val manifest = JSONObject()
             .put("format", "notes_rich_backup")
             .put("version", 1)
@@ -62,16 +74,16 @@ internal object RichDocumentBackupArchive {
             .put("assets", JSONArray(selectedAssets))
         ZipOutputStream(output.buffered()).use { zip ->
             zip.putNextEntry(ZipEntry(LEGACY_SNAPSHOT))
-            zip.write(legacySnapshotJson.toByteArray(StandardCharsets.UTF_8))
+            zip.write(legacyBytes)
             zip.closeEntry()
 
             zip.putNextEntry(ZipEntry(MANIFEST))
             zip.write(manifest.toString().toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            documents.sortedBy { it.id }.forEachIndexed { index, document ->
-                zip.putNextEntry(ZipEntry(DOCUMENT_PREFIX + documentEntries[index]))
-                zip.write(DocumentJsonCodec.encode(document).toByteArray(StandardCharsets.UTF_8))
+            serializedDocuments.forEach { (document, bytes) ->
+                zip.putNextEntry(ZipEntry(DOCUMENT_PREFIX + encodedId(document.id) + ".json"))
+                zip.write(bytes)
                 zip.closeEntry()
             }
             selectedAssets.forEach { id ->

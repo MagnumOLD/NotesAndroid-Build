@@ -187,3 +187,19 @@ internal fun mergeImportedCollections(existing: List<NoteCollection>, imported: 
     }
     return result
 }
+
+
+/** Applies rich-document ID remaps to the corresponding legacy note records. */
+internal fun BackupData.remapNoteIds(mapping: Map<String, String>): BackupData {
+    if (mapping.isEmpty()) return this
+    fun remap(note: Note): Note {
+        val newId = mapping[note.id.toString()]?.toLongOrNull() ?: note.id
+        return note.copy(id = newId, children = note.children.map(::remap))
+    }
+    return copy(
+        notes = notes.map(::remap),
+        collections = collections.map { it.copy(notes = it.notes.map(::remap)) },
+        archived = archived.map { it.copy(note = remap(it.note)) },
+        trash = trash.map { it.copy(note = remap(it.note)) }
+    )
+}

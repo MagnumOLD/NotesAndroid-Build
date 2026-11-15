@@ -111,7 +111,7 @@ internal fun rememberBackupActions(
         exportBackup = { exportLauncher.launch("Notes-backup.zip") },
         importBackup = {
             importLauncher.launch(
-                arrayOf("application/zip", "application/json", "text/json", "text/plain", "application/octet-stream")
+                arrayOf("application/zip", "application/x-zip-compressed", "application/json", "text/json", "text/plain", "application/octet-stream")
             )
         }
     )

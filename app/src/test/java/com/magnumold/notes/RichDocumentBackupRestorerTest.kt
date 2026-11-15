@@ -5,6 +5,7 @@ import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.ImageBlock
 import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.RichText
+import com.magnumold.notes.editor.model.plainText
 import com.magnumold.notes.editor.storage.DocumentAssetStore
 import com.magnumold.notes.editor.storage.DocumentRepository
 import com.magnumold.notes.editor.storage.RichDocumentBackupArchive
@@ -89,4 +90,47 @@ class RichDocumentBackupRestorerTest {
             assets.deleteRecursively()
         }
     }
+    @Test
+    fun numericDocumentCollisionRemapsMatchingLegacyNoteId() {
+        val context = context()
+        val docs = File(context.filesDir, "restore-docs-c").apply { deleteRecursively() }
+        val assets = File(context.filesDir, "restore-assets-c").apply { deleteRecursively() }
+        val repository = DocumentRepository(context, "restore-docs-c")
+        val assetStore = DocumentAssetStore(context, directoryName = "restore-assets-c")
+        repository.save(
+            EditorDocument(
+                id = "17",
+                createdAt = 1L,
+                updatedAt = 1L,
+                blocks = listOf(ParagraphBlock(content = RichText("Existing")))
+            )
+        )
+        val incoming = EditorDocument(
+            id = "17",
+            createdAt = 2L,
+            updatedAt = 2L,
+            blocks = listOf(ParagraphBlock(content = RichText("Imported")))
+        )
+        try {
+            val report = RichDocumentBackupRestorer(repository, assetStore).restore(
+                RichDocumentBackupArchive.Payload("{}", listOf(incoming), emptyList()),
+                reservedNoteIds = setOf(17L),
+                incomingNoteIds = setOf(17L)
+            )
+            val remappedId = report.remappedDocumentIds.getValue("17").toLong()
+            val legacy = BackupData(
+                notes = listOf(Note(17L, "", listOf(NoteBlock("Imported")), 2L, created = 2L)),
+                collections = emptyList(),
+                archived = emptyList(),
+                trash = emptyList()
+            ).remapNoteIds(report.remappedDocumentIds)
+            assertNotEquals(17L, remappedId)
+            assertEquals(remappedId, legacy.notes.single().id)
+            assertEquals("Imported", repository.load(remappedId.toString()).getOrNull()!!.plainText())
+        } finally {
+            docs.deleteRecursively()
+            assets.deleteRecursively()
+        }
+    }
+
 }
