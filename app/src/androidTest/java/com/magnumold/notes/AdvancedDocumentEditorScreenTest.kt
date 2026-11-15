@@ -7,11 +7,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import com.magnumold.notes.editor.model.AttachmentBlock
 import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.HeadingBlock
 import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.RichText
+import com.magnumold.notes.editor.model.plainText
 import com.magnumold.notes.editor.ui.AdvancedDocumentEditorScreen
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -55,6 +57,43 @@ class AdvancedDocumentEditorScreenTest {
             assertEquals(1, (emitted?.blocks?.last() as HeadingBlock).level)
         }
     }
+
+    @Test
+    fun editsParagraphAndUndoRedoRestoresExactText() {
+        val initial = EditorDocument(
+            id = "ui-edit-history-document",
+            createdAt = 1L,
+            updatedAt = 1L,
+            blocks = listOf(ParagraphBlock(content = RichText("Начальный текст")))
+        )
+        var emitted: EditorDocument? = null
+
+        composeRule.setContent {
+            MaterialTheme {
+                AdvancedDocumentEditorScreen(
+                    document = initial,
+                    onDocumentChange = { emitted = it },
+                    onBack = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Начальный текст").performTextInput(" продолжение")
+        composeRule.runOnIdle {
+            assertEquals("Начальный текст продолжение", emitted?.plainText())
+        }
+
+        composeRule.onNodeWithContentDescription("Отменить").performClick()
+        composeRule.runOnIdle {
+            assertEquals("Начальный текст", emitted?.plainText())
+        }
+
+        composeRule.onNodeWithContentDescription("Повторить").performClick()
+        composeRule.runOnIdle {
+            assertEquals("Начальный текст продолжение", emitted?.plainText())
+        }
+    }
+
     @Test
     fun rendersImportedAttachmentCard() {
         val initial = EditorDocument(
