@@ -2,7 +2,10 @@ package com.magnumold.notes
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class BackupJsonCodecTest {
     private fun note(id: Long, text: String, children: List<Note> = emptyList()) = Note(
         id = id,
