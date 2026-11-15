@@ -910,7 +910,10 @@ internal fun NoteEditor(
                         .padding(top = AppSpacing.xxs)
                         .focusRequester(bodyFocusRequester)
                         .testTag("note-editor-body")
-                        .heightIn(min = AppEditorDimensions.bodyMinHeight),
+                        .then(
+                            if (note.type == RecordType.NOTE) Modifier.fillParentMaxHeight()
+                            else Modifier.heightIn(min = AppEditorDimensions.bodyMinHeight)
+                        ),
                     textStyle = editorTextStyle,
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
