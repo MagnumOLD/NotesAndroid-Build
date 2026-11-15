@@ -40,7 +40,12 @@ internal object LegacyNoteDocumentMigrator {
             } else {
                 ParagraphBlock(id, RichText(legacy.text))
             }
-        }.ifEmpty { listOf(ParagraphBlock(content = RichText(""))) }
+        }.ifEmpty {
+            val emptyId = java.util.UUID.nameUUIDFromBytes(
+                "legacy-${note.id}-empty-document".toByteArray(Charsets.UTF_8)
+            ).toString()
+            listOf(ParagraphBlock(id = emptyId, content = RichText("")))
+        }
 
         return EditorDocument(
             id = note.id.toString(),
