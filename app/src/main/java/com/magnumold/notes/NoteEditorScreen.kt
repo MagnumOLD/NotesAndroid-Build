@@ -195,6 +195,18 @@ internal fun isStaleLocalEditorEcho(
     incomingBlocks.toPlainText() != currentEditorText &&
         locallyPublishedBlocks.any { it == incomingBlocks }
 
+internal fun commitCompositionOnCaretMove(
+    previous: TextFieldValue,
+    value: TextFieldValue
+): TextFieldValue {
+    val composition = value.composition ?: return value
+    if (previous.text != value.text || previous.selection == value.selection) return value
+
+    val caretRemainsAtCompositionEnd =
+        value.selection.start == composition.end && value.selection.end == composition.end
+    return if (caretRemainsAtCompositionEnd) value else value.copy(composition = null)
+}
+
 internal fun mapTextSelection(oldText: String, newText: String, selection: TextRange): TextRange {
     var prefix = 0
     val commonLimit = minOf(oldText.length, newText.length)
@@ -921,6 +933,7 @@ internal fun NoteEditor(
                     value = fieldValue,
                     onValueChange = { value ->
                         val previous = fieldValue
+                        val acceptedValue = commitCompositionOnCaretMove(previous, value)
                         if (BuildConfig.DEBUG && previous.selection != value.selection) {
                             Log.d(
                                 NOTE_EDITOR_CURSOR_LOG_TAG,
@@ -928,11 +941,12 @@ internal fun NoteEditor(
                                     "newSelection=${value.selection.start}..${value.selection.end} " +
                                     "oldComposition=${previous.composition?.let { "${it.start}..${it.end}" } ?: "none"} " +
                                     "newComposition=${value.composition?.let { "${it.start}..${it.end}" } ?: "none"} " +
+                                    "acceptedComposition=${acceptedValue.composition?.let { "${it.start}..${it.end}" } ?: "none"} " +
                                     "textLength=${value.text.length}"
                             )
                         }
-                        fieldValue = value
-                        updateText(previous, value)
+                        fieldValue = acceptedValue
+                        updateText(previous, acceptedValue)
                     },
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()

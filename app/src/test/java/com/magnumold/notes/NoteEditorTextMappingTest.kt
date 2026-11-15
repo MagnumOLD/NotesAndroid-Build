@@ -1,11 +1,68 @@
 package com.magnumold.notes
 
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NoteEditorTextMappingTest {
+
+    @Test
+    fun movingCaretAwayFromComposingWordCommitsComposition() {
+        val previous = TextFieldValue(
+            text = "Привет",
+            selection = TextRange(6),
+            composition = TextRange(0, 6)
+        )
+        val incoming = TextFieldValue(
+            text = "Привет",
+            selection = TextRange(3),
+            composition = TextRange(0, 6)
+        )
+
+        val accepted = commitCompositionOnCaretMove(previous, incoming)
+
+        assertEquals(TextRange(3), accepted.selection)
+        assertEquals(null, accepted.composition)
+    }
+
+    @Test
+    fun caretAtCompositionEndDoesNotCommitComposition() {
+        val previous = TextFieldValue(
+            text = "Привет",
+            selection = TextRange(5),
+            composition = TextRange(0, 6)
+        )
+        val incoming = TextFieldValue(
+            text = "Привет",
+            selection = TextRange(6),
+            composition = TextRange(0, 6)
+        )
+
+        val accepted = commitCompositionOnCaretMove(previous, incoming)
+
+        assertEquals(TextRange(0, 6), accepted.composition)
+    }
+
+    @Test
+    fun textChangesDuringCompositionAreNotTreatedAsCaretMoves() {
+        val previous = TextFieldValue(
+            text = "Приве",
+            selection = TextRange(5),
+            composition = TextRange(0, 5)
+        )
+        val incoming = TextFieldValue(
+            text = "Привет",
+            selection = TextRange(6),
+            composition = TextRange(0, 6)
+        )
+
+        val accepted = commitCompositionOnCaretMove(previous, incoming)
+
+        assertEquals(TextRange(0, 6), accepted.composition)
+    }
 
     @Test
     fun unchangedPlainTextRoundTripsChecklistBlocksAndIds() {
