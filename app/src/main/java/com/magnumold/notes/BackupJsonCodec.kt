@@ -204,21 +204,21 @@ private fun mergeVaultEntries(
 ): List<VaultNote> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
-        val beforeCount = result.size
+        val localIndex = result.indexOfFirst {
+            it.note.id == incoming.note.id && it.note.sameRecordContent(incoming.note)
+        }
+        if (localIndex >= 0) {
+            val current = result[localIndex]
+            result[localIndex] = current.copy(
+                note = current.note.copy(
+                    children = mergeNoteLists(current.note.children, incoming.note.children, knownRecords)
+                )
+            )
+            return@forEach
+        }
         val merged = mergeNoteLists(emptyList(), listOf(incoming.note), knownRecords).singleOrNull()
         if (merged != null && result.none { it.note.id == merged.id }) {
             result.add(incoming.copy(note = merged))
-        } else if (result.size == beforeCount && merged != null) {
-            // A same-ID record already exists in this vault section.
-            val index = result.indexOfFirst { it.note.id == merged.id }
-            if (index >= 0) {
-                val current = result[index]
-                result[index] = current.copy(
-                    note = current.note.copy(
-                        children = mergeNoteLists(current.note.children, incoming.note.children, knownRecords)
-                    )
-                )
-            }
         }
     }
     return result
