@@ -5,11 +5,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecordOperationsTest {
-    private fun note(id: Long, text: String) = Note(
+    private fun note(id: Long, text: String, children: List<Note> = emptyList()) = Note(
         id = id,
         title = text,
         blocks = listOf(NoteBlock(text = text)),
-        updated = id
+        updated = id,
+        children = children
     )
 
     private fun vault(note: Note, movedAt: Long = 1L) =
