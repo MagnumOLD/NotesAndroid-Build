@@ -118,6 +118,7 @@ class EditorSessionControllerTest {
 
         session.setSelection(2, 2)
         session.replaceSelection("c")
+        session.setSelection(1, 1) // A real cursor move ends the current typing group.
         session.setSelection(3, 3)
         session.replaceSelection("d")
         assertEquals("abcd", (session.state.document.blocks.single() as ParagraphBlock).content.text)
