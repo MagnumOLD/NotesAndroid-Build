@@ -187,8 +187,11 @@ class RecordOperationsTest {
         )
 
         val merge = RecordOperations.mergeBackupWithReport(current, backup)
+        val repeatedMerge = RecordOperations.mergeBackupWithReport(merge.snapshot, backup)
         val remappedTracking = tracking.remapTaskIds(merge.taskIdRemaps)
 
+        assertEquals(merge.taskIdRemaps, repeatedMerge.taskIdRemaps)
+        assertEquals(allIds(merge.snapshot).toSet(), allIds(repeatedMerge.snapshot).toSet())
         assertTrue(merge.taskIdRemaps.containsKey(40L))
         assertTrue(merge.taskIdRemaps.containsKey(41L))
         assertEquals(merge.taskIdRemaps.getValue(41L), remappedTracking.sessions.single().taskId)
