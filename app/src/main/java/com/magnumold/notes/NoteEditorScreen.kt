@@ -705,7 +705,9 @@ internal fun NoteEditor(
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
-            contentPadding = if (note.type == RecordType.TASK && !isTaskListItem) {
+            contentPadding = if (note.type == RecordType.NOTE ||
+                (note.type == RecordType.TASK && !isTaskListItem)
+            ) {
                 PaddingValues(top = 0.dp, bottom = AppSpacing.lg)
             } else {
                 AppPageLayout.editorListContentPadding
@@ -907,7 +909,10 @@ internal fun NoteEditor(
                     },
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
-                        .padding(top = AppSpacing.xxs)
+                        .then(
+                            if (note.type == RecordType.NOTE) Modifier
+                            else Modifier.padding(top = AppSpacing.xxs)
+                        )
                         .focusRequester(bodyFocusRequester)
                         .testTag("note-editor-body")
                         .then(
