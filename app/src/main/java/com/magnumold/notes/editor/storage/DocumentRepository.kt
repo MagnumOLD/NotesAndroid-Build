@@ -55,7 +55,7 @@ internal class DocumentRepository(
         val documents = mutableListOf<EditorDocument>()
         val corruptIds = mutableListOf<String>()
         directory.listFiles().orEmpty()
-            .filter { it.isFile && it.name.endsWith(DOCUMENT_EXTENSION) }
+            .filter { it.isFile && it.name.endsWith(DOCUMENT_EXTENSION) && it.name != RECOVERY_FILE_NAME }
             .sortedBy { it.name }
             .forEach { file ->
                 val id = decodeDocumentId(file.name.removeSuffix(DOCUMENT_EXTENSION))

@@ -4,6 +4,7 @@ import android.content.Context
 import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.RichText
+import com.magnumold.notes.editor.model.plainText
 import com.magnumold.notes.editor.storage.DocumentPersistenceController
 import com.magnumold.notes.editor.storage.DocumentRepository
 import kotlinx.coroutines.CoroutineScope
