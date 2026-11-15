@@ -73,63 +73,40 @@ internal fun List<NoteBlock>.withEditedPlainText(value: String): List<NoteBlock>
         (if (block.isChecklist) (if (block.checked) "☑ " else "☐ ") else "") + block.text
     }
 
-    // Find unchanged paragraphs in order using a longest-common-subsequence
-    // alignment. These anchors keep IDs stable when paragraphs are inserted
-    // or removed before them.
+    // Match the unchanged prefix and suffix. This is linear-time and avoids
+    // an expensive alignment matrix on every keystroke in long notes.
     val oldCount = oldParagraphs.size
     val newCount = paragraphs.size
-    val lcs = Array(oldCount + 1) { IntArray(newCount + 1) }
-    for (oldIndex in oldCount - 1 downTo 0) {
-        for (newIndex in newCount - 1 downTo 0) {
-            lcs[oldIndex][newIndex] =
-                if (oldParagraphs[oldIndex] == paragraphs[newIndex]) {
-                    1 + lcs[oldIndex + 1][newIndex + 1]
-                } else {
-                    maxOf(lcs[oldIndex + 1][newIndex], lcs[oldIndex][newIndex + 1])
-                }
-        }
-    }
-
     val matchedOldIndex = IntArray(newCount) { -1 }
-    val usedOldIndices = BooleanArray(oldCount)
-    val anchors = mutableListOf<Pair<Int, Int>>()
-    var oldIndex = 0
-    var newIndex = 0
-    while (oldIndex < oldCount && newIndex < newCount) {
-        when {
-            oldParagraphs[oldIndex] == paragraphs[newIndex] -> {
-                anchors += oldIndex to newIndex
-                oldIndex++
-                newIndex++
-            }
-            lcs[oldIndex + 1][newIndex] >= lcs[oldIndex][newIndex + 1] -> oldIndex++
-            else -> newIndex++
-        }
+    val sharedLimit = minOf(oldCount, newCount)
+
+    var prefix = 0
+    while (prefix < sharedLimit && oldParagraphs[prefix] == paragraphs[prefix]) {
+        matchedOldIndex[prefix] = prefix
+        prefix++
     }
 
-    anchors.forEach { (oldMatch, newMatch) ->
-        matchedOldIndex[newMatch] = oldMatch
-        usedOldIndices[oldMatch] = true
+    var suffix = 0
+    while (
+        suffix < oldCount - prefix &&
+        suffix < newCount - prefix &&
+        oldParagraphs[oldCount - suffix - 1] == paragraphs[newCount - suffix - 1]
+    ) {
+        val oldIndex = oldCount - suffix - 1
+        val newIndex = newCount - suffix - 1
+        matchedOldIndex[newIndex] = oldIndex
+        suffix++
     }
 
-    // Between unchanged anchors, a one-for-one replacement is treated as an
-    // edit of the existing block. Unequal gaps are left unmatched rather than
-    // assigning metadata to the wrong paragraph.
-    var previousOld = -1
-    var previousNew = -1
-    (anchors + listOf(oldCount to newCount)).forEach { (nextOld, nextNew) ->
-        val oldGap = nextOld - previousOld - 1
-        val newGap = nextNew - previousNew - 1
-        if (oldGap == newGap) {
-            for (offset in 1..oldGap) {
-                val oldMatch = previousOld + offset
-                val newMatch = previousNew + offset
-                matchedOldIndex[newMatch] = oldMatch
-                usedOldIndices[oldMatch] = true
-            }
+    // A one-for-one middle segment represents edits to existing paragraphs.
+    // If its size changes, leave it unmatched rather than transferring IDs
+    // or checklist metadata to a potentially different paragraph.
+    val oldMiddleCount = oldCount - prefix - suffix
+    val newMiddleCount = newCount - prefix - suffix
+    if (oldMiddleCount == newMiddleCount) {
+        for (offset in 0 until oldMiddleCount) {
+            matchedOldIndex[prefix + offset] = prefix + offset
         }
-        previousOld = nextOld
-        previousNew = nextNew
     }
 
     return paragraphs.mapIndexed { index, paragraph ->
