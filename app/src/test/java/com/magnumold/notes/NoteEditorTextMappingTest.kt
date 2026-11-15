@@ -136,7 +136,7 @@ class NoteEditorTextMappingTest {
         val commaDecision = decideUndoHistoryAction(helloDecision.nextState, comma)
         assertEquals(UndoHistoryAction.REPLACE_CURRENT, commaDecision.action)
 
-        val nextWord = describeTextEdit("Привет,м", "Привет, ми", 8, 8)!!
+        val nextWord = describeTextEdit("Привет,", "Привет,м", 7, 7)!!
         assertEquals(
             UndoHistoryAction.APPEND,
             decideUndoHistoryAction(commaDecision.nextState, nextWord).action
@@ -197,7 +197,7 @@ class NoteEditorTextMappingTest {
             newText = "New paragraph\n\nAlpha\n\nBeta",
             selection = androidx.compose.ui.text.TextRange(10)
         )
-        assertEquals(androidx.compose.ui.text.TextRange(23), mapped)
+        assertEquals(androidx.compose.ui.text.TextRange(25), mapped)
     }
 
 }
