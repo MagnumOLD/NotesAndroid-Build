@@ -131,4 +131,83 @@ class BackupJsonCodecTest {
         assertEquals(81L, imported.trash.single().note.id)
     }
 
+    @Test
+    fun remappingRichNoteIdsDoesNotRewriteTaskTimeTrackingReferences() {
+        val tracking = TimeTrackingState(
+            sessions = listOf(
+                WorkSession(
+                    id = "session-1",
+                    taskId = 41L,
+                    parentTaskId = 40L,
+                    taskTitle = "Task",
+                    subtaskTitle = "Subtask",
+                    startedAtMillis = 1_000L,
+                    endedAtMillis = 3_000L,
+                    durationMillis = 2_000L,
+                    endReason = WorkSessionEndReason.STOP
+                )
+            ),
+            activeSessions = mapOf(
+                41L to ActiveWorkSession(
+                    id = "active-1",
+                    taskId = 41L,
+                    parentTaskId = 40L,
+                    taskTitle = "Task",
+                    subtaskTitle = "Subtask",
+                    startedAtMillis = 4_000L
+                )
+            ),
+            protectionTimer = ProtectionTimer(
+                taskId = 41L,
+                parentTaskId = 40L,
+                taskTitle = "Task",
+                subtaskTitle = "Subtask",
+                startedAtMillis = 5_000L,
+                endsAtMillis = 9_000L,
+                endMode = ProtectionEndMode.SIGNAL_ONLY
+            )
+        )
+        val backup = BackupData(
+            notes = listOf(note(41L, "Rich note id collision")),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList(),
+            timeTracking = tracking
+        )
+
+        val remapped = backup.remapNoteIds(mapOf("41" to "141")).timeTracking
+
+        assertEquals(tracking, remapped)
+    }
+
+    @Test
+    fun versionSevenBackupRoundTripsTimeTrackingState() {
+        val tracking = TimeTrackingState(
+            sessions = listOf(
+                WorkSession(
+                    id = "session-2",
+                    taskId = 52L,
+                    parentTaskId = null,
+                    taskTitle = "Tracked task",
+                    subtaskTitle = null,
+                    startedAtMillis = 10_000L,
+                    endedAtMillis = 16_000L,
+                    durationMillis = 6_000L,
+                    endReason = WorkSessionEndReason.PAUSE
+                )
+            ),
+            soundUri = "content://test/sound",
+            soundEnabled = false
+        )
+        val json = createBackupJson(
+            items = emptyList(),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList(),
+            timeTracking = tracking
+        )
+
+        assertEquals(tracking, parseBackupJson(json).timeTracking)
+    }
+
 }
