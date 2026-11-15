@@ -119,17 +119,32 @@ internal class RichDocumentBackupRestorer(
     private fun newDocumentId(sourceId: String, reservedIds: MutableSet<Long>): String {
         if (sourceId.toLongOrNull() != null) {
             var candidate = System.currentTimeMillis()
-            while (candidate in reservedIds || documents.load(candidate.toString()).let {
-                    it.isFailure || it.getOrNull() != null
-                }
-            ) candidate++
+            while (candidate in reservedIds || !isDocumentIdAvailable(candidate.toString())) candidate++
             reservedIds += candidate
             return candidate.toString()
         }
-        while (true) {
+
+        // A corrupt document file must fail the restore safely, not make UUID
+        // generation loop forever while repeatedly encountering the same error.
+        repeat(MAX_UUID_ATTEMPTS) {
             val candidate = UUID.randomUUID().toString()
-            val existing = documents.load(candidate)
-            if (existing.isSuccess && existing.getOrNull() == null) return candidate
+            if (isDocumentIdAvailable(candidate)) return candidate
         }
+        error("Unable to allocate a unique document id")
+    }
+
+    private fun isDocumentIdAvailable(candidate: String): Boolean {
+        val result = documents.load(candidate)
+        if (result.isFailure) {
+            throw IllegalStateException(
+                "Cannot safely check whether document id is available: $candidate",
+                result.exceptionOrNull()
+            )
+        }
+        return result.getOrNull() == null
+    }
+
+    private companion object {
+        const val MAX_UUID_ATTEMPTS = 16
     }
 }
