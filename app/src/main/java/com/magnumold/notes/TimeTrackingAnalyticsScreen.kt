@@ -81,7 +81,7 @@ internal fun TimeTrackingAnalyticsScreen(
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), thickness = CardDimensions.dividerThickness)
         if (tab == 0) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Рабочие сессии", style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium)
+                Text("Рабочие сессии", style = AppTypography.emphasisBodyStyle())
                 if (manualTaskId != null) {
                     TextButton(onClick = { adding = true }) { Text("Добавить") }
                 }
@@ -105,7 +105,7 @@ internal fun TimeTrackingAnalyticsScreen(
                             modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                             verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
                         ) {
-                            Text(first.subtaskTitle ?: first.taskTitle, style = AppTypography.compactBodyStyle(), fontWeight = FontWeight.Medium)
+                            Text(first.subtaskTitle ?: first.taskTitle, style = AppTypography.emphasisCompactBodyStyle())
                             if (first.subtaskTitle != null) {
                                 Text(first.taskTitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = AppTypography.smallBodyStyle())
                             }
