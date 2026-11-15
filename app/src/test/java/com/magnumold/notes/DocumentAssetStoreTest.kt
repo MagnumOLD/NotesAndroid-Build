@@ -25,18 +25,18 @@ class DocumentAssetStoreTest {
     @Test
     fun importsAssetIntoPrivateStorageAndCanReadItBack() {
         val bytes = byteArrayOf(0, 1, 2, 3, 4, 5)
-        val asset = store("unused").import(ByteArrayInputStream(bytes), "photo.png", "image/png")
+        val asset = store("import").import(ByteArrayInputStream(bytes), "photo.png", "image/png")
 
         assertTrue(asset.file.isFile)
         assertEquals("photo.png", asset.fileName)
         assertEquals("image/png", asset.mimeType)
         assertEquals(bytes.size.toLong(), asset.sizeBytes)
-        assertArrayEquals(bytes, store("unused").open(asset.assetId).use { it.readBytes() })
+        assertArrayEquals(bytes, store("import").open(asset.assetId).use { it.readBytes() })
     }
 
     @Test
     fun pruneKeepsReferencedAssetsAndRemovesOrphans() {
-        val store = store("unused")
+        val store = store("prune")
         val kept = store.import(ByteArrayInputStream(byteArrayOf(1)), "kept.bin")
         val orphan = store.import(ByteArrayInputStream(byteArrayOf(2)), "orphan.bin")
 
@@ -47,7 +47,7 @@ class DocumentAssetStoreTest {
 
     @Test
     fun rejectsOversizedAssetAndRemovesPartialFile() {
-        val store = store("unused", maxBytes = 3)
+        val store = store("oversized", maxBytes = 3)
         assertThrows(IllegalArgumentException::class.java) {
             store.import(ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)), "large.bin")
         }
@@ -56,7 +56,7 @@ class DocumentAssetStoreTest {
 
     @Test
     fun rejectsPathTraversalAndUnknownAssetIds() {
-        val store = store("unused")
+        val store = store("path")
         assertNull(store.find("../../outside"))
         assertFalse(store.delete("../../outside"))
         assertThrows(IllegalArgumentException::class.java) { store.open("../../outside") }
