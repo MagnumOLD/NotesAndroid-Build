@@ -74,6 +74,8 @@ internal object AppLayoutContract {
     val sectionLabelSize = collectionLabelSize
     val sectionLabelLineHeight = 24.sp
     val metadataTextSize = 12.sp
+    // Compact creation-date label is intentionally smaller to fit the card side rail.
+    val cardMetadataTextSize = 9.sp
 
     // Semantic editor geometry.
     val editorTitleMinHeight = 48.dp
@@ -147,6 +149,7 @@ internal object AppTypography {
     val sectionLabel = AppLayoutContract.sectionLabelSize
     val sectionLabelLineHeight = AppLayoutContract.sectionLabelLineHeight
     val metadata = AppLayoutContract.metadataTextSize
+    val cardMetadata = AppLayoutContract.cardMetadataTextSize
 
     // Semantic text styles are aliases of the app-wide Material typography.
     // This keeps screen code from rebuilding equivalent TextStyle values.
@@ -171,10 +174,24 @@ internal object AppTypography {
     fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel, lineHeight = sectionLabelLineHeight)
 
     @Composable
+    fun sectionLabelEmphasisStyle(): TextStyle = sectionLabelStyle().copy(fontWeight = FontWeight.Medium)
+
+    @Composable
+    fun collectionLabelStyle(selected: Boolean): TextStyle = sectionLabelStyle().copy(
+        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+    )
+
+    @Composable
     fun helperStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = helper)
 
     @Composable
+    fun emphasisBodyStyle(): TextStyle = bodyStyle().copy(fontWeight = FontWeight.Medium)
+
+    @Composable
     fun compactBodyStyle(): TextStyle = MaterialTheme.typography.bodyMedium
+
+    @Composable
+    fun emphasisCompactBodyStyle(): TextStyle = compactBodyStyle().copy(fontWeight = FontWeight.Medium)
 
     @Composable
     fun smallBodyStyle(): TextStyle = MaterialTheme.typography.bodySmall
@@ -187,6 +204,9 @@ internal object AppTypography {
 
     @Composable
     fun metadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = metadata)
+
+    @Composable
+    fun cardMetadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = cardMetadata)
 }
 
 /** Semantic dimensions for the common page and list structures. */
