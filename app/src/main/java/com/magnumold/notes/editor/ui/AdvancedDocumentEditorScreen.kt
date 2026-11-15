@@ -229,13 +229,16 @@ private fun DocumentBlockEditor(
         is TableBlock -> Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
             block.rows.forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                    row.cells.forEach { cell ->
+                    row.cells.forEachIndexed { columnIndex, cell ->
                         Surface(
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(2.dp)
                         ) {
-                            Text(cell.content.text, Modifier.padding(8.dp), fontSize = 14.sp)
+                            RichTextEditorField(
+                                block.id, null, cell.content, controller, onStateChange, 14.sp,
+                                tableCell = row.id to columnIndex
+                            )
                         }
                     }
                 }
@@ -257,7 +260,8 @@ private fun RichTextEditorField(
     onStateChange: (com.magnumold.notes.editor.engine.EditorSessionState) -> Unit,
     fontSize: androidx.compose.ui.unit.TextUnit,
     fontWeight: FontWeight = FontWeight.Normal,
-    fontFamily: FontFamily = FontFamily.Default
+    fontFamily: FontFamily = FontFamily.Default,
+    tableCell: Pair<String, Int>? = null
 ) {
     var selection by remember(blockId, itemId) { mutableStateOf(TextRange(richText.text.length)) }
     LaunchedEffect(richText.text) {
@@ -272,7 +276,8 @@ private fun RichTextEditorField(
             selection = next.selection
             if (newText != oldText) {
                 if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId) {
-                    if (itemId == null) controller.activateBlock(blockId)
+                    if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
+                    else if (itemId == null) controller.activateBlock(blockId)
                     else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {
                         controller.activateListItem(blockId, itemId)
                     } else {
@@ -284,7 +289,8 @@ private fun RichTextEditorField(
                 onStateChange(controller.replaceSelection(change.replacement))
             } else {
                 if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId) {
-                    if (itemId == null) controller.activateBlock(blockId)
+                    if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
+                    else if (itemId == null) controller.activateBlock(blockId)
                     else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {
                         controller.activateListItem(blockId, itemId)
                     } else controller.activateChecklistItem(blockId, itemId)

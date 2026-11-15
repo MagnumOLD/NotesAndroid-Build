@@ -12,6 +12,8 @@ import com.magnumold.notes.editor.model.ListItem
 import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.QuoteBlock
 import com.magnumold.notes.editor.model.RichText
+import com.magnumold.notes.editor.model.TableBlock
+import com.magnumold.notes.editor.model.TableCell
 
 /**
  * UI-independent editing state. Offsets are UTF-16 indices, matching Kotlin String
@@ -22,7 +24,8 @@ internal data class EditorSessionState(
     val activeBlockId: String?,
     val selection: TextSelection,
     val composingRange: TextRange? = null,
-    val activeItemId: String? = null
+    val activeItemId: String? = null,
+    val activeTableCell: TableCellPosition? = null
 ) {
     init {
         require(activeBlockId == null || document.blocks.any { it.id == activeBlockId }) {
@@ -30,6 +33,8 @@ internal data class EditorSessionState(
         }
     }
 }
+
+internal data class TableCellPosition(val rowId: String, val columnIndex: Int)
 
 internal class EditorSessionController(
     initialDocument: EditorDocument,
@@ -57,10 +62,31 @@ internal class EditorSessionController(
             else -> null
         }
         val content = block.richTextForItem(firstItemId) ?: block.richTextOrNull()
-        val length = content?.text?.length ?: 0
+        val tableCell = if (block is TableBlock) block.rows.firstOrNull()?.let { TableCellPosition(it.id, 0) } else null
+        val tableContent = tableCell?.let { target -> (block as TableBlock).rows.first { it.id == target.rowId }.cells[target.columnIndex].content }
+        val length = (content ?: tableContent)?.text?.length ?: 0
         state = state.copy(
             activeBlockId = blockId,
             activeItemId = firstItemId,
+            activeTableCell = tableCell,
+            selection = TextSelection(length, length),
+            composingRange = null
+        )
+        return state
+    }
+
+    fun activateTableCell(blockId: String, rowId: String, columnIndex: Int): EditorSessionState {
+        val block = state.document.blocks.firstOrNull { it.id == blockId } as? TableBlock
+            ?: throw IllegalArgumentException("Table block not found: $blockId")
+        val row = block.rows.firstOrNull { it.id == rowId }
+            ?: throw IllegalArgumentException("Table row not found: $rowId")
+        require(columnIndex in row.cells.indices) { "Table column is out of range" }
+        history.breakCoalescing()
+        val length = row.cells[columnIndex].content.text.length
+        state = state.copy(
+            activeBlockId = blockId,
+            activeItemId = null,
+            activeTableCell = TableCellPosition(rowId, columnIndex),
             selection = TextSelection(length, length),
             composingRange = null
         )
@@ -90,6 +116,7 @@ internal class EditorSessionController(
         state = state.copy(
             activeBlockId = blockId,
             activeItemId = itemId,
+            activeTableCell = tableCell,
             selection = TextSelection(content.text.length, content.text.length),
             composingRange = null
         )
@@ -135,7 +162,7 @@ internal class EditorSessionController(
         val updated = RichTextOperations.replaceRange(content, range, replacement)
         if (updated == content) return state
 
-        val updatedBlock = block.withRichTextForTarget(state.activeItemId, updated)
+        val updatedBlock = block.withRichTextForTarget(state.activeItemId, updated, state.activeTableCell)
         replaceActiveBlock(updatedBlock, "text:${block.id}:${state.activeItemId.orEmpty()}")
         val cursor = range.start + replacement.length
         state = state.copy(selection = TextSelection(cursor, cursor), composingRange = null)
@@ -152,7 +179,7 @@ internal class EditorSessionController(
         history.breakCoalescing()
         val updated = RichTextOperations.setStyle(content, state.selection.asRange(), style, enabled)
         if (updated != content) {
-            replaceActiveBlock(block.withRichTextForTarget(state.activeItemId, updated))
+            replaceActiveBlock(block.withRichTextForTarget(state.activeItemId, updated, state.activeTableCell))
         }
         return state
     }
@@ -192,13 +219,20 @@ internal class EditorSessionController(
         state.document.blocks.firstOrNull { it.id == state.activeBlockId }
 
     private fun activeRichText(): RichText? =
-        activeBlock()?.richTextForItem(state.activeItemId) ?: activeBlock()?.richTextOrNull()
+        activeTableCellContent() ?: activeBlock()?.richTextForItem(state.activeItemId) ?: activeBlock()?.richTextOrNull()
+
+    private fun activeTableCellContent(): RichText? {
+        val block = activeBlock() as? TableBlock ?: return null
+        val target = state.activeTableCell ?: return null
+        return block.rows.firstOrNull { it.id == target.rowId }?.cells?.getOrNull(target.columnIndex)?.content
+    }
 
     private fun stateForDocument(
         document: EditorDocument,
         preferredBlockId: String?,
         preferredItemId: String?,
-        previousSelection: TextSelection
+        previousSelection: TextSelection,
+        preferredTableCell: TableCellPosition? = state.activeTableCell
     ): EditorSessionState {
         val active = document.blocks.firstOrNull { it.id == preferredBlockId && (it.editableRichText() || it.hasEditableItems()) }
             ?: document.blocks.firstOrNull { it.editableRichText() || it.hasEditableItems() }
@@ -209,7 +243,12 @@ internal class EditorSessionController(
                 ?: active.items.firstOrNull()?.id
             else -> null
         }
+        val tableCell = (active as? TableBlock)?.let { table ->
+            preferredTableCell?.takeIf { target -> table.rows.any { it.id == target.rowId && target.columnIndex in it.cells.indices } }
+                ?: table.rows.firstOrNull()?.let { TableCellPosition(it.id, 0) }
+        }
         val length = active?.richTextForItem(itemId)?.text?.length
+            ?: (tableCell?.let { target -> (active as TableBlock).rows.first { it.id == target.rowId }.cells[target.columnIndex].content.text })
             ?: active?.richTextOrNull()?.text?.length ?: 0
         return EditorSessionState(
             document = document,
@@ -226,7 +265,7 @@ internal class EditorSessionController(
 private fun DocumentBlock.editableRichText(): Boolean = richTextOrNull() != null
 
 private fun DocumentBlock.hasEditableItems(): Boolean =
-    (this is ListBlock && items.isNotEmpty()) || (this is ChecklistBlock && items.isNotEmpty())
+    (this is ListBlock && items.isNotEmpty()) || (this is ChecklistBlock && items.isNotEmpty()) || (this is TableBlock && rows.isNotEmpty())
 
 private fun DocumentBlock.richTextOrNull(): RichText? = when (this) {
     is ParagraphBlock -> content
@@ -243,12 +282,24 @@ private fun DocumentBlock.richTextForItem(itemId: String?): RichText? = when (th
     else -> null
 }
 
-private fun DocumentBlock.withRichTextForTarget(itemId: String?, value: RichText): DocumentBlock = when (this) {
+private fun DocumentBlock.withRichTextForTarget(
+    itemId: String?,
+    value: RichText,
+    tableCell: TableCellPosition? = null
+): DocumentBlock = when (this) {
     is ParagraphBlock -> copy(content = value)
     is HeadingBlock -> copy(content = value)
     is QuoteBlock -> copy(content = value)
     is CalloutBlock -> copy(content = value)
     is CodeBlock -> copy(code = value.text)
+    is TableBlock -> {
+        val target = requireNotNull(tableCell)
+        copy(rows = rows.map { row ->
+            if (row.id != target.rowId) row else row.copy(cells = row.cells.mapIndexed { index, cell ->
+                if (index == target.columnIndex) TableCell(value) else cell
+            })
+        })
+    }
     is ListBlock -> copy(items = updateListItem(items, requireNotNull(itemId), value))
     is ChecklistBlock -> copy(items = updateChecklistItem(items, requireNotNull(itemId), value))
     else -> this

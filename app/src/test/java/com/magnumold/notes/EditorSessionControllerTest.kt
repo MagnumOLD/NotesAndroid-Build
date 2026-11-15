@@ -12,6 +12,9 @@ import com.magnumold.notes.editor.model.ListBlock
 import com.magnumold.notes.editor.model.ListItem
 import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.RichText
+import com.magnumold.notes.editor.model.TableBlock
+import com.magnumold.notes.editor.model.TableCell
+import com.magnumold.notes.editor.model.TableRow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -121,6 +124,23 @@ class EditorSessionControllerTest {
         assertEquals("nested item", resultNested.content.text)
         assertEquals(true, resultNested.checked)
         assertEquals("nested task", (session.undo().document.blocks.single() as ChecklistBlock).items.single().children.single().content.text)
+    }
+
+    @Test fun tableCellCanBeEditedWithoutChangingNeighboringCells() {
+        val firstRow = TableRow(cells = listOf(TableCell(RichText("A1")), TableCell(RichText("B1"))))
+        val secondRow = TableRow(cells = listOf(TableCell(RichText("A2")), TableCell(RichText("B2"))))
+        val table = TableBlock(rows = listOf(firstRow, secondRow))
+        val session = EditorSessionController(document(table))
+        session.activateTableCell(table.id, firstRow.id, 1)
+        session.setSelection(0, 2)
+
+        val edited = session.replaceSelection("changed")
+        val result = edited.document.blocks.single() as TableBlock
+        assertEquals("A1", result.rows[0].cells[0].content.text)
+        assertEquals("changed", result.rows[0].cells[1].content.text)
+        assertEquals("A2", result.rows[1].cells[0].content.text)
+        assertEquals("B2", result.rows[1].cells[1].content.text)
+        assertEquals("B1", (session.undo().document.blocks.single() as TableBlock).rows[0].cells[1].content.text)
     }
 
     @Test fun codeBlockCanBeEditedAndUndoRedoRestoresItsContent() {
