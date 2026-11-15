@@ -101,7 +101,7 @@ jobs:
           retention-days: 7
 
   instrumentation-tests:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/feature/advanced-document-editor') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/advanced-document-editor')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/feature/advanced-document-editor')
     name: Run Compose UI tests on Android emulator
     runs-on: ubuntu-latest
     timeout-minutes: 35
