@@ -533,7 +533,7 @@ internal fun NoteRow(
                     if (showCreationDate) {
                         Text(
                             text = compactCreationDate,
-                            style = AppTypography.metadataStyle().copy(fontSize = 9.sp),
+                            style = AppTypography.cardMetadataStyle(),
                             color = rowTextColor.copy(alpha = 0.82f),
                             maxLines = 1,
                             softWrap = false
