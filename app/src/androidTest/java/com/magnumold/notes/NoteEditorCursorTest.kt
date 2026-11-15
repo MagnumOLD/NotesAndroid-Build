@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -28,6 +29,44 @@ class NoteEditorCursorTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+
+    @Test
+    fun tappingBlankAreaBelowNoteTextKeepsTypingAvailable() {
+        var note by mutableStateOf(
+            Note(
+                id = 7002L,
+                title = "",
+                blocks = listOf(NoteBlock("Existing note text", id = "body")),
+                updated = 1L
+            )
+        )
+
+        composeRule.setContent {
+            MaterialTheme {
+                NoteEditor(
+                    note = note,
+                    dark = false,
+                    topBarColor = Color(0xFF202020),
+                    addButtonColor = Color(0xFF607D8B),
+                    selectionColor = Color(0xFF607D8B),
+                    autoFocus = false,
+                    onBack = {},
+                    onChange = { note = it },
+                    onDelete = {},
+                    onShare = {}
+                )
+            }
+        }
+
+        val editor = composeRule.onNodeWithTag("note-editor-body")
+        editor.performTouchInput {
+            click(Offset(x = size.width / 2f, y = size.height - 8f))
+        }
+        editor.performTextInput(" continued")
+
+        editor.assertTextEquals("Existing note text continued")
+    }
 
     @Test
     fun caretStaysAtRequestedPositionAfterLocalTextEchoFromParent() {
