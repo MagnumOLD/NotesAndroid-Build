@@ -8,7 +8,6 @@ import com.magnumold.notes.editor.model.DocumentMetadata
 import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.RichText
-import com.magnumold.notes.editor.model.newBlockId
 
 /**
  * One-way converter for legacy ordinary notes.
@@ -19,16 +18,23 @@ internal object LegacyNoteDocumentMigrator {
         require(note.type == RecordType.NOTE) { "Only ordinary notes can be migrated to documents" }
 
         val usedIds = mutableSetOf<String>()
-        fun stableId(candidate: String): String {
-            val preferred = candidate.takeIf(String::isNotBlank) ?: newBlockId()
-            if (usedIds.add(preferred)) return preferred
-            val replacement = newBlockId()
-            usedIds.add(replacement)
-            return replacement
-        }
 
-        val blocks = note.blocks.map { legacy ->
-            val id = stableId(legacy.id)
+        val blocks = note.blocks.mapIndexed { index, legacy ->
+            val candidate = legacy.id.takeIf(String::isNotBlank)
+                ?: "legacy-${note.id}-block-$index"
+            val id = if (usedIds.add(candidate)) candidate else {
+                var replacement = java.util.UUID.nameUUIDFromBytes(
+                    "${note.id}:$index:$candidate".toByteArray(Charsets.UTF_8)
+                ).toString()
+                var suffix = 0
+                while (!usedIds.add(replacement)) {
+                    suffix++
+                    replacement = java.util.UUID.nameUUIDFromBytes(
+                        "${note.id}:$index:$candidate:$suffix".toByteArray(Charsets.UTF_8)
+                    ).toString()
+                }
+                replacement
+            }
             if (legacy.isChecklist) {
                 ChecklistBlock(id, listOf(ChecklistItem(content = RichText(legacy.text), checked = legacy.checked)))
             } else {
