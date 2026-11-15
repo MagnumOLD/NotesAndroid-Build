@@ -8,10 +8,6 @@ android {
     namespace = "com.magnumold.notes"
     compileSdk = 35
 
-    buildFeatures {
-        buildConfig = true
-    }
-
     defaultConfig {
         applicationId = "com.magnumold.notes.prototype"
         minSdk = 23
