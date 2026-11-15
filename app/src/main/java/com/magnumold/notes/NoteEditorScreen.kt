@@ -257,6 +257,9 @@ internal fun NoteEditor(
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var undoGroupingState by remember(note.id) { mutableStateOf(UndoGroupingState()) }
     var locallyPublishedBlocks by remember(note.id) { mutableStateOf(emptyList<List<NoteBlock>>()) }
+    val latestLocallyPublishedBlocks = rememberUpdatedState(locallyPublishedBlocks)
+    val latestEditorBlocks = rememberUpdatedState(editorBlocks)
+    val latestFieldValue = rememberUpdatedState(fieldValue)
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     val latestTaskNote = rememberUpdatedState(note)
@@ -285,20 +288,21 @@ internal fun NoteEditor(
     LaunchedEffect(note.id, note.blocks) {
         val incomingBlocks = note.blocks
         val incomingText = incomingBlocks.toPlainText()
-        val isLocalEcho = locallyPublishedBlocks.any { it == incomingBlocks }
+        val currentFieldValue = latestFieldValue.value
+        val isLocalEcho = latestLocallyPublishedBlocks.value.any { it == incomingBlocks }
 
         // A parent-state echo can arrive after the user has already typed more.
         // Ignore older snapshots published by this editor instead of moving the
         // cursor to the end and replacing the current in-memory document.
         if (isLocalEcho) {
-            if (incomingText == fieldValue.text) editorBlocks = incomingBlocks
+            if (incomingText == currentFieldValue.text) editorBlocks = incomingBlocks
             return@LaunchedEffect
         }
-        if (incomingBlocks == editorBlocks) return@LaunchedEffect
+        if (incomingBlocks == latestEditorBlocks.value) return@LaunchedEffect
 
-        val mappedSelection = mapTextSelection(fieldValue.text, incomingText, fieldValue.selection)
+        val mappedSelection = mapTextSelection(currentFieldValue.text, incomingText, currentFieldValue.selection)
         editorBlocks = incomingBlocks
-        if (fieldValue.text != incomingText) {
+        if (currentFieldValue.text != incomingText) {
             fieldValue = TextFieldValue(incomingText, selection = mappedSelection)
             history = listOf(NoteEditorHistoryEntry(incomingBlocks, mappedSelection))
             historyIndex = 0
