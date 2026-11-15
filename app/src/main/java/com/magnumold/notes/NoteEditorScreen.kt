@@ -3,6 +3,7 @@ package com.magnumold.notes
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
+
+private const val NOTE_EDITOR_CURSOR_LOG_TAG = "NoteEditorCursor"
 
 private data class NoteEditorHistoryEntry(
     val blocks: List<NoteBlock>,
@@ -302,6 +305,14 @@ internal fun NoteEditor(
             locallyPublishedBlocks = locallyPublishedBlocks,
             currentEditorText = currentFieldValue.text
         )
+        if (BuildConfig.DEBUG && incomingBlocks != latestEditorBlocks.value) {
+            Log.d(
+                NOTE_EDITOR_CURSOR_LOG_TAG,
+                "parent-sync local=$isLocalEcho stale=$isStaleLocalEcho " +
+                    "incomingLength=${incomingText.length} currentLength=${currentFieldValue.text.length} " +
+                    "selection=${currentFieldValue.selection.start}..${currentFieldValue.selection.end}"
+            )
+        }
 
         // A parent-state echo can arrive after the user has already typed more.
         // Ignore older snapshots published by this editor instead of moving the
@@ -316,6 +327,13 @@ internal fun NoteEditor(
         val mappedSelection = mapTextSelection(currentFieldValue.text, incomingText, currentFieldValue.selection)
         editorBlocks = incomingBlocks
         if (currentFieldValue.text != incomingText) {
+            if (BuildConfig.DEBUG) {
+                Log.w(
+                    NOTE_EDITOR_CURSOR_LOG_TAG,
+                    "RESET field from parent: oldLength=${currentFieldValue.text.length} " +
+                        "newLength=${incomingText.length} selection=${mappedSelection.start}..${mappedSelection.end}"
+                )
+            }
             fieldValue = TextFieldValue(incomingText, selection = mappedSelection)
             history = listOf(NoteEditorHistoryEntry(incomingBlocks, mappedSelection))
             historyIndex = 0
@@ -902,6 +920,16 @@ internal fun NoteEditor(
                     value = fieldValue,
                     onValueChange = { value ->
                         val previous = fieldValue
+                        if (BuildConfig.DEBUG && previous.selection != value.selection) {
+                            Log.d(
+                                NOTE_EDITOR_CURSOR_LOG_TAG,
+                                "ime-value oldSelection=${previous.selection.start}..${previous.selection.end} " +
+                                    "newSelection=${value.selection.start}..${value.selection.end} " +
+                                    "oldComposition=${previous.composition?.let { "${it.start}..${it.end}" } ?: "none"} " +
+                                    "newComposition=${value.composition?.let { "${it.start}..${it.end}" } ?: "none"} " +
+                                    "textLength=${value.text.length}"
+                            )
+                        }
                         fieldValue = value
                         updateText(previous, value)
                     },
