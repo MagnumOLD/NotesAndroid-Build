@@ -252,4 +252,17 @@ class NoteEditorTextMappingTest {
         )
     }
 
+    @Test
+    fun separatorAfterExistingTextBelongsToTheFollowingWordGroup() {
+        val space = describeTextEdit("Привет", "Привет ", 6, 6)!!
+        val spaceDecision = decideUndoHistoryAction(UndoGroupingState(), space)
+        assertEquals(UndoHistoryAction.SKIP, spaceDecision.action)
+
+        val nextLetter = describeTextEdit("Привет ", "Привет м", 7, 7)!!
+        assertEquals(
+            UndoHistoryAction.APPEND,
+            decideUndoHistoryAction(spaceDecision.nextState, nextLetter).action
+        )
+    }
+
 }
