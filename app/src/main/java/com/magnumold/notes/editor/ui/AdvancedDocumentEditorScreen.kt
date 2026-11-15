@@ -269,8 +269,8 @@ private fun RichTextEditorField(
                     }
                 }
                 val change = textChange(oldText, newText)
-                controller.setSelection(change.first, oldText.length - change.second)
-                onStateChange(controller.replaceSelection(change.third))
+                controller.setSelection(change.start, change.oldEnd)
+                onStateChange(controller.replaceSelection(change.replacement))
             } else {
                 if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId) {
                     if (itemId == null) controller.activateBlock(blockId)
