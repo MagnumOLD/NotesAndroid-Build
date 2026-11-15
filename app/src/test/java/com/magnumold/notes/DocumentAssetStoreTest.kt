@@ -19,7 +19,7 @@ import org.robolectric.RuntimeEnvironment
 class DocumentAssetStoreTest {
     private fun store(name: String, maxBytes: Long = 1024L): DocumentAssetStore {
         val context = RuntimeEnvironment.getApplication() as Context
-        return DocumentAssetStore(context, maxBytes)
+        return DocumentAssetStore(context, maxBytes, "editor_assets_test_$name")
     }
 
     @Test

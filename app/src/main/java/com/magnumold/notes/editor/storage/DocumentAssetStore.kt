@@ -2,7 +2,6 @@ package com.magnumold.notes.editor.storage
 
 import android.content.Context
 import android.net.Uri
-import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.InputStream
 import java.util.UUID
@@ -23,15 +22,19 @@ internal data class StoredDocumentAsset(
  */
 internal class DocumentAssetStore(
     context: Context,
-    private val maxAssetBytes: Long = DEFAULT_MAX_ASSET_BYTES
+    private val maxAssetBytes: Long = DEFAULT_MAX_ASSET_BYTES,
+    directoryName: String = ASSET_DIRECTORY
 ) {
     private val resolver = context.applicationContext.contentResolver
-    private val directory = File(context.applicationContext.filesDir, ASSET_DIRECTORY).apply {
+    private val directory = File(context.applicationContext.filesDir, directoryName).apply {
         if (!exists()) check(mkdirs()) { "Unable to create document asset directory" }
     }
 
     init {
         require(maxAssetBytes > 0) { "Maximum asset size must be positive" }
+        require(directoryName.isNotBlank() && '/' !in directoryName && '\\\\' !in directoryName) {
+            "Asset directory name must be a single path segment"
+        }
     }
 
     fun import(uri: Uri, fileName: String): StoredDocumentAsset {
