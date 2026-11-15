@@ -227,6 +227,21 @@ internal class EditorSessionController(
         return block.rows.firstOrNull { it.id == target.rowId }?.cells?.getOrNull(target.columnIndex)?.content
     }
 
+    /** Returns the latest model text for a field, even if its Compose callback is stale. */
+    fun textForTarget(
+        blockId: String,
+        itemId: String?,
+        tableCell: TableCellPosition? = null
+    ): String? {
+        val block = state.document.blocks.firstOrNull { it.id == blockId } ?: return null
+        if (block is TableBlock && tableCell != null) {
+            return block.rows.firstOrNull { it.id == tableCell.rowId }
+                ?.cells?.getOrNull(tableCell.columnIndex)?.content?.text
+        }
+        if (itemId != null) return block.richTextForItem(itemId)?.text
+        return block.richTextOrNull()?.text
+    }
+
     private fun stateForDocument(
         document: EditorDocument,
         preferredBlockId: String?,

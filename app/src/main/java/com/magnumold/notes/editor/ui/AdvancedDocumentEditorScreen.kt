@@ -482,30 +482,46 @@ private fun RichTextEditorField(
         onValueChange = { next ->
             val oldText = richText.text
             val newText = next.text
-            selection = next.selection
-            if (newText != oldText) {
-                if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId ||
-                    (tableCell != null && controller.state.activeTableCell != com.magnumold.notes.editor.engine.TableCellPosition(tableCell.first, tableCell.second))) {
-                    if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
-                    else if (itemId == null) controller.activateBlock(blockId)
-                    else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {
-                        controller.activateListItem(blockId, itemId)
-                    } else {
-                        controller.activateChecklistItem(blockId, itemId)
-                    }
-                }
-                val change = textChange(oldText, newText)
-                controller.setSelection(change.start, change.oldEnd)
-                onStateChange(controller.replaceSelection(change.replacement))
+            val targetCell = tableCell?.let {
+                com.magnumold.notes.editor.engine.TableCellPosition(it.first, it.second)
+            }
+            val modelText = controller.textForTarget(blockId, itemId, targetCell)
+            if (modelText != oldText) {
+                // Undo/redo may update the model while the IME still has an older
+                // composing value. Ignore that stale callback instead of restoring
+                // text which the user has just undone.
+                val currentLength = modelText?.length ?: 0
+                selection = TextRange(
+                    next.selection.start.coerceIn(0, currentLength),
+                    next.selection.end.coerceIn(0, currentLength)
+                )
             } else {
-                if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId) {
-                    if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
-                    else if (itemId == null) controller.activateBlock(blockId)
-                    else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {
-                        controller.activateListItem(blockId, itemId)
-                    } else controller.activateChecklistItem(blockId, itemId)
+                selection = next.selection
+                if (newText != oldText) {
+                    if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId ||
+                        (targetCell != null && controller.state.activeTableCell != targetCell)) {
+                        if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
+                        else if (itemId == null) controller.activateBlock(blockId)
+                        else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {
+                            controller.activateListItem(blockId, itemId)
+                        } else {
+                            controller.activateChecklistItem(blockId, itemId)
+                        }
+                    }
+                    val change = textChange(oldText, newText)
+                    controller.setSelection(change.start, change.oldEnd)
+                    onStateChange(controller.replaceSelection(change.replacement))
+                } else {
+                    if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId ||
+                        (targetCell != null && controller.state.activeTableCell != targetCell)) {
+                        if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
+                        else if (itemId == null) controller.activateBlock(blockId)
+                        else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {
+                            controller.activateListItem(blockId, itemId)
+                        } else controller.activateChecklistItem(blockId, itemId)
+                    }
+                    onStateChange(controller.setSelection(next.selection.start, next.selection.end))
                 }
-                onStateChange(controller.setSelection(next.selection.start, next.selection.end))
             }
         },
         modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),

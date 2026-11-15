@@ -2,6 +2,7 @@ package com.magnumold.notes
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -83,7 +84,7 @@ class AdvancedDocumentEditorScreenTest {
             assertEquals("Начальный текст продолжение", emitted?.plainText())
         }
 
-        composeRule.onNodeWithContentDescription("Отменить").performClick()
+        composeRule.onNodeWithContentDescription("Отменить").assertIsEnabled().performClick()
         composeRule.runOnIdle {
             assertEquals("Начальный текст", emitted?.plainText())
         }

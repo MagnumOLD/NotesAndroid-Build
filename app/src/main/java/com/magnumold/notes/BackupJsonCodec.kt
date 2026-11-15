@@ -145,6 +145,29 @@ private fun stableImportedRecordId(note: Note, salt: Int): Long {
     return candidate.takeIf { it != 0L } ?: 1L
 }
 
+private fun collectExistingTaskIdRemaps(
+    note: Note,
+    knownRecords: Map<Long, Note>,
+    taskIdRemaps: MutableMap<Long, Long>
+) {
+    note.children.forEach { child ->
+        val occupant = knownRecords[child.id]
+        if (child.type == RecordType.TASK && occupant != null && !occupant.sameRecordContent(child)) {
+            var salt = 0
+            var candidate: Long
+            while (true) {
+                candidate = stableImportedRecordId(child, salt++)
+                val candidateOccupant = knownRecords[candidate]
+                if (candidateOccupant == null || candidateOccupant.sameRecordContent(child)) break
+            }
+            if (knownRecords[candidate]?.sameRecordContent(child) == true) {
+                taskIdRemaps.putIfAbsent(child.id, candidate)
+            }
+        }
+        collectExistingTaskIdRemaps(child, knownRecords, taskIdRemaps)
+    }
+}
+
 private fun mergeNoteLists(
     existing: List<Note>,
     imported: List<Note>,
@@ -168,6 +191,7 @@ private fun mergeNoteLists(
         val existingWithId = knownRecords[incoming.id]
         if (existingWithId != null && existingWithId.sameRecordContent(incoming)) {
             // The same logical record is already present in another section.
+            collectExistingTaskIdRemaps(incoming, knownRecords, taskIdRemaps)
             return@forEach
         }
 
@@ -185,6 +209,9 @@ private fun mergeNoteLists(
                 if (incoming.type == RecordType.TASK && candidate != incoming.id) {
                     taskIdRemaps.putIfAbsent(incoming.id, candidate)
                 }
+                // The parent was imported previously. Reconstruct mappings for its
+                // nested tasks as well, otherwise a repeated import loses child links.
+                collectExistingTaskIdRemaps(incoming, knownRecords, taskIdRemaps)
                 return@forEach
             }
             candidate
