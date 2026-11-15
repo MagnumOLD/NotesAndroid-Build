@@ -183,6 +183,14 @@ internal fun decideUndoHistoryAction(
     }
 }
 
+internal fun isStaleLocalEditorEcho(
+    incomingBlocks: List<NoteBlock>,
+    locallyPublishedBlocks: List<List<NoteBlock>>,
+    currentEditorText: String
+): Boolean =
+    incomingBlocks.toPlainText() != currentEditorText &&
+        locallyPublishedBlocks.any { it == incomingBlocks }
+
 internal fun mapTextSelection(oldText: String, newText: String, selection: TextRange): TextRange {
     var prefix = 0
     val commonLimit = minOf(oldText.length, newText.length)
@@ -290,12 +298,18 @@ internal fun NoteEditor(
         val incomingText = incomingBlocks.toPlainText()
         val currentFieldValue = latestFieldValue.value
         val isLocalEcho = latestLocallyPublishedBlocks.value.any { it == incomingBlocks }
+        val isStaleLocalEcho = isStaleLocalEditorEcho(
+            incomingBlocks = incomingBlocks,
+            locallyPublishedBlocks = latestLocallyPublishedBlocks.value,
+            currentEditorText = currentFieldValue.text
+        )
 
         // A parent-state echo can arrive after the user has already typed more.
         // Ignore older snapshots published by this editor instead of moving the
         // cursor to the end and replacing the current in-memory document.
+        if (isStaleLocalEcho) return@LaunchedEffect
         if (isLocalEcho) {
-            if (incomingText == currentFieldValue.text) editorBlocks = incomingBlocks
+            editorBlocks = incomingBlocks
             return@LaunchedEffect
         }
         if (incomingBlocks == latestEditorBlocks.value) return@LaunchedEffect
