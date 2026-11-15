@@ -39,7 +39,8 @@ internal fun PersistentAdvancedDocumentEditorRoute(
     onDocumentChange: (EditorDocument) -> Unit,
     onBack: () -> Unit,
     onDelete: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    autoFocus: Boolean = false
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -144,7 +145,8 @@ internal fun PersistentAdvancedDocumentEditorRoute(
                     }
                 }
             },
-            onShare = onShare
+            onShare = onShare,
+            autoFocus = autoFocus
         )
     }
 }

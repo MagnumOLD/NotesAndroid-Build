@@ -55,7 +55,12 @@ Tables contain rows and cells; each cell owns text and inline spans. Images and 
 - The migration startup gate creates a checksum-verified backup before migrating NOTE records. The user can retry a failed migration or continue using the legacy editor without setting the migration-complete marker.
 - Migration backups are fingerprinted per legacy snapshot; a changed snapshot gets a separate backup rather than overwriting an earlier recovery point.
 - Automated tests cover archive round-trip, truncated archives, missing assets, restore collisions, and asset-reference remapping. Full CI and emulator validation remain required.
-- Advanced editor routing into the live note list is still gated; task routes and the existing editor remain unchanged until integration tests are complete.
+- Ordinary NOTE records now open the persistent advanced document editor after the startup migration marker is verified. The legacy note record keeps a plain-text preview/search mirror; rich content remains the document source of truth.
+- TASK records continue to use the existing task editor and time-tracking path. Migration failure offers a retry or a legacy-editor fallback without setting the completion marker.
+- The editor route flushes on back navigation and lifecycle stop, offers explicit recovery-draft restore/discard, and preserves note share/delete actions.
+- New notes open the document editor with keyboard autofocus; empty notes are discarded without leaving orphan document files.
+- Permanent deletion from trash removes associated document files and collects assets only when no valid document or recovery draft references them.
+- The latest emulator, unit-test, and APK checks are required after each integration change; final APK artifact verification and manual device QA remain outstanding.
 
 ## Non-goals for the first release
 Desktop word-processor pagination, columns, equation editor, real-time collaboration, and arbitrary plugin execution.

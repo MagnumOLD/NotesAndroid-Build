@@ -51,4 +51,30 @@ class BackupJsonCodecTest {
         assertEquals(104L, remapped.archived.single().note.id)
         assertEquals(105L, remapped.trash.single().note.id)
     }
+    @Test
+    fun sameNumericIdWithDifferentRecordTypesIsRemappedInsteadOfMerged() {
+        val existing = note(9L, "Ordinary note")
+        val importedTask = note(9L, "Task").copy(type = RecordType.TASK)
+
+        val merged = mergeImportedNotes(listOf(existing), listOf(importedTask))
+
+        assertEquals(2, merged.size)
+        assertEquals(RecordType.NOTE, merged.first().type)
+        assertEquals(RecordType.TASK, merged.last().type)
+        org.junit.Assert.assertNotEquals(9L, merged.last().id)
+    }
+
+    @Test
+    fun sameIdWithDifferentContentIsPreservedAsAnotherRecord() {
+        val existing = note(11L, "Original")
+        val imported = note(11L, "Imported")
+
+        val merged = mergeImportedNotes(listOf(existing), listOf(imported))
+
+        assertEquals(2, merged.size)
+        assertEquals("Original", merged.first().blocks.first().text)
+        assertEquals("Imported", merged.last().blocks.first().text)
+        org.junit.Assert.assertNotEquals(11L, merged.last().id)
+    }
+
 }

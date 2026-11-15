@@ -121,10 +121,16 @@ internal fun parseBackupJson(raw: String): BackupData {
     return BackupData(notes, collections, parseVaultArray(root.optJSONArray("archive")), parseVaultArray(root.optJSONArray("trash")), root.optJSONObject("timeTracking")?.let(::parseTimeTrackingJson))
 }
 
+private fun Note.sameRecordContent(other: Note): Boolean =
+    type == other.type && blocks.toPlainText() == other.blocks.toPlainText() &&
+        titleText == other.titleText && descriptionText == other.descriptionText
+
 internal fun mergeImportedNotes(existing: List<Note>, imported: List<Note>): List<Note> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
-        val sameIndex = result.indexOfFirst { it.id == incoming.id }
+        val sameIndex = result.indexOfFirst {
+            it.id == incoming.id && it.sameRecordContent(incoming)
+        }
         if (sameIndex >= 0) {
             val current = result[sameIndex]
             result[sameIndex] = current.copy(
@@ -149,7 +155,9 @@ internal fun mergeImportedNotes(existing: List<Note>, imported: List<Note>): Lis
 internal fun mergeImportedVault(existing: List<VaultNote>, imported: List<VaultNote>): List<VaultNote> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
-        val sameIndex = result.indexOfFirst { it.note.id == incoming.note.id }
+        val sameIndex = result.indexOfFirst {
+            it.note.id == incoming.note.id && it.note.sameRecordContent(incoming.note)
+        }
         if (sameIndex >= 0) {
             val current = result[sameIndex]
             result[sameIndex] = current.copy(

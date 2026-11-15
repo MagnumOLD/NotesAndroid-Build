@@ -238,7 +238,9 @@ internal fun NotesApp(
                                 val text = document.plainText().ifBlank {
                                     if (document.blocks.any { it is ImageBlock }) "Изображение" else ""
                                 }
-                                val previewBlocks = if (text.isBlank()) listOf(NoteBlock()) else listOf(NoteBlock(text))
+                                val previewBlockId = currentNote.blocks.firstOrNull()?.id
+                                    ?: "editor-preview-${selected.id}"
+                                val previewBlocks = listOf(NoteBlock(text = text, id = previewBlockId))
                                 recordsViewModel.updateActiveRecord(
                                     activeCollectionId,
                                     currentNote.copy(blocks = previewBlocks, updated = document.updatedAt)
@@ -268,7 +270,8 @@ internal fun NotesApp(
                             )
                             navigation.closeEditor()
                         },
-                        onShare = { activity.shareNote(selected) }
+                        onShare = { activity.shareNote(selected) },
+                        autoFocus = autoFocusNewNote
                     )
                 } else {
                     NoteEditor(

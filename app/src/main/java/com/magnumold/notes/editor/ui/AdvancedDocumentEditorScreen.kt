@@ -61,10 +61,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.core.content.FileProvider
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -120,7 +123,8 @@ internal fun AdvancedDocumentEditorScreen(
     onDocumentChange: (EditorDocument) -> Unit,
     onBack: () -> Unit,
     onDelete: () -> Unit = {},
-    onShare: () -> Unit = {}
+    onShare: () -> Unit = {},
+    autoFocus: Boolean = false
 ) {
     val context = LocalContext.current
     val assetStore = remember(context) { DocumentAssetStore(context.applicationContext) }
@@ -274,12 +278,18 @@ internal fun AdvancedDocumentEditorScreen(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            val firstEditableBlockId = editorState.document.blocks.firstOrNull { block ->
+                block is ParagraphBlock || block is HeadingBlock || block is QuoteBlock ||
+                    block is CalloutBlock || block is CodeBlock || block is ListBlock ||
+                    block is ChecklistBlock || block is TableBlock
+            }?.id
             editorState.document.blocks.forEach { block ->
                 DocumentBlockEditor(
                     block = block,
                     controller = controller,
                     onStateChange = ::publish,
                     assetStore = assetStore,
+                    autoFocus = autoFocus && block.id == firstEditableBlockId,
                     onToggleChecklist = { itemId, checked ->
                         val updated = block.toggleChecklistItem(itemId, checked)
                         publish(controller.execute(DocumentCommand.Replace(updated)))
@@ -337,19 +347,21 @@ private fun DocumentBlockEditor(
     controller: EditorSessionController,
     onStateChange: (com.magnumold.notes.editor.engine.EditorSessionState) -> Unit,
     assetStore: DocumentAssetStore,
+    autoFocus: Boolean,
     onToggleChecklist: (String, Boolean) -> Unit
 ) {
     when (block) {
-        is ParagraphBlock -> RichTextEditorField(block.id, null, block.content, controller, onStateChange, 16.sp)
+        is ParagraphBlock -> RichTextEditorField(block.id, null, block.content, controller, onStateChange, 16.sp, autoFocus = autoFocus)
         is HeadingBlock -> RichTextEditorField(
             block.id, null, block.content, controller, onStateChange,
             when (block.level) { 1 -> 26.sp; 2 -> 22.sp; else -> 19.sp },
-            FontWeight.SemiBold
+            FontWeight.SemiBold,
+            autoFocus = autoFocus
         )
         is QuoteBlock -> Row(verticalAlignment = Alignment.Top) {
             Box(Modifier.width(3.dp).height(42.dp).background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)))
             Spacer(Modifier.width(12.dp))
-            RichTextEditorField(block.id, null, block.content, controller, onStateChange, 16.sp)
+            RichTextEditorField(block.id, null, block.content, controller, onStateChange, 16.sp, autoFocus = autoFocus)
         }
         is CalloutBlock -> Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -357,7 +369,7 @@ private fun DocumentBlockEditor(
         ) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(block.title.ifBlank { block.kind.label() }, style = MaterialTheme.typography.labelLarge)
-                RichTextEditorField(block.id, null, block.content, controller, onStateChange, 16.sp)
+                RichTextEditorField(block.id, null, block.content, controller, onStateChange, 16.sp, autoFocus = autoFocus)
             }
         }
         is ListBlock -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -375,7 +387,8 @@ private fun DocumentBlockEditor(
                 Text(block.language ?: "Код", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 RichTextEditorField(
                     block.id, null, RichText(block.code), controller, onStateChange, 14.sp,
-                    fontFamily = FontFamily.Monospace
+                    fontFamily = FontFamily.Monospace,
+                    autoFocus = autoFocus
                 )
             }
         }
@@ -390,7 +403,8 @@ private fun DocumentBlockEditor(
                         ) {
                             RichTextEditorField(
                                 block.id, null, cell.content, controller, onStateChange, 14.sp,
-                                tableCell = row.id to columnIndex
+                                tableCell = row.id to columnIndex,
+                                autoFocus = autoFocus && row == block.rows.first() && columnIndex == 0
                             )
                         }
                     }
@@ -446,8 +460,17 @@ private fun RichTextEditorField(
     fontSize: androidx.compose.ui.unit.TextUnit,
     fontWeight: FontWeight = FontWeight.Normal,
     fontFamily: FontFamily = FontFamily.Default,
-    tableCell: Pair<String, Int>? = null
+    tableCell: Pair<String, Int>? = null,
+    autoFocus: Boolean = false
 ) {
+    val focusRequester = remember(blockId, itemId, tableCell) { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
     var selection by remember(blockId, itemId, tableCell) { mutableStateOf(TextRange(richText.text.length)) }
     LaunchedEffect(richText.text) {
         if (selection.end > richText.text.length) selection = TextRange(richText.text.length)
@@ -484,7 +507,7 @@ private fun RichTextEditorField(
                 onStateChange(controller.setSelection(next.selection.start, next.selection.end))
             }
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
         textStyle = TextStyle(
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = fontSize,
