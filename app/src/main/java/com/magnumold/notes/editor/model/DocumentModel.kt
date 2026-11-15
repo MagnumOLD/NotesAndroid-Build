@@ -22,7 +22,31 @@ internal data class EditorDocument(
     init {
         require(id.isNotBlank()) { "Document id must not be blank" }
         require(schemaVersion > 0) { "Document schema version must be positive" }
-        require(blocks.map { it.id }.toSet().size == blocks.size) { "Block ids must be unique within a document" }
+        val structuralIds = mutableListOf<String>()
+        fun collectListItems(items: List<ListItem>) {
+            items.forEach { item ->
+                structuralIds += item.id
+                collectListItems(item.children)
+            }
+        }
+        fun collectChecklistItems(items: List<ChecklistItem>) {
+            items.forEach { item ->
+                structuralIds += item.id
+                collectChecklistItems(item.children)
+            }
+        }
+        structuralIds += blocks.map { it.id }
+        blocks.forEach { block ->
+            when (block) {
+                is ListBlock -> collectListItems(block.items)
+                is ChecklistBlock -> collectChecklistItems(block.items)
+                is TableBlock -> structuralIds += block.rows.map { it.id }
+                else -> Unit
+            }
+        }
+        require(structuralIds.toSet().size == structuralIds.size) {
+            "Block, list item and table row ids must be unique within a document"
+        }
     }
 }
 
