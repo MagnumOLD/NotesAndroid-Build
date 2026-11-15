@@ -281,6 +281,7 @@ internal fun NoteEditor(
         val changed = editorBlocks.withEditedPlainText(value.text)
         val entry = NoteEditorHistoryEntry(changed, value.selection)
         val now = android.os.SystemClock.uptimeMillis()
+        // Keep undo steps bounded during long continuous typing sessions.
         val continuesTypingGroup =
             editingBlockId == editorBlockId &&
                 now - lastTextEditAt <= 700L &&
