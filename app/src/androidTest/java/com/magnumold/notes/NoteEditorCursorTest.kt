@@ -6,13 +6,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -62,7 +62,7 @@ class NoteEditorCursorTest {
         val editor = composeRule.onNodeWithTag("note-editor-body")
         // Tap near the bottom edge, far below the visible text content.
         editor.performTouchInput {
-            click(Offset(x = size.width / 2f, y = size.height - 8f))
+            click(center)
         }
         editor.performTextInput(" continued")
 
