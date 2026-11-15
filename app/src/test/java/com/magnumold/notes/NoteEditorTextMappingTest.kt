@@ -56,7 +56,7 @@ class NoteEditorTextMappingTest {
             NoteBlock("Gamma", id = "gamma")
         )
 
-        val edited = original.withEditedPlainText("New paragraph\\n\\nAlpha\\n\\nBeta\\n\\nGamma")
+        val edited = original.withEditedPlainText("New paragraph\n\nAlpha\n\nBeta\n\nGamma")
 
         assertEquals("alpha", edited[1].id)
         assertEquals("beta", edited[2].id)
@@ -71,7 +71,7 @@ class NoteEditorTextMappingTest {
             NoteBlock("Gamma", id = "gamma")
         )
 
-        val edited = original.withEditedPlainText("Alpha\\n\\nNew paragraph\\n\\nBeta\\n\\nGamma")
+        val edited = original.withEditedPlainText("Alpha\n\nNew paragraph\n\nBeta\n\nGamma")
 
         assertEquals("alpha", edited[0].id)
         assertEquals("beta", edited[2].id)
