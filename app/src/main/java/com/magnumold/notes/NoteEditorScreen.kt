@@ -105,6 +105,8 @@ internal fun NoteEditor(
     var parentAutoFocusConsumed by remember(note.id) { mutableStateOf(false) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var editingBlockId by remember(note.id) { mutableStateOf<String?>(null) }
+    var typingGroupStartedAt by remember(note.id) { mutableLongStateOf(0L) }
+    var lastTextEditAt by remember(note.id) { mutableLongStateOf(0L) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     val latestTaskNote = rememberUpdatedState(note)
@@ -278,16 +280,24 @@ internal fun NoteEditor(
 
         val changed = editorBlocks.withEditedPlainText(value.text)
         val entry = NoteEditorHistoryEntry(changed, value.selection)
-        if (editingBlockId != editorBlockId) {
+        val now = android.os.SystemClock.uptimeMillis()
+        val continuesTypingGroup =
+            editingBlockId == editorBlockId &&
+                now - lastTextEditAt <= 700L &&
+                now - typingGroupStartedAt <= 1600L
+
+        if (!continuesTypingGroup) {
             val next = (history.take(historyIndex + 1) + listOf(entry)).takeLast(80)
             history = next
             historyIndex = history.lastIndex
-            editingBlockId = editorBlockId
+            typingGroupStartedAt = now
         } else {
             val next = history.toMutableList()
             next[historyIndex] = entry
             history = next
         }
+        lastTextEditAt = now
+        editingBlockId = editorBlockId
         publish(changed)
     }
 
