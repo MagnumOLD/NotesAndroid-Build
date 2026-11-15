@@ -71,7 +71,7 @@ internal fun ProtectionTimerControls(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Осталось", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), style = AppTypography.bodyStyle(), fontWeight = FontWeight.Medium)
+                    Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), style = AppTypography.emphasisBodyStyle())
                     TextButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) { Text("Остановить") }
                 }
                 Text(
