@@ -32,6 +32,22 @@ class DocumentJsonCodecTest {
         assertEquals(document, decoded)
     }
 
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsDuplicateIdsAcrossBlocksAndNestedItems() {
+        EditorDocument(
+            id = "doc-duplicate-ids",
+            createdAt = 1L,
+            updatedAt = 1L,
+            blocks = listOf(
+                ListBlock(
+                    id = "shared-id",
+                    ordered = false,
+                    items = listOf(ListItem(id = "shared-id", content = RichText("Item")))
+                )
+            )
+        )
+    }
+
     @Test fun plainTextKeepsTextualContentReadable() {
         val document = EditorDocument(
             id = "doc-2", createdAt = 1, updatedAt = 1,
