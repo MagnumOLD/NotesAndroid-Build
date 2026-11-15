@@ -182,6 +182,9 @@ private fun mergeNoteLists(
                 if (occupant == null || occupant.sameRecordContent(incoming)) break
             }
             if (knownRecords[candidate]?.sameRecordContent(incoming) == true) {
+                if (incoming.type == RecordType.TASK && candidate != incoming.id) {
+                    taskIdRemaps.putIfAbsent(incoming.id, candidate)
+                }
                 return@forEach
             }
             candidate
