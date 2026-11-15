@@ -79,6 +79,11 @@ internal class DocumentRepository(
         if (draft?.id == documentId) clearRecoveryDraft()
     }
 
+    /** Deletes an imported primary file without touching a possibly older recovery draft. */
+    internal fun deleteImportedDocument(documentId: String) {
+        documentFile(documentId).delete()
+    }
+
     fun saveRecoveryDraft(document: EditorDocument) {
         val payload = JSONObject()
             .put("savedAt", System.currentTimeMillis())
