@@ -1,7 +1,7 @@
 package com.magnumold.notes
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -39,8 +39,8 @@ class AdvancedDocumentEditorScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag("advanced-document-editor").assertExists()
-        composeRule.onNodeWithText("Черновик документа").assertExists()
+        composeRule.onNodeWithTag("advanced-document-editor").assertIsDisplayed()
+        composeRule.onNodeWithText("Черновик документа").assertIsDisplayed()
         composeRule.onNodeWithText("Заголовок").performClick()
 
         composeRule.runOnIdle {
