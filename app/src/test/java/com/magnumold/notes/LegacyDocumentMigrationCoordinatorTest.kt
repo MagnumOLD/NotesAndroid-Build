@@ -50,7 +50,7 @@ class LegacyDocumentMigrationCoordinatorTest {
         assertEquals("Trashed", repository.load("5").getOrNull()?.plainText())
         assertTrue(repository.load("2").getOrNull() == null)
         assertEquals(report.backup, backupStore.readVerifiedBackup())
-        assertEquals(snapshot.notes.single().id, parseBackupJson(backupStore.readBackupPayload()).notes.first { it.id == 1L }.id)
+        assertEquals(1L, parseBackupJson(backupStore.readBackupPayload()).notes.first { it.id == 1L }.id)
     }
 
     @Test

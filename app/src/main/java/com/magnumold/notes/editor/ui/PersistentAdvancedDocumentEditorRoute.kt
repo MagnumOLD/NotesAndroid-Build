@@ -81,7 +81,6 @@ internal fun PersistentAdvancedDocumentEditorRoute(
             CircularProgressIndicator()
         }
     } else if (!editorReady && state.recoveryDraft != null) {
-        val draft = state.recoveryDraft!!
         AlertDialog(
             onDismissRequest = {},
             title = { Text("Восстановить черновик?") },
