@@ -144,7 +144,7 @@ internal fun decideUndoHistoryAction(
             val whitespace = isWhitespaceCodePoint(edit.inserted)
             val boundary = !isWordCodePoint(edit.inserted)
             val action = when {
-                whitespace && contiguous -> UndoHistoryAction.SKIP
+                whitespace && (contiguous || edit.start > 0) -> UndoHistoryAction.SKIP
                 contiguous && !previous.previousWasBoundary -> UndoHistoryAction.REPLACE_CURRENT
                 else -> UndoHistoryAction.APPEND
             }
