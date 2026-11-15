@@ -919,7 +919,9 @@ internal fun NoteEditor(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
                         Box(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = AppEditorDimensions.bodyMinHeight),
+                            modifier = Modifier.fillMaxWidth()
+                                .heightIn(min = AppEditorDimensions.bodyMinHeight)
+                                .then(if (note.type == RecordType.NOTE) Modifier.padding(top = 8.dp) else Modifier),
                             contentAlignment = Alignment.TopStart
                         ) {
                             if (fieldValue.text.isEmpty()) {
