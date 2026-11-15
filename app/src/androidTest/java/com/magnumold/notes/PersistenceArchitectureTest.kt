@@ -49,6 +49,7 @@ class PersistenceArchitectureTest {
         val decoded = parseBackupJson(encoded)
 
         assertEquals("notes_backup", root.getString("format"))
+        // Keep this assertion aligned with the current exported backup schema.
         assertEquals(7, root.getInt("version"))
         assertEquals(snapshot.notes, decoded.notes)
         assertEquals(snapshot.collections, decoded.collections)
