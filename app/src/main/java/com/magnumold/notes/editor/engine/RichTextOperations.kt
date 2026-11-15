@@ -76,9 +76,9 @@ internal object RichTextOperations {
 
             val covering = value.spans.filter { it.start <= start && it.end >= end }
             val styles = covering.flatMap { it.styles }.toMutableSet()
-            val foreground = covering.lastNotNullOfOrNull { it.foregroundArgb }
-            val background = covering.lastNotNullOfOrNull { it.backgroundArgb }
-            val link = covering.lastNotNullOfOrNull { it.link }
+            val foreground = covering.mapNotNull { it.foregroundArgb }.lastOrNull()
+            val background = covering.mapNotNull { it.backgroundArgb }.lastOrNull()
+            val link = covering.mapNotNull { it.link }.lastOrNull()
 
             if (start >= range.start && end <= range.end) {
                 if (enabled) styles += style else styles -= style
