@@ -153,4 +153,47 @@ class AdvancedDocumentEditorScreenTest {
         composeRule.onNodeWithText("application/pdf · 2 КБ").assertIsDisplayed()
     }
 
+
+
+    @Test
+    fun undoRedoFollowsEachSequentialCharacterInput() {
+        val initial = EditorDocument(
+            id = "ui-character-history-document",
+            createdAt = 1L,
+            updatedAt = 1L,
+            blocks = listOf(ParagraphBlock(content = RichText("")))
+        )
+        var emitted: EditorDocument? = null
+
+        composeRule.setContent {
+            MaterialTheme {
+                AdvancedDocumentEditorScreen(
+                    document = initial,
+                    onDocumentChange = { emitted = it },
+                    onBack = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Начните писать…").performTextInput("a")
+        composeRule.onNodeWithText("a").performTextInput("b")
+        composeRule.onNodeWithText("ab").performTextInput("c")
+        composeRule.runOnIdle {
+            assertEquals("abc", emitted?.plainText())
+        }
+
+        repeat(3) {
+            composeRule.onNodeWithContentDescription("Отменить").performClick()
+        }
+        composeRule.runOnIdle {
+            assertEquals("", emitted?.plainText())
+        }
+
+        repeat(3) {
+            composeRule.onNodeWithContentDescription("Повторить").performClick()
+        }
+        composeRule.runOnIdle {
+            assertEquals("abc", emitted?.plainText())
+        }
+    }
 }
