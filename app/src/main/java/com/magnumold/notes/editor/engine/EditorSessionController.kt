@@ -248,7 +248,7 @@ internal class EditorSessionController(
                 ?: table.rows.firstOrNull()?.let { TableCellPosition(it.id, 0) }
         }
         val length = active?.richTextForItem(itemId)?.text?.length
-            ?: (tableCell?.let { target -> (active as TableBlock).rows.first { it.id == target.rowId }.cells[target.columnIndex].content.text })
+            ?: (tableCell?.let { target -> (active as TableBlock).rows.first { it.id == target.rowId }.cells[target.columnIndex].content.text.length })
             ?: active?.richTextOrNull()?.text?.length ?: 0
         return EditorSessionState(
             document = document,
