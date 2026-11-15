@@ -10,7 +10,6 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
-import android.util.Base64
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -188,7 +187,9 @@ internal object RichDocumentBackupArchive {
         }.toSet()
 
     private fun encodedId(id: String): String =
-        Base64.encodeToString(id.toByteArray(StandardCharsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+        id.toByteArray(StandardCharsets.UTF_8).joinToString("") { byte ->
+            "%02x".format(byte.toInt() and 0xff)
+        }
 
     private fun isUuid(value: String): Boolean =
         runCatching { java.util.UUID.fromString(value).toString() == value.lowercase() }.getOrDefault(false)
