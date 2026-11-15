@@ -64,7 +64,7 @@ internal fun NoteEditor(
     }
     var fieldValue by remember(note.id) { mutableStateOf(TextFieldValue(initialText)) }
     var history by remember(note.id) {
-        mutableStateOf(listOf(listOf(NoteBlock(initialText, id = editorBlockId))))
+        mutableStateOf(listOf(note.blocks))
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
@@ -243,7 +243,7 @@ internal fun NoteEditor(
     }
 
     fun updateText(value: String) {
-        val changed = listOf(NoteBlock(value, id = editorBlockId))
+        val changed = note.blocks.withEditedPlainText(value)
         if (editingBlockId != editorBlockId) {
             val next = (history.take(historyIndex + 1) + listOf(changed)).takeLast(80)
             history = next
