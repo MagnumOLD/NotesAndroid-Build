@@ -63,6 +63,7 @@ internal fun NoteEditor(
         note.blocks.firstOrNull()?.id ?: java.util.UUID.randomUUID().toString()
     }
     var fieldValue by remember(note.id) { mutableStateOf(TextFieldValue(initialText)) }
+    var editorBlocks by remember(note.id) { mutableStateOf(note.blocks) }
     var history by remember(note.id) {
         mutableStateOf(listOf(note.blocks))
     }
@@ -125,6 +126,7 @@ internal fun NoteEditor(
     }
 
     LaunchedEffect(note.id, note.blocks) {
+        editorBlocks = note.blocks
         val latestText = note.blocks.toPlainText()
         if (fieldValue.text != latestText) {
             fieldValue = TextFieldValue(latestText, selection = TextRange(latestText.length))
@@ -232,6 +234,7 @@ internal fun NoteEditor(
     )
 
     fun publish(blocks: List<NoteBlock>) {
+        editorBlocks = blocks
         onChange(note.copy(blocks = blocks))
     }
 
@@ -243,7 +246,7 @@ internal fun NoteEditor(
     }
 
     fun updateText(value: String) {
-        val changed = note.blocks.withEditedPlainText(value)
+        val changed = editorBlocks.withEditedPlainText(value)
         if (editingBlockId != editorBlockId) {
             val next = (history.take(historyIndex + 1) + listOf(changed)).takeLast(80)
             history = next
