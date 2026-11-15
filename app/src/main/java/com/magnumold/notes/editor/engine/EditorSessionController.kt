@@ -210,8 +210,10 @@ internal class EditorSessionController(
         return state
     }
 
-    private fun replaceActiveBlock(updated: DocumentBlock, coalescingKey: String? = null) {
-        val document = history.execute(DocumentCommand.Replace(updated), coalescingKey)
+    private fun replaceActiveBlock(updated: DocumentBlock) {
+        // Each committed text/format change is its own history transaction.
+        // IME callbacks must not be merged: one Undo reverses one input event.
+        val document = history.execute(DocumentCommand.Replace(updated))
         state = stateForDocument(document, updated.id, state.activeItemId, state.selection)
     }
 
