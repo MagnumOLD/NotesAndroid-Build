@@ -476,14 +476,27 @@ private fun RichTextEditorField(
             keyboardController?.show()
         }
     }
-    var selection by remember(blockId, itemId, tableCell) { mutableStateOf(TextRange(richText.text.length)) }
-    LaunchedEffect(richText.text) {
-        if (selection.end > richText.text.length) selection = TextRange(richText.text.length)
-    }
     val annotated = remember(richText) { richText.toAnnotatedString() }
+    // Keep the complete TextFieldValue locally. Rebuilding it from text+selection
+    // on every recomposition drops the IME composing range and breaks normal typing.
+    var fieldValue by remember(blockId, itemId, tableCell) {
+        mutableStateOf(TextFieldValue(annotated, TextRange(richText.text.length)))
+    }
+    LaunchedEffect(annotated, richText.text) {
+        val current = fieldValue
+        if (current.text != richText.text) {
+            val start = current.selection.start.coerceIn(0, richText.text.length)
+            val end = current.selection.end.coerceIn(0, richText.text.length)
+            fieldValue = TextFieldValue(annotated, TextRange(start, end))
+        } else if (current.annotatedString != annotated) {
+            // Refresh visual spans without discarding an active IME composition.
+            fieldValue = current.copy(annotatedString = annotated)
+        }
+    }
     BasicTextField(
-        value = TextFieldValue(annotated, selection),
+        value = fieldValue,
         onValueChange = { next ->
+            fieldValue = next
             val oldText = richText.text
             val newText = next.text
             val targetCell = tableCell?.let {
@@ -495,12 +508,14 @@ private fun RichTextEditorField(
                 // composing value. Ignore that stale callback instead of restoring
                 // text which the user has just undone.
                 val currentLength = modelText?.length ?: 0
-                selection = TextRange(
-                    next.selection.start.coerceIn(0, currentLength),
-                    next.selection.end.coerceIn(0, currentLength)
+                fieldValue = TextFieldValue(
+                    annotated,
+                    TextRange(
+                        next.selection.start.coerceIn(0, currentLength),
+                        next.selection.end.coerceIn(0, currentLength)
+                    )
                 )
             } else {
-                selection = next.selection
                 if (newText != oldText) {
                     if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId ||
                         (targetCell != null && controller.state.activeTableCell != targetCell)) {
