@@ -93,3 +93,30 @@ internal data class TimeTrackingPeriodStats(
     val taskTotalsMillis: Map<Long, Long>,
     val sessionCount: Int
 )
+
+internal fun TimeTrackingState.remapTaskIds(mapping: Map<Long, Long>): TimeTrackingState {
+    if (mapping.isEmpty()) return this
+    fun remap(id: Long?): Long? = id?.let { mapping[it] ?: it }
+    val remappedActive = activeSessions.values.associate { active ->
+        val taskId = mapping[active.taskId] ?: active.taskId
+        taskId to active.copy(
+            taskId = taskId,
+            parentTaskId = remap(active.parentTaskId)
+        )
+    }
+    return copy(
+        sessions = sessions.map { session ->
+            session.copy(
+                taskId = mapping[session.taskId] ?: session.taskId,
+                parentTaskId = remap(session.parentTaskId)
+            )
+        },
+        activeSessions = remappedActive,
+        protectionTimer = protectionTimer?.let { timer ->
+            timer.copy(
+                taskId = mapping[timer.taskId] ?: timer.taskId,
+                parentTaskId = remap(timer.parentTaskId)
+            )
+        }
+    )
+}
