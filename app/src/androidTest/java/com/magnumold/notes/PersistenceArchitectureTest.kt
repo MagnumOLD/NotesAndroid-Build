@@ -28,7 +28,7 @@ class PersistenceArchitectureTest {
     )
 
     @Test
-    fun backupRoundTripPreservesRecordsAndVersionSixSchema() {
+    fun backupRoundTripPreservesRecordsAndVersionSevenSchema() {
         val childTask = record(2, RecordType.TASK)
         val task = record(1, RecordType.TASK, listOf(childTask))
         val purchase = record(3, RecordType.PURCHASE)
@@ -49,7 +49,7 @@ class PersistenceArchitectureTest {
         val decoded = parseBackupJson(encoded)
 
         assertEquals("notes_backup", root.getString("format"))
-        assertEquals(6, root.getInt("version"))
+        assertEquals(7, root.getInt("version"))
         assertEquals(snapshot.notes, decoded.notes)
         assertEquals(snapshot.collections, decoded.collections)
         assertEquals(snapshot.archived, decoded.archived)
