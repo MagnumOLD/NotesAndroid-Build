@@ -96,7 +96,11 @@ internal class DocumentRepository(
         DocumentJsonCodec.decode(document.toString())
     }
 
-    fun clearRecoveryDraft() {
+    fun clearRecoveryDraft(documentId: String? = null) {
+        if (documentId != null) {
+            val draftId = loadRecoveryDraft().getOrNull()?.id
+            if (draftId != documentId) return
+        }
         recoveryFile.delete()
     }
 
