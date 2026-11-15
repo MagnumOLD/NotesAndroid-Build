@@ -172,4 +172,51 @@ class RichDocumentBackupRestorerTest {
         }
     }
 
+    @Test
+    fun rollbackRemovesOnlyFilesInstalledByRestoreAndPreservesRecoveryDraft() {
+        val context = context()
+        val docs = File(context.filesDir, "restore-docs-e").apply { deleteRecursively() }
+        val assets = File(context.filesDir, "restore-assets-e").apply { deleteRecursively() }
+        val repository = DocumentRepository(context, "restore-docs-e")
+        val assetStore = DocumentAssetStore(context, directoryName = "restore-assets-e")
+        val stagedFile = File(context.cacheDir, "restore-source-e").apply { writeBytes(byteArrayOf(1, 3, 5, 7)) }
+        val sourceAssetId = "550e8400-e29b-41d4-a716-446655440002"
+        val document = EditorDocument(
+            id = "draft-preserve",
+            createdAt = 1L,
+            updatedAt = 2L,
+            blocks = listOf(ImageBlock(assetId = sourceAssetId))
+        )
+        val recoveryDraft = EditorDocument(
+            id = "draft-preserve",
+            createdAt = 1L,
+            updatedAt = 3L,
+            blocks = listOf(ParagraphBlock(content = RichText("Unsaved recovery text")))
+        )
+        repository.saveRecoveryDraft(recoveryDraft)
+        val restorer = RichDocumentBackupRestorer(repository, assetStore)
+        try {
+            val report = restorer.restore(
+                RichDocumentBackupArchive.Payload(
+                    "{}",
+                    listOf(document),
+                    listOf(RichDocumentBackupArchive.StagedAsset(sourceAssetId, stagedFile))
+                )
+            )
+            val imported = repository.load("draft-preserve").getOrNull()!!
+            val installedAssetId = (imported.blocks.single() as ImageBlock).assetId
+            assertTrue(assetStore.find(installedAssetId)!!.isFile)
+
+            restorer.rollback(report)
+
+            assertTrue(repository.load("draft-preserve").getOrNull() == null)
+            assertTrue(assetStore.find(installedAssetId) == null)
+            assertEquals(recoveryDraft, repository.loadRecoveryDraft().getOrNull())
+        } finally {
+            docs.deleteRecursively()
+            assets.deleteRecursively()
+            stagedFile.delete()
+        }
+    }
+
 }
