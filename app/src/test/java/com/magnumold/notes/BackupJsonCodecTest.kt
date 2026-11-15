@@ -96,7 +96,7 @@ class BackupJsonCodecTest {
             val imported = parseBackupJson(raw)
 
             assertEquals(1, imported.notes.size)
-            assertEquals(700L + version, imported.notes.single().id)
+            assertEquals(7000L + version, imported.notes.single().id)
             assertEquals("Legacy version $version", imported.notes.single().blocks.single().text)
             assertEquals(emptyList<NoteCollection>(), imported.collections)
             assertEquals(emptyList<VaultNote>(), imported.archived)
