@@ -127,7 +127,7 @@ class EditorSessionControllerTest {
         val code = CodeBlock(code = "val answer = 41")
         val session = EditorSessionController(document(code))
         session.activateBlock(code.id)
-        session.setSelection(14, 16)
+        session.setSelection(13, 15)
 
         val edited = session.replaceSelection("42")
         assertEquals("val answer = 42", (edited.document.blocks.single() as CodeBlock).code)
