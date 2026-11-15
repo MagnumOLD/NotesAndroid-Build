@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -937,6 +938,7 @@ internal fun NoteEditor(
                         .appPageHorizontalInsets()
                         .padding(top = AppSpacing.xxs)
                         .focusRequester(bodyFocusRequester)
+                        .testTag("note-editor-body")
                         .heightIn(min = AppEditorDimensions.bodyMinHeight),
                     textStyle = editorTextStyle,
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
