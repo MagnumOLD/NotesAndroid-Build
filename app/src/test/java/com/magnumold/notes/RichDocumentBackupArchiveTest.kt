@@ -98,4 +98,28 @@ class RichDocumentBackupArchiveTest {
             root.deleteRecursively()
         }
     }
+    @Test
+    fun rejectsUnsafeAssetIdsBeforeWritingZipEntries() {
+        val root = createTempDir(prefix = "rich-backup-unsafe-id")
+        try {
+            val asset = File(root, "asset.bin").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val document = EditorDocument(
+                id = "unsafe-id-test",
+                createdAt = 1L,
+                updatedAt = 1L,
+                blocks = listOf(ImageBlock(assetId = "../outside"))
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                RichDocumentBackupArchive.write(
+                    ByteArrayOutputStream(),
+                    "{}",
+                    listOf(document),
+                    mapOf("../outside" to asset)
+                )
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
 }

@@ -52,6 +52,7 @@ internal object RichDocumentBackupArchive {
             "A document refers to a missing asset"
         }
         val selectedAssets = referencedAssets.sorted()
+        require(selectedAssets.all(::isUuid)) { "Invalid asset id in document backup" }
         val serializedDocuments = documents.sortedBy { it.id }.map { document ->
             document to DocumentJsonCodec.encode(document).toByteArray(StandardCharsets.UTF_8)
         }

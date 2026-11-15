@@ -36,22 +36,30 @@ internal class LegacyDocumentMigrationCoordinator(
         }
 
         val expected = candidates.map(LegacyNoteDocumentMigrator::migrate)
-        var migratedCount = 0
-        var alreadyMigratedCount = 0
-
-        expected.forEach { document ->
-            val existing = repository.load(document.id).getOrElse { error ->
+        // Read and validate every destination before the first write. A conflict
+        // must not leave an earlier subset of notes migrated.
+        val existingById = expected.associate { document ->
+            document.id to repository.load(document.id).getOrElse { error ->
                 throw IllegalStateException("Cannot read existing document ${document.id}", error)
             }
-            when {
-                existing == null -> {
+        }
+        val conflicts = expected.filter { document ->
+            existingById[document.id]?.let { it != document } == true
+        }
+        require(conflicts.isEmpty()) {
+            "Existing documents conflict with legacy conversion: ${conflicts.joinToString { it.id }}"
+        }
+
+        var migratedCount = 0
+        var alreadyMigratedCount = 0
+        expected.forEach { document ->
+            when (existingById.getValue(document.id)) {
+                null -> {
                     repository.save(document)
                     migratedCount++
                 }
-                existing == document -> alreadyMigratedCount++
-                else -> throw IllegalStateException(
-                    "Document ${document.id} already exists and differs from the legacy conversion"
-                )
+                document -> alreadyMigratedCount++
+                else -> error("Migration preflight invariant failed for ${document.id}")
             }
         }
 

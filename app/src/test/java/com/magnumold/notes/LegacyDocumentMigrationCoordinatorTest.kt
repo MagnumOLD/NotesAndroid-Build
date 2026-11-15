@@ -3,10 +3,14 @@ package com.magnumold.notes
 import android.content.Context
 import com.magnumold.notes.editor.migration.LegacyDocumentMigrationCoordinator
 import com.magnumold.notes.editor.migration.MigrationBackupStore
+import com.magnumold.notes.editor.model.EditorDocument
+import com.magnumold.notes.editor.model.ParagraphBlock
+import com.magnumold.notes.editor.model.RichText
 import com.magnumold.notes.editor.model.plainText
 import com.magnumold.notes.editor.storage.DocumentRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -115,6 +119,37 @@ class LegacyDocumentMigrationCoordinatorTest {
         assertTrue(first.fileName != second.fileName)
         assertTrue(java.io.File(context.filesDir, directoryName + "/" + first.fileName).isFile)
         assertTrue(java.io.File(context.filesDir, directoryName + "/" + second.fileName).isFile)
+    }
+
+    @Test
+    fun migrationPreflightsAllConflictsBeforeWritingAnyDocument() {
+        val context = context()
+        java.io.File(context.filesDir, "migration-preflight-docs").deleteRecursively()
+        java.io.File(context.filesDir, "migration-preflight-backup").deleteRecursively()
+        val snapshot = PersistenceSnapshot(
+            notes = listOf(note(61, "First"), note(62, "Second")),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+        val repository = DocumentRepository(context, "migration-preflight-docs")
+        val conflicting = EditorDocument(
+            id = "62",
+            createdAt = 1L,
+            updatedAt = 2L,
+            blocks = listOf(ParagraphBlock(content = RichText("Already rich")))
+        )
+        repository.save(conflicting)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            LegacyDocumentMigrationCoordinator(
+                repository,
+                MigrationBackupStore(context, "migration-preflight-backup")
+            ).migrate(snapshot)
+        }
+
+        assertTrue(repository.load("61").getOrNull() == null)
+        assertEquals(conflicting, repository.load("62").getOrNull())
     }
 
 }

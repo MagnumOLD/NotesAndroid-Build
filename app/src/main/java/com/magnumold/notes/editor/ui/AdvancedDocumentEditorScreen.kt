@@ -268,6 +268,7 @@ internal fun AdvancedDocumentEditorScreen(
                         showLinkDialog = true
                     }) { Text("Ссылка") }
                     TextButton(onClick = { insert(CalloutBlock(kind = CalloutKind.NOTE, content = RichText(""))) }) { Text("Заметка-блок") }
+                    TextButton(onClick = { insert(DividerBlock()) }) { Text("Разделитель") }
                     TextButton(onClick = { imagePicker.launch(arrayOf("image/*")) }) { Text("Изображение") }
                     TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }) { Text("Файл") }
                 }
