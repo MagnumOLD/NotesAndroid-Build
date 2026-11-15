@@ -263,7 +263,7 @@ private fun RichTextEditorField(
     fontFamily: FontFamily = FontFamily.Default,
     tableCell: Pair<String, Int>? = null
 ) {
-    var selection by remember(blockId, itemId) { mutableStateOf(TextRange(richText.text.length)) }
+    var selection by remember(blockId, itemId, tableCell) { mutableStateOf(TextRange(richText.text.length)) }
     LaunchedEffect(richText.text) {
         if (selection.end > richText.text.length) selection = TextRange(richText.text.length)
     }
@@ -275,7 +275,8 @@ private fun RichTextEditorField(
             val newText = next.text
             selection = next.selection
             if (newText != oldText) {
-                if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId) {
+                if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId ||
+                    (tableCell != null && controller.state.activeTableCell != com.magnumold.notes.editor.engine.TableCellPosition(tableCell.first, tableCell.second))) {
                     if (tableCell != null) controller.activateTableCell(blockId, tableCell.first, tableCell.second)
                     else if (itemId == null) controller.activateBlock(blockId)
                     else if (controller.state.document.blocks.firstOrNull { it.id == blockId } is ListBlock) {

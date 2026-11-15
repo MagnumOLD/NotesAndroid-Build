@@ -116,7 +116,7 @@ internal class EditorSessionController(
         state = state.copy(
             activeBlockId = blockId,
             activeItemId = itemId,
-            activeTableCell = tableCell,
+            activeTableCell = null,
             selection = TextSelection(content.text.length, content.text.length),
             composingRange = null
         )
@@ -254,6 +254,7 @@ internal class EditorSessionController(
             document = document,
             activeBlockId = active?.id,
             activeItemId = itemId,
+            activeTableCell = tableCell,
             selection = TextSelection(
                 previousSelection.anchor.coerceIn(0, length),
                 previousSelection.focus.coerceIn(0, length)
