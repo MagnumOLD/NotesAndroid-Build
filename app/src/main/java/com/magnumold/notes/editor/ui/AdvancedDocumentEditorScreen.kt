@@ -1,5 +1,12 @@
 package com.magnumold.notes.editor.ui
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.provider.OpenableColumns
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,11 +47,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -79,6 +91,9 @@ import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.QuoteBlock
 import com.magnumold.notes.editor.model.RichText
 import com.magnumold.notes.editor.model.TableBlock
+import com.magnumold.notes.editor.storage.DocumentAssetStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * First independent Compose surface for the advanced document editor.
@@ -92,8 +107,40 @@ internal fun AdvancedDocumentEditorScreen(
     onDocumentChange: (EditorDocument) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val assetStore = remember(context) { DocumentAssetStore(context.applicationContext) }
     val controller = remember(document.id) { EditorSessionController(document) }
     var editorState by remember(document.id) { mutableStateOf(controller.state) }
+
+    fun insertImported(block: DocumentBlock) {
+        insert(block)
+    }
+
+    fun importSelectedAsset(uri: android.net.Uri) {
+        runCatching {
+            val name = context.contentResolver.query(
+                uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }?.takeIf { it.isNotBlank() } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "Вложение"
+            val asset = assetStore.import(uri, name)
+            val block = if (asset.mimeType?.startsWith("image/") == true) {
+                ImageBlock(assetId = asset.assetId)
+            } else {
+                AttachmentBlock(assetId = asset.assetId, fileName = asset.fileName, mimeType = asset.mimeType, sizeBytes = asset.sizeBytes)
+            }
+            insertImported(block)
+        }.onFailure { error ->
+            Toast.makeText(context, error.message ?: "Не удалось добавить файл", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) importSelectedAsset(uri)
+    }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) importSelectedAsset(uri)
+    }
 
     fun publish(next: com.magnumold.notes.editor.engine.EditorSessionState) {
         val previousDocument = editorState.document
@@ -153,6 +200,8 @@ internal fun AdvancedDocumentEditorScreen(
                     TextButton(onClick = { insert(ChecklistBlock(items = listOf(ChecklistItem(content = RichText(""))))) }) { Text("Чек-лист") }
                     TextButton(onClick = { insert(QuoteBlock(content = RichText(""))) }) { Text("Цитата") }
                     TextButton(onClick = { insert(CodeBlock(code = "")) }) { Text("Код") }
+                    TextButton(onClick = { imagePicker.launch(arrayOf("image/*")) }) { Text("Изображение") }
+                    TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }) { Text("Файл") }
                 }
             }
         }
@@ -166,6 +215,7 @@ internal fun AdvancedDocumentEditorScreen(
                     block = block,
                     controller = controller,
                     onStateChange = ::publish,
+                    assetStore = assetStore,
                     onToggleChecklist = { itemId, checked ->
                         val updated = block.toggleChecklistItem(itemId, checked)
                         publish(controller.execute(DocumentCommand.Replace(updated)))
@@ -184,6 +234,7 @@ private fun DocumentBlockEditor(
     block: DocumentBlock,
     controller: EditorSessionController,
     onStateChange: (com.magnumold.notes.editor.engine.EditorSessionState) -> Unit,
+    assetStore: DocumentAssetStore,
     onToggleChecklist: (String, Boolean) -> Unit
 ) {
     when (block) {
@@ -244,8 +295,8 @@ private fun DocumentBlockEditor(
                 }
             }
         }
-        is ImageBlock -> PlaceholderBlock("Изображение", block.caption.ifBlank { "Вложение: ${block.assetId}" })
-        is AttachmentBlock -> PlaceholderBlock("Файл", block.fileName)
+        is ImageBlock -> ImageAssetBlock(block, assetStore)
+        is AttachmentBlock -> AttachmentAssetBlock(block)
         is LinkBlock -> PlaceholderBlock("Ссылка", block.label.ifBlank { block.url } + "\n" + block.url)
         is DividerBlock -> Divider(color = MaterialTheme.colorScheme.outlineVariant)
     }
@@ -358,6 +409,57 @@ private fun ChecklistItemEditor(
             ChecklistItemEditor(blockId, child, depth + 1, controller, onStateChange, onToggle)
         }
     }
+}
+
+
+@Composable
+private fun ImageAssetBlock(block: ImageBlock, assetStore: DocumentAssetStore) {
+    val bitmap by produceState<Bitmap?>(initialValue = null, block.assetId) {
+        value = withContext(Dispatchers.IO) {
+            assetStore.find(block.assetId)?.let(::decodeDocumentImagePreview)
+        }
+    }
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp)) {
+        Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap!!.asImageBitmap(),
+                    contentDescription = block.caption.ifBlank { "Изображение" },
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Text("Изображение недоступно", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (block.caption.isNotBlank()) Text(block.caption, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+private fun decodeDocumentImagePreview(file: java.io.File): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.absolutePath, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    var sampleSize = 1
+    while (bounds.outWidth / sampleSize > 1600 || bounds.outHeight / sampleSize > 1600) sampleSize *= 2
+    return BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sampleSize })
+}
+
+@Composable
+private fun AttachmentAssetBlock(block: AttachmentBlock) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(block.fileName, style = MaterialTheme.typography.labelLarge)
+            val details = listOfNotNull(block.mimeType, block.sizeBytes?.let(::formatAssetSize)).joinToString(" · ")
+            if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+private fun formatAssetSize(bytes: Long): String = when {
+    bytes < 1024 -> "$bytes Б"
+    bytes < 1024 * 1024 -> "${bytes / 1024} КБ"
+    else -> String.format(java.util.Locale.ROOT, "%.1f МБ", bytes / (1024f * 1024f))
 }
 
 @Composable
