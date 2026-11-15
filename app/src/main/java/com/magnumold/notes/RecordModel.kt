@@ -61,6 +61,39 @@ internal fun List<NoteBlock>.toPlainText(): String = joinToString("\n\n") { bloc
     (if (block.isChecklist) (if (block.checked) "☑ " else "☐ ") else "") + block.text
 }
 
+/**
+ * Rebuilds editor blocks from the plain-text representation while retaining
+ * metadata and stable IDs for blocks that still occupy the same paragraph.
+ * Checklist markers are part of the editor text, so toggling/removing one is
+ * reflected in the model rather than silently discarded.
+ */
+internal fun List<NoteBlock>.withEditedPlainText(value: String): List<NoteBlock> {
+    val paragraphs = value.split("\n\n")
+    return paragraphs.mapIndexed { index, paragraph ->
+        val previous = getOrNull(index)
+        val checked = when {
+            paragraph.startsWith("☑ ") -> true
+            paragraph.startsWith("☐ ") -> false
+            else -> false
+        }
+        val hasChecklistMarker = paragraph.startsWith("☑ ") || paragraph.startsWith("☐ ")
+        val text = if (hasChecklistMarker) paragraph.substring(2) else paragraph
+        if (previous != null) {
+            previous.copy(
+                text = text,
+                checked = checked,
+                isChecklist = hasChecklistMarker
+            )
+        } else {
+            NoteBlock(
+                text = text,
+                checked = checked,
+                isChecklist = hasChecklistMarker
+            )
+        }
+    }
+}
+
 internal fun Note.matchesSearch(query: String): Boolean =
     blocks.any { it.text.contains(query, ignoreCase = true) } ||
         titleText.contains(query, ignoreCase = true) ||
