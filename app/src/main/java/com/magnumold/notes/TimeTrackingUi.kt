@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 
-/** Compact, flat time summary; separators run edge to edge. */
+/** Compact, flat time summary without a bottom separator. */
 @Composable
 internal fun TimeTrackingSection(
     title: String,
@@ -50,10 +48,5 @@ internal fun TimeTrackingSection(
             }
             content()
         }
-        HorizontalDivider(
-            modifier = Modifier.padding(top = AppSpacing.xxs),
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-            thickness = CardDimensions.dividerThickness
-        )
     }
 }
