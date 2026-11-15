@@ -93,10 +93,11 @@ internal class EditorSessionController(
     }
 
     fun setSelection(anchor: Int, focus: Int): EditorSessionState {
-        history.breakCoalescing()
         val length = activeRichText()?.text?.length ?: 0
+        val nextSelection = TextSelection(anchor.coerceIn(0, length), focus.coerceIn(0, length))
+        if (nextSelection != state.selection) history.breakCoalescing()
         state = state.copy(
-            selection = TextSelection(anchor.coerceIn(0, length), focus.coerceIn(0, length)),
+            selection = nextSelection,
             composingRange = null
         )
         return state
