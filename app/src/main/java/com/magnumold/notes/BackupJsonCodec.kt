@@ -230,6 +230,26 @@ internal fun mergeImportedCollections(existing: List<NoteCollection>, imported: 
 }
 
 
+/** Merges every backup section against one shared namespace of record IDs. */
+internal fun mergeBackupRecords(current: PersistenceSnapshot, imported: BackupData): PersistenceSnapshot {
+    val usedIds = sequence {
+        current.notes.forEach { yieldAll(it.allRecordIds()) }
+        current.collections.forEach { collection ->
+            collection.notes.forEach { yieldAll(it.allRecordIds()) }
+        }
+        current.archived.forEach { yieldAll(it.note.allRecordIds()) }
+        current.trash.forEach { yieldAll(it.note.allRecordIds()) }
+    }.toMutableSet()
+
+    return current.copy(
+        notes = mergeNoteLists(current.notes, imported.notes, usedIds),
+        collections = mergeCollectionLists(current.collections, imported.collections, usedIds),
+        archived = mergeVaultEntries(current.archived, imported.archived, usedIds),
+        trash = mergeVaultEntries(current.trash, imported.trash, usedIds)
+    )
+}
+
+
 /** Applies rich-document ID remaps to the corresponding legacy note records. */
 internal fun BackupData.remapNoteIds(mapping: Map<String, String>): BackupData {
     if (mapping.isEmpty()) return this
