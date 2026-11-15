@@ -70,12 +70,15 @@ internal object AppLayoutContract {
     val bodyTextSize = 16.sp
     val cardPreviewLineHeight = 22.sp
     val helperTextSize = 13.sp
+    val helperLineHeight = 18.sp
     val bodyLineHeight = 24.sp
     val sectionLabelSize = collectionLabelSize
     val sectionLabelLineHeight = 24.sp
     val metadataTextSize = 12.sp
+    val metadataLineHeight = 18.sp
     // Compact creation-date label is intentionally smaller to fit the card side rail.
     val cardMetadataTextSize = 9.sp
+    val cardMetadataLineHeight = 12.sp
 
     // Semantic editor geometry.
     val editorTitleMinHeight = 48.dp
@@ -145,11 +148,14 @@ internal object AppTypography {
     val cardPreview = AppLayoutContract.mainCardTextSize
     val cardPreviewLineHeight = AppLayoutContract.cardPreviewLineHeight
     val helper = AppLayoutContract.helperTextSize
+    val helperLineHeight = AppLayoutContract.helperLineHeight
     val bodyLineHeight = AppLayoutContract.bodyLineHeight
     val sectionLabel = AppLayoutContract.sectionLabelSize
     val sectionLabelLineHeight = AppLayoutContract.sectionLabelLineHeight
     val metadata = AppLayoutContract.metadataTextSize
+    val metadataLineHeight = AppLayoutContract.metadataLineHeight
     val cardMetadata = AppLayoutContract.cardMetadataTextSize
+    val cardMetadataLineHeight = AppLayoutContract.cardMetadataLineHeight
 
     // Semantic text styles are aliases of the app-wide Material typography.
     // This keeps screen code from rebuilding equivalent TextStyle values.
@@ -171,7 +177,8 @@ internal object AppTypography {
         MaterialTheme.typography.bodyLarge.copy(lineHeight = cardPreviewLineHeight)
 
     @Composable
-    fun sectionLabelStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel, lineHeight = sectionLabelLineHeight)
+    fun sectionLabelStyle(): TextStyle =
+        MaterialTheme.typography.bodyLarge.copy(fontSize = sectionLabel, lineHeight = sectionLabelLineHeight)
 
     @Composable
     fun sectionLabelEmphasisStyle(): TextStyle = sectionLabelStyle().copy(fontWeight = FontWeight.Medium)
@@ -182,7 +189,8 @@ internal object AppTypography {
     )
 
     @Composable
-    fun helperStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = helper)
+    fun helperStyle(): TextStyle =
+        MaterialTheme.typography.bodySmall.copy(fontSize = helper, lineHeight = helperLineHeight)
 
     @Composable
     fun emphasisBodyStyle(): TextStyle = bodyStyle().copy(fontWeight = FontWeight.Medium)
@@ -203,10 +211,12 @@ internal object AppTypography {
     fun smallLabelStyle(): TextStyle = MaterialTheme.typography.labelSmall
 
     @Composable
-    fun metadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = metadata)
+    fun metadataStyle(): TextStyle =
+        MaterialTheme.typography.bodySmall.copy(fontSize = metadata, lineHeight = metadataLineHeight)
 
     @Composable
-    fun cardMetadataStyle(): TextStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = cardMetadata)
+    fun cardMetadataStyle(): TextStyle =
+        MaterialTheme.typography.bodySmall.copy(fontSize = cardMetadata, lineHeight = cardMetadataLineHeight)
 }
 
 /** Semantic dimensions for the common page and list structures. */
@@ -376,9 +386,6 @@ internal object CardDimensions {
     val nestedRowMinHeight = AppLayoutContract.nestedRowMinHeight
     val nestedGroupMinHeight = AppLayoutContract.nestedGroupMinHeight
 }
-
-
-
 
 internal fun formatNoteCreationDate(timestamp: Long): String {
     val locale = java.util.Locale("ru")
