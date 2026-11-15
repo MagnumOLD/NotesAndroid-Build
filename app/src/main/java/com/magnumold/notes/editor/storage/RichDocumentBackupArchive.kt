@@ -64,22 +64,24 @@ internal object RichDocumentBackupArchive {
         require(selectedAssets.all { assetFiles.getValue(it).length() <= MAX_ENTRY_BYTES }) {
             "An asset exceeds backup entry size limit"
         }
-        val totalBytes = legacyBytes.size.toLong() +
-            serializedDocuments.sumOf { it.second.size.toLong() } +
-            selectedAssets.sumOf { assetFiles.getValue(it).length() }
-        require(totalBytes <= MAX_TOTAL_BYTES) { "Backup exceeds total uncompressed size limit" }
         val manifest = JSONObject()
             .put("format", "notes_rich_backup")
             .put("version", 1)
             .put("documents", JSONArray(documents.sortedBy { it.id }.map { it.id }))
             .put("assets", JSONArray(selectedAssets))
+        val manifestBytes = manifest.toString().toByteArray(StandardCharsets.UTF_8)
+        require(manifestBytes.size <= MAX_ENTRY_BYTES) { "Backup manifest exceeds entry size limit" }
+        val totalBytes = legacyBytes.size.toLong() + manifestBytes.size.toLong() +
+            serializedDocuments.sumOf { it.second.size.toLong() } +
+            selectedAssets.sumOf { assetFiles.getValue(it).length() }
+        require(totalBytes <= MAX_TOTAL_BYTES) { "Backup exceeds total uncompressed size limit" }
         ZipOutputStream(output.buffered()).use { zip ->
             zip.putNextEntry(ZipEntry(LEGACY_SNAPSHOT))
             zip.write(legacyBytes)
             zip.closeEntry()
 
             zip.putNextEntry(ZipEntry(MANIFEST))
-            zip.write(manifest.toString().toByteArray(StandardCharsets.UTF_8))
+            zip.write(manifestBytes)
             zip.closeEntry()
 
             serializedDocuments.forEach { (document, bytes) ->
@@ -87,7 +89,7 @@ internal object RichDocumentBackupArchive {
                 zip.write(bytes)
                 zip.closeEntry()
             }
-            var actualTotalBytes = legacyBytes.size.toLong() +
+            var actualTotalBytes = legacyBytes.size.toLong() + manifestBytes.size.toLong() +
                 serializedDocuments.sumOf { it.second.size.toLong() }
             selectedAssets.forEach { id ->
                 val file = assetFiles.getValue(id)
