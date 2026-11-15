@@ -447,18 +447,20 @@ internal fun NoteEditor(
 
     fun updateText(previous: TextFieldValue, value: TextFieldValue) {
         if (editorBlocks.toPlainText() == value.text) {
-            if (historyIndex in history.indices) {
-                val next = history.toMutableList()
-                val storedText = next[historyIndex].blocks.toPlainText()
-                val safeSelection = TextRange(
-                    value.selection.start.coerceIn(0, storedText.length),
-                    value.selection.end.coerceIn(0, storedText.length)
-                )
-                next[historyIndex] = next[historyIndex].copy(selection = safeSelection)
-                history = next
+            if (previous.selection != value.selection) {
+                if (historyIndex in history.indices) {
+                    val next = history.toMutableList()
+                    val storedText = next[historyIndex].blocks.toPlainText()
+                    val safeSelection = TextRange(
+                        value.selection.start.coerceIn(0, storedText.length),
+                        value.selection.end.coerceIn(0, storedText.length)
+                    )
+                    next[historyIndex] = next[historyIndex].copy(selection = safeSelection)
+                    history = next
+                }
+                // Moving the caret or changing a selection ends the current word group.
+                undoGroupingState = UndoGroupingState()
             }
-            // Moving the caret or changing a selection ends the current word group.
-            undoGroupingState = UndoGroupingState()
             return
         }
 
