@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.magnumold.notes.editor.model.AttachmentBlock
 import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.HeadingBlock
 import com.magnumold.notes.editor.model.ParagraphBlock
@@ -52,4 +53,34 @@ class AdvancedDocumentEditorScreenTest {
             assertEquals(1, (emitted?.blocks?.last() as HeadingBlock).level)
         }
     }
+    @Test
+    fun rendersImportedAttachmentCard() {
+        val initial = EditorDocument(
+            id = "ui-attachment-document",
+            createdAt = 1L,
+            updatedAt = 1L,
+            blocks = listOf(
+                AttachmentBlock(
+                    assetId = "00000000-0000-0000-0000-000000000001",
+                    fileName = "reference.pdf",
+                    mimeType = "application/pdf",
+                    sizeBytes = 2048L
+                )
+            )
+        )
+
+        composeRule.setContent {
+            MaterialTheme {
+                AdvancedDocumentEditorScreen(
+                    document = initial,
+                    onDocumentChange = {},
+                    onBack = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("reference.pdf").assertIsDisplayed()
+        composeRule.onNodeWithText("application/pdf · 2 КБ").assertIsDisplayed()
+    }
+
 }
