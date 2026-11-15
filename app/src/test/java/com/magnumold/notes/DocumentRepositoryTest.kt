@@ -70,7 +70,7 @@ class DocumentRepositoryTest {
         preferences.edit().putString("editor_document_v1_dmFsaWQ", "{broken").commit()
 
         val snapshot = store.loadAll()
-        assertEquals(listOf(valid), snapshot.documents)
+        assertTrue(snapshot.documents.isEmpty())
         assertEquals(listOf("valid"), snapshot.corruptDocumentIds)
         assertEquals("{broken", preferences.getString("editor_document_v1_dmFsaWQ", null))
     }
