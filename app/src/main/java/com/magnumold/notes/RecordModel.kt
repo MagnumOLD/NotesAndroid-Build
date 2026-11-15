@@ -68,15 +68,42 @@ internal fun List<NoteBlock>.toPlainText(): String = joinToString("\n\n") { bloc
  * reflected in the model rather than silently discarded.
  */
 internal fun List<NoteBlock>.withEditedPlainText(value: String): List<NoteBlock> {
-    val paragraphs = value.split("\n\n")
-    return paragraphs.mapIndexed { index, paragraph ->
-        val previous = getOrNull(index)
-        val checked = when {
-            paragraph.startsWith("☑ ") -> true
-            paragraph.startsWith("☐ ") -> false
-            else -> false
+    val paragraphs = value.split("\\n\\n")
+    val oldParagraphs = map { block ->
+        (if (block.isChecklist) (if (block.checked) "☑ " else "☐ ") else "") + block.text
+    }
+
+    // First align unchanged paragraphs in order. This prevents inserting a
+    // paragraph near the beginning from stealing IDs from all following blocks.
+    val matchedOldIndex = IntArray(paragraphs.size) { -1 }
+    val usedOldIndices = BooleanArray(size)
+    var lastMatchedOldIndex = -1
+    paragraphs.forEachIndexed { newIndex, paragraph ->
+        val candidate = (lastMatchedOldIndex + 1 until oldParagraphs.size)
+            .firstOrNull { oldIndex -> !usedOldIndices[oldIndex] && oldParagraphs[oldIndex] == paragraph }
+        if (candidate != null) {
+            matchedOldIndex[newIndex] = candidate
+            usedOldIndices[candidate] = true
+            lastMatchedOldIndex = candidate
         }
-        val hasChecklistMarker = paragraph.startsWith("☑ ") || paragraph.startsWith("☐ ")
+    }
+
+    // For paragraphs whose text was edited, retain the block at the same
+    // position only when that block was not already aligned elsewhere.
+    paragraphs.indices.forEach { newIndex ->
+        if (matchedOldIndex[newIndex] == -1 &&
+            newIndex < size &&
+            !usedOldIndices[newIndex]
+        ) {
+            matchedOldIndex[newIndex] = newIndex
+            usedOldIndices[newIndex] = true
+        }
+    }
+
+    return paragraphs.mapIndexed { index, paragraph ->
+        val previous = getOrNull(matchedOldIndex[index])
+        val checked = paragraph.startsWith("☑ ")
+        val hasChecklistMarker = checked || paragraph.startsWith("☐ ")
         val text = if (hasChecklistMarker) paragraph.substring(2) else paragraph
         if (previous != null) {
             previous.copy(
