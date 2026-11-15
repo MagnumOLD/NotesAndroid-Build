@@ -53,7 +53,7 @@ internal fun WorkTimeControls(
             Text(
                 formatWorkDuration(totalMillis),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         headerAction = {
@@ -128,7 +128,7 @@ internal fun ParentWorkTimeSummary(
             Text(
                 formatWorkDuration(totalMillis),
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     )
