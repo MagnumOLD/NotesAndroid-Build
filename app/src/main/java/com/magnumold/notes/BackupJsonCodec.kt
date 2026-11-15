@@ -130,16 +130,25 @@ private fun Note.allRecordIds(): Sequence<Long> = sequence {
     children.forEach { child -> yieldAll(child.allRecordIds()) }
 }
 
-private fun nextAvailableRecordId(usedIds: MutableSet<Long>): Long {
-    var candidate = newRecordId()
-    while (!usedIds.add(candidate)) candidate = newRecordId()
-    return candidate
+private fun stableImportedRecordId(note: Note, salt: Int): Long {
+    val content = buildString {
+        append(note.id).append('|').append(note.type.name).append('|')
+        append(note.titleText).append('|').append(note.descriptionText).append('|')
+        note.blocks.forEach { block ->
+            append(block.text).append('|').append(block.checked).append('|')
+                .append(block.isChecklist).append(';')
+        }
+        append('|').append(salt)
+    }
+    val candidate = java.util.UUID.nameUUIDFromBytes(content.toByteArray(Charsets.UTF_8))
+        .mostSignificantBits and Long.MAX_VALUE
+    return candidate.takeIf { it != 0L } ?: 1L
 }
 
 private fun mergeNoteLists(
     existing: List<Note>,
     imported: List<Note>,
-    usedIds: MutableSet<Long>
+    knownRecords: MutableMap<Long, Note>
 ): List<Note> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
@@ -148,104 +157,112 @@ private fun mergeNoteLists(
         }
         if (sameIndex >= 0) {
             val current = result[sameIndex]
-            result[sameIndex] = current.copy(
-                children = mergeNoteLists(current.children, incoming.children, usedIds)
-            )
+            val mergedChildren = mergeNoteLists(current.children, incoming.children, knownRecords)
+            val updated = current.copy(children = mergedChildren)
+            result[sameIndex] = updated
+            knownRecords[updated.id] = updated
             return@forEach
         }
 
-        val collision = incoming.id in usedIds
-        val safeId = if (collision) nextAvailableRecordId(usedIds) else incoming.id.also { usedIds.add(it) }
-        val safeBlocks = if (collision) incoming.blocks.map {
+        val existingWithId = knownRecords[incoming.id]
+        if (existingWithId != null && existingWithId.sameRecordContent(incoming)) {
+            // The same logical record is already present in another section.
+            return@forEach
+        }
+
+        val safeId = if (existingWithId == null) {
+            incoming.id
+        } else {
+            var salt = 0
+            var candidate: Long
+            while (true) {
+                candidate = stableImportedRecordId(incoming, salt++)
+                val occupant = knownRecords[candidate]
+                if (occupant == null || occupant.sameRecordContent(incoming)) break
+            }
+            if (knownRecords[candidate]?.sameRecordContent(incoming) == true) {
+                return@forEach
+            }
+            candidate
+        }
+
+        val safeBlocks = if (safeId == incoming.id) incoming.blocks else incoming.blocks.map {
             it.copy(id = java.util.UUID.randomUUID().toString())
-        } else incoming.blocks
-        val safeChildren = mergeNoteLists(emptyList(), incoming.children, usedIds)
-        result.add(incoming.copy(id = safeId, blocks = safeBlocks, children = safeChildren))
+        }
+        val safeChildren = mergeNoteLists(emptyList(), incoming.children, knownRecords)
+        val safeNote = incoming.copy(id = safeId, blocks = safeBlocks, children = safeChildren)
+        result.add(safeNote)
+        knownRecords[safeId] = safeNote
     }
     return result
-}
-
-internal fun mergeImportedNotes(existing: List<Note>, imported: List<Note>): List<Note> {
-    val usedIds = existing.asSequence().flatMap { it.allRecordIds() }.toMutableSet()
-    return mergeNoteLists(existing, imported, usedIds)
 }
 
 private fun mergeVaultEntries(
     existing: List<VaultNote>,
     imported: List<VaultNote>,
-    usedIds: MutableSet<Long>
+    knownRecords: MutableMap<Long, Note>
 ): List<VaultNote> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
-        val sameIndex = result.indexOfFirst {
-            it.note.id == incoming.note.id && it.note.sameRecordContent(incoming.note)
-        }
-        if (sameIndex >= 0) {
-            val current = result[sameIndex]
-            result[sameIndex] = current.copy(
-                note = current.note.copy(
-                    children = mergeNoteLists(current.note.children, incoming.note.children, usedIds)
+        val beforeCount = result.size
+        val merged = mergeNoteLists(emptyList(), listOf(incoming.note), knownRecords).singleOrNull()
+        if (merged != null && result.none { it.note.id == merged.id }) {
+            result.add(incoming.copy(note = merged))
+        } else if (result.size == beforeCount && merged != null) {
+            // A same-ID record already exists in this vault section.
+            val index = result.indexOfFirst { it.note.id == merged.id }
+            if (index >= 0) {
+                val current = result[index]
+                result[index] = current.copy(
+                    note = current.note.copy(
+                        children = mergeNoteLists(current.note.children, incoming.note.children, knownRecords)
+                    )
                 )
-            )
-            return@forEach
+            }
         }
-        val note = mergeNoteLists(emptyList(), listOf(incoming.note), usedIds).single()
-        result.add(incoming.copy(note = note))
     }
     return result
-}
-
-internal fun mergeImportedVault(existing: List<VaultNote>, imported: List<VaultNote>): List<VaultNote> {
-    val usedIds = existing.asSequence().flatMap { it.note.allRecordIds() }.toMutableSet()
-    return mergeVaultEntries(existing, imported, usedIds)
 }
 
 private fun mergeCollectionLists(
     existing: List<NoteCollection>,
     imported: List<NoteCollection>,
-    usedIds: MutableSet<Long>
+    knownRecords: MutableMap<Long, Note>
 ): List<NoteCollection> {
     val result = existing.toMutableList()
     imported.forEach { incoming ->
         val sameName = result.indexOfFirst { it.name.equals(incoming.name, true) }
         if (sameName >= 0) {
             result[sameName] = result[sameName].copy(
-                notes = mergeNoteLists(result[sameName].notes, incoming.notes, usedIds)
+                notes = mergeNoteLists(result[sameName].notes, incoming.notes, knownRecords)
             )
         } else {
             var id = incoming.id
             val usedCollectionIds = result.mapTo(mutableSetOf()) { it.id }
             while (id in usedCollectionIds) id++
-            result.add(incoming.copy(id = id, notes = mergeNoteLists(emptyList(), incoming.notes, usedIds)))
+            result.add(incoming.copy(id = id, notes = mergeNoteLists(emptyList(), incoming.notes, knownRecords)))
         }
     }
     return result
 }
 
-internal fun mergeImportedCollections(existing: List<NoteCollection>, imported: List<NoteCollection>): List<NoteCollection> {
-    val usedIds = existing.asSequence().flatMap { collection ->
-        collection.notes.asSequence().flatMap { it.allRecordIds() }
-    }.toMutableSet()
-    return mergeCollectionLists(existing, imported, usedIds)
-}
-
-
 /** Merges every backup section against one shared namespace of record IDs. */
 internal fun mergeBackupRecords(current: PersistenceSnapshot, imported: BackupData): PersistenceSnapshot {
-    val usedIds = sequence {
-        current.notes.forEach { yieldAll(it.allRecordIds()) }
-        current.collections.forEach { collection ->
-            collection.notes.forEach { yieldAll(it.allRecordIds()) }
-        }
-        current.archived.forEach { yieldAll(it.note.allRecordIds()) }
-        current.trash.forEach { yieldAll(it.note.allRecordIds()) }
-    }.toMutableSet()
+    val knownRecords = mutableMapOf<Long, Note>()
+    fun remember(note: Note) {
+        knownRecords.putIfAbsent(note.id, note)
+        note.children.forEach(::remember)
+    }
+    current.notes.forEach(::remember)
+    current.collections.forEach { it.notes.forEach(::remember) }
+    current.archived.forEach { remember(it.note) }
+    current.trash.forEach { remember(it.note) }
 
     return current.copy(
-        notes = mergeNoteLists(current.notes, imported.notes, usedIds),
-        collections = mergeCollectionLists(current.collections, imported.collections, usedIds),
-        archived = mergeVaultEntries(current.archived, imported.archived, usedIds),
-        trash = mergeVaultEntries(current.trash, imported.trash, usedIds)
+        notes = mergeNoteLists(current.notes, imported.notes, knownRecords),
+        collections = mergeCollectionLists(current.collections, imported.collections, knownRecords),
+        archived = mergeVaultEntries(current.archived, imported.archived, knownRecords),
+        trash = mergeVaultEntries(current.trash, imported.trash, knownRecords)
     )
 }
 
