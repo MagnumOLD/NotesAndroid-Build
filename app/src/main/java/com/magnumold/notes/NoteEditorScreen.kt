@@ -47,6 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 
+private data class NoteEditorHistoryEntry(
+    val blocks: List<NoteBlock>,
+    val selection: TextRange
+)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 internal fun NoteEditor(
@@ -65,7 +70,7 @@ internal fun NoteEditor(
     var fieldValue by remember(note.id) { mutableStateOf(TextFieldValue(initialText)) }
     var editorBlocks by remember(note.id) { mutableStateOf(note.blocks) }
     var history by remember(note.id) {
-        mutableStateOf(listOf(note.blocks))
+        mutableStateOf(listOf(NoteEditorHistoryEntry(note.blocks, TextRange(initialText.length))))
     }
     var historyIndex by remember(note.id) { mutableIntStateOf(0) }
     var taskDetailsExpanded by remember(note.id) { mutableStateOf(false) }
@@ -233,28 +238,54 @@ internal fun NoteEditor(
         onFinishDrag = { finishChildDrag() }
     )
 
-    fun publish(blocks: List<NoteBlock>) {
+    fun publish(blocks: List<NoteBlock>, selection: TextRange? = null) {
         editorBlocks = blocks
+        val latestText = blocks.toPlainText()
+        if (fieldValue.text != latestText || selection != null) {
+            val requestedSelection = selection ?: TextRange(latestText.length)
+            fieldValue = TextFieldValue(
+                latestText,
+                selection = TextRange(
+                    requestedSelection.start.coerceIn(0, latestText.length),
+                    requestedSelection.end.coerceIn(0, latestText.length)
+                )
+            )
+        }
         onChange(note.copy(blocks = blocks))
     }
 
-    fun record(blocks: List<NoteBlock>) {
-        val next = (history.take(historyIndex + 1) + listOf(blocks)).takeLast(80)
-        history = next
-        historyIndex = history.lastIndex
-        publish(blocks)
+    fun publish(entry: NoteEditorHistoryEntry) {
+        publish(entry.blocks, entry.selection)
     }
 
-    fun updateText(value: String) {
-        val changed = editorBlocks.withEditedPlainText(value)
+    fun record(blocks: List<NoteBlock>) {
+        val entry = NoteEditorHistoryEntry(blocks, fieldValue.selection)
+        val next = (history.take(historyIndex + 1) + listOf(entry)).takeLast(80)
+        history = next
+        historyIndex = history.lastIndex
+        publish(entry)
+    }
+
+    fun updateText(value: TextFieldValue) {
+        if (editorBlocks.toPlainText() == value.text) {
+            if (historyIndex in history.indices) {
+                val next = history.toMutableList()
+                next[historyIndex] = next[historyIndex].copy(selection = value.selection)
+                history = next
+            }
+            return
+        }
+
+        val changed = editorBlocks.withEditedPlainText(value.text)
+        val entry = NoteEditorHistoryEntry(changed, value.selection)
         if (editingBlockId != editorBlockId) {
-            val next = (history.take(historyIndex + 1) + listOf(changed)).takeLast(80)
+            val next = (history.take(historyIndex + 1) + listOf(entry)).takeLast(80)
             history = next
             historyIndex = history.lastIndex
             editingBlockId = editorBlockId
         } else {
             val next = history.toMutableList()
-            next[historyIndex] = changed
+            next[historyIndex] = entry
             history = next
         }
         publish(changed)
@@ -666,7 +697,7 @@ internal fun NoteEditor(
                     value = fieldValue,
                     onValueChange = {
                         fieldValue = it
-                        updateText(it.text)
+                        updateText(it)
                     },
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
