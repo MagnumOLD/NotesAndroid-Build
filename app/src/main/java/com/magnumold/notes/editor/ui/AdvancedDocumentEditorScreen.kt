@@ -496,8 +496,12 @@ private fun RichTextEditorField(
     BasicTextField(
         value = fieldValue,
         onValueChange = { next ->
-            fieldValue = next
-            val oldText = richText.text
+            // BasicTextField may deliver several IME events before Compose gets
+            // another frame. The richText parameter still belongs to the previous
+            // frame, while fieldValue is updated synchronously for every event.
+            // Diff against that latest local value or fast typing drops characters.
+            val previousValue = fieldValue
+            val oldText = previousValue.text
             val newText = next.text
             val targetCell = tableCell?.let {
                 com.magnumold.notes.editor.engine.TableCellPosition(it.first, it.second)
@@ -516,6 +520,7 @@ private fun RichTextEditorField(
                     )
                 )
             } else {
+                fieldValue = next
                 if (newText != oldText) {
                     if (controller.state.activeBlockId != blockId || controller.state.activeItemId != itemId ||
                         (targetCell != null && controller.state.activeTableCell != targetCell)) {
