@@ -125,7 +125,7 @@ internal fun ParentWorkTimeSummary(
         trailingContent = {
             Text(
                 formatWorkDuration(totalMillis),
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+                style = AppTypography.emphasisBodyStyle(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
