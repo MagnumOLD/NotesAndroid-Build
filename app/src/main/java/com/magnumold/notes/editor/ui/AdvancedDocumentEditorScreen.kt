@@ -112,8 +112,14 @@ internal fun AdvancedDocumentEditorScreen(
     val controller = remember(document.id) { EditorSessionController(document) }
     var editorState by remember(document.id) { mutableStateOf(controller.state) }
 
-    fun insertImported(block: DocumentBlock) {
-        insert(block)
+    fun publish(next: com.magnumold.notes.editor.engine.EditorSessionState) {
+        val previousDocument = editorState.document
+        editorState = next
+        if (next.document != previousDocument) onDocumentChange(next.document)
+    }
+
+    fun insert(block: DocumentBlock) {
+        publish(controller.execute(DocumentCommand.Insert(editorState.document.blocks.size, block)))
     }
 
     fun importSelectedAsset(uri: android.net.Uri) {
@@ -127,9 +133,14 @@ internal fun AdvancedDocumentEditorScreen(
             val block = if (asset.mimeType?.startsWith("image/") == true) {
                 ImageBlock(assetId = asset.assetId)
             } else {
-                AttachmentBlock(assetId = asset.assetId, fileName = asset.fileName, mimeType = asset.mimeType, sizeBytes = asset.sizeBytes)
+                AttachmentBlock(
+                    assetId = asset.assetId,
+                    fileName = asset.fileName,
+                    mimeType = asset.mimeType,
+                    sizeBytes = asset.sizeBytes
+                )
             }
-            insertImported(block)
+            insert(block)
         }.onFailure { error ->
             Toast.makeText(context, error.message ?: "Не удалось добавить файл", Toast.LENGTH_LONG).show()
         }
@@ -140,16 +151,6 @@ internal fun AdvancedDocumentEditorScreen(
     }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importSelectedAsset(uri)
-    }
-
-    fun publish(next: com.magnumold.notes.editor.engine.EditorSessionState) {
-        val previousDocument = editorState.document
-        editorState = next
-        if (next.document != previousDocument) onDocumentChange(next.document)
-    }
-
-    fun insert(block: DocumentBlock) {
-        publish(controller.execute(DocumentCommand.Insert(editorState.document.blocks.size, block)))
     }
 
     fun toggleInlineStyle(style: InlineStyle) {
