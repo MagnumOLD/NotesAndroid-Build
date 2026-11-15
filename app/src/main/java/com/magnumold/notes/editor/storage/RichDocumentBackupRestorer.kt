@@ -8,7 +8,9 @@ import java.util.UUID
 internal data class RichDocumentRestoreReport(
     val importedDocuments: Int,
     val remappedDocumentIds: Map<String, String>,
-    val remappedAssetIds: Map<String, String>
+    val remappedAssetIds: Map<String, String>,
+    internal val installedDocumentIds: List<String>,
+    internal val installedAssetIds: List<String>
 )
 
 /**
@@ -43,7 +45,6 @@ internal class RichDocumentBackupRestorer(
             if (existing != null && existing == source &&
                 sourceAssetIds.all { assets.find(it) != null }
             ) {
-                // Exact document and all its local assets already exist.
                 return@forEach
             }
 
@@ -92,13 +93,27 @@ internal class RichDocumentBackupRestorer(
             return RichDocumentRestoreReport(
                 importedDocuments = savedDocumentIds.size,
                 remappedDocumentIds = remappedDocuments,
-                remappedAssetIds = installedAssets
+                remappedAssetIds = installedAssets,
+                installedDocumentIds = savedDocumentIds.toList(),
+                installedAssetIds = installedAssets.values.toList()
             )
         } catch (error: Throwable) {
-            savedDocumentIds.forEach { id -> runCatching { documents.delete(id) } }
-            installedAssets.values.forEach { id -> runCatching { assets.delete(id) } }
+            rollbackInstalled(savedDocumentIds, installedAssets.values)
             throw error
         }
+    }
+
+    /**
+     * Rolls back only files created by this restore operation. It deliberately
+     * preserves any pre-existing recovery draft, including one with a matching id.
+     */
+    fun rollback(report: RichDocumentRestoreReport) {
+        rollbackInstalled(report.installedDocumentIds, report.installedAssetIds)
+    }
+
+    private fun rollbackInstalled(documentIds: Iterable<String>, assetIds: Iterable<String>) {
+        documentIds.forEach { id -> runCatching { documents.deleteImportedDocument(id) } }
+        assetIds.forEach { id -> runCatching { assets.delete(id) } }
     }
 
     private fun newDocumentId(sourceId: String, reservedIds: MutableSet<Long>): String {
