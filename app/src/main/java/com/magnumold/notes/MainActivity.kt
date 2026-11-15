@@ -118,7 +118,8 @@ class MainActivity : ComponentActivity() {
                     recordsViewModel = recordsViewModel,
                     timeTrackingRepository = timeTrackingRepository,
                     savedThemeMode = savedThemeMode,
-                    initialThemeColorSets = initialThemeColorSets
+                    initialThemeColorSets = initialThemeColorSets,
+                    advancedEditorEnabled = migration.isMigrationComplete
                 )
             } else {
                 MigrationStartupScreen(
@@ -146,7 +147,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             migrationState.value = result.fold(
-                onSuccess = { MigrationStartupState(isReady = true) },
+                onSuccess = { MigrationStartupState(isReady = true, isMigrationComplete = true) },
                 onFailure = { MigrationStartupState(error = it.message ?: "Не удалось подготовить документы") }
             )
         }

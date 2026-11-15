@@ -36,7 +36,10 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun PersistentAdvancedDocumentEditorRoute(
     initialDocument: EditorDocument,
-    onBack: () -> Unit
+    onDocumentChange: (EditorDocument) -> Unit,
+    onBack: () -> Unit,
+    onDelete: () -> Unit,
+    onShare: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -109,7 +112,10 @@ internal fun PersistentAdvancedDocumentEditorRoute(
         val document = state.document ?: initialDocument
         AdvancedDocumentEditorScreen(
             document = document,
-            onDocumentChange = persistence::update,
+            onDocumentChange = { changed ->
+                persistence.update(changed)
+                onDocumentChange(changed)
+            },
             onBack = {
                 scope.launch {
                     val result = persistence.flush()
@@ -123,7 +129,22 @@ internal fun PersistentAdvancedDocumentEditorRoute(
                         ).show()
                     }
                 }
-            }
+            },
+            onDelete = {
+                scope.launch {
+                    val result = persistence.flush()
+                    if (result.isSuccess) {
+                        onDelete()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            result.exceptionOrNull()?.message ?: "Не удалось сохранить документ",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            },
+            onShare = onShare
         )
     }
 }

@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.FormatItalic
 import androidx.compose.material.icons.outlined.FormatUnderlined
@@ -40,6 +41,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -107,16 +110,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * First independent Compose surface for the advanced document editor.
- * It is intentionally not wired into NotesApp yet: the legacy note/task screen
- * remains the production route until persistence, migration and UI gates pass.
+ * Compose editor for ordinary notes. Task records continue to use their
+ * dedicated legacy task editor and are never routed through this screen.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun AdvancedDocumentEditorScreen(
     document: EditorDocument,
     onDocumentChange: (EditorDocument) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onDelete: () -> Unit = {},
+    onShare: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val assetStore = remember(context) { DocumentAssetStore(context.applicationContext) }
@@ -126,6 +130,7 @@ internal fun AdvancedDocumentEditorScreen(
     var showLinkDialog by remember(document.id) { mutableStateOf(false) }
     var newLinkLabel by remember(document.id) { mutableStateOf("") }
     var newLinkUrl by remember(document.id) { mutableStateOf("https://") }
+    var overflowExpanded by remember(document.id) { mutableStateOf(false) }
 
     fun publish(next: com.magnumold.notes.editor.engine.EditorSessionState) {
         val previousDocument = editorState.document
@@ -181,7 +186,7 @@ internal fun AdvancedDocumentEditorScreen(
         modifier = Modifier.testTag("advanced-document-editor").imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text(document.metadata.title.ifBlank { "Документ" }) },
+                title = { Text(document.metadata.title.ifBlank { "Заметка" }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Назад")
@@ -194,6 +199,28 @@ internal fun AdvancedDocumentEditorScreen(
                     ) { Icon(Icons.Outlined.Undo, contentDescription = "Отменить") }
                     IconButton(onClick = { publish(controller.redo()) }, enabled = controller.canRedo) {
                         Icon(Icons.Outlined.Redo, contentDescription = "Повторить")
+                    }
+                    IconButton(onClick = { overflowExpanded = true }) {
+                        Icon(Icons.Outlined.MoreVert, contentDescription = "Дополнительно")
+                    }
+                    DropdownMenu(
+                        expanded = overflowExpanded,
+                        onDismissRequest = { overflowExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Поделиться") },
+                            onClick = {
+                                overflowExpanded = false
+                                onShare()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Удалить заметку") },
+                            onClick = {
+                                overflowExpanded = false
+                                onDelete()
+                            }
+                        )
                     }
                 }
             )

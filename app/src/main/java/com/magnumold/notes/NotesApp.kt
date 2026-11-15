@@ -7,6 +7,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.magnumold.notes.editor.migration.LegacyNoteDocumentMigrator
+import com.magnumold.notes.editor.model.plainText
+import com.magnumold.notes.editor.model.ImageBlock
+import com.magnumold.notes.editor.ui.PersistentAdvancedDocumentEditorRoute
 import com.magnumold.notes.editor.storage.DocumentAssetStore
 import com.magnumold.notes.editor.storage.DocumentRepository
 
@@ -16,7 +20,8 @@ internal fun NotesApp(
     recordsViewModel: NotesViewModel,
     timeTrackingRepository: TimeTrackingRepository,
     savedThemeMode: String,
-    initialThemeColorSets: ThemeColorSets
+    initialThemeColorSets: ThemeColorSets,
+    advancedEditorEnabled: Boolean
 ) {
             val snapshot by recordsViewModel.snapshot.collectAsStateWithLifecycle()
             val themeSettings = remember(activity) {
@@ -186,6 +191,52 @@ internal fun NotesApp(
                             recordsViewModel.createActiveRecord(activeCollectionId, Note(id, "", listOf(NoteBlock()), now, created = now, type = type))
                             navigation.openNewRecord(id)
                         }
+                    )
+                } else if (selected.type == RecordType.NOTE && advancedEditorEnabled) {
+                    PersistentAdvancedDocumentEditorRoute(
+                        initialDocument = LegacyNoteDocumentMigrator.migrate(selected),
+                        onDocumentChange = { document ->
+                            val currentSnapshot = recordsViewModel.snapshot.value
+                            val currentNote = if (activeCollectionId == null) {
+                                currentSnapshot.notes.firstOrNull { it.id == selected.id }
+                            } else {
+                                currentSnapshot.collections.firstOrNull { it.id == activeCollectionId }
+                                    ?.notes?.firstOrNull { it.id == selected.id }
+                            }
+                            if (currentNote != null) {
+                                val text = document.plainText().ifBlank {
+                                    if (document.blocks.any { it is ImageBlock }) "Изображение" else ""
+                                }
+                                val previewBlocks = if (text.isBlank()) listOf(NoteBlock()) else listOf(NoteBlock(text))
+                                recordsViewModel.updateActiveRecord(
+                                    activeCollectionId,
+                                    currentNote.copy(blocks = previewBlocks, updated = document.updatedAt)
+                                )
+                            }
+                        },
+                        onBack = {
+                            val currentSnapshot = recordsViewModel.snapshot.value
+                            val currentNote = if (activeCollectionId == null) {
+                                currentSnapshot.notes.firstOrNull { it.id == selected.id }
+                            } else {
+                                currentSnapshot.collections.firstOrNull { it.id == activeCollectionId }
+                                    ?.notes?.firstOrNull { it.id == selected.id }
+                            }
+                            if (currentNote?.hasContent() != true) {
+                                richDocumentRepository.delete(selected.id.toString())
+                                recordsViewModel.removeActiveRecord(activeCollectionId, selected.id)
+                            }
+                            navigation.closeEditor()
+                        },
+                        onDelete = {
+                            recordsViewModel.moveActiveRecordsToVault(
+                                activeCollectionId,
+                                setOf(selected.id),
+                                toTrash = true
+                            )
+                            navigation.closeEditor()
+                        },
+                        onShare = { activity.shareNote(selected) }
                     )
                 } else {
                     NoteEditor(

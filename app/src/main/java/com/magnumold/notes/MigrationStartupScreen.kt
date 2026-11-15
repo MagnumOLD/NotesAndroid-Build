@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 internal data class MigrationStartupState(
     val isRunning: Boolean = true,
     val isReady: Boolean = false,
+    val isMigrationComplete: Boolean = false,
     val error: String? = null
 )
 

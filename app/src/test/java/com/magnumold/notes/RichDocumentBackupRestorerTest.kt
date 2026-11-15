@@ -133,4 +133,43 @@ class RichDocumentBackupRestorerTest {
         }
     }
 
+    @Test
+    fun identicalImageDocumentIsImportedAgainWhenItsLocalAssetIsMissing() {
+        val context = context()
+        val docs = File(context.filesDir, "restore-docs-d").apply { deleteRecursively() }
+        val assets = File(context.filesDir, "restore-assets-d").apply { deleteRecursively() }
+        val repository = DocumentRepository(context, "restore-docs-d")
+        val assetStore = DocumentAssetStore(context, directoryName = "restore-assets-d")
+        val assetId = "550e8400-e29b-41d4-a716-446655440001"
+        val document = EditorDocument(
+            id = "22",
+            createdAt = 1L,
+            updatedAt = 1L,
+            blocks = listOf(ImageBlock(assetId = assetId))
+        )
+        repository.save(document)
+        val stagedFile = File(context.cacheDir, "restore-source-d").apply { writeBytes(byteArrayOf(4, 5, 6)) }
+        try {
+            val report = RichDocumentBackupRestorer(repository, assetStore).restore(
+                RichDocumentBackupArchive.Payload(
+                    "{}",
+                    listOf(document),
+                    listOf(RichDocumentBackupArchive.StagedAsset(assetId, stagedFile))
+                ),
+                reservedNoteIds = setOf(22L),
+                incomingNoteIds = setOf(22L)
+            )
+            val newId = report.remappedDocumentIds.getValue("22")
+            val restored = repository.load(newId).getOrNull()!!
+            val restoredAssetId = (restored.blocks.single() as ImageBlock).assetId
+            assertEquals(document, repository.load("22").getOrNull())
+            assertNotEquals(assetId, restoredAssetId)
+            assertEquals(byteArrayOf(4, 5, 6).toList(), assetStore.find(restoredAssetId)!!.readBytes().toList())
+        } finally {
+            docs.deleteRecursively()
+            assets.deleteRecursively()
+            stagedFile.delete()
+        }
+    }
+
 }
