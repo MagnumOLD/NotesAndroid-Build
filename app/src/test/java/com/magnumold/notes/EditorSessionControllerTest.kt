@@ -174,4 +174,42 @@ class EditorSessionControllerTest {
         assertEquals("abc", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
         assertEquals("ab", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
     }
+
+
+    @Test fun eachTypingEventHasItsOwnUndoAndRedoStep() {
+        val paragraph = ParagraphBlock(content = RichText(""))
+        val session = EditorSessionController(document(paragraph))
+        session.activateBlock(paragraph.id)
+
+        session.replaceSelection("a")
+        session.replaceSelection("b")
+        session.replaceSelection("c")
+        assertEquals("abc", (session.state.document.blocks.single() as ParagraphBlock).content.text)
+
+        assertEquals("ab", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("a", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
+
+        assertEquals("a", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("ab", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("abc", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
+    }
+
+    @Test fun eachBackspaceEventRestoresOnlyTheDeletedCharacter() {
+        val paragraph = ParagraphBlock(content = RichText("abc"))
+        val session = EditorSessionController(document(paragraph))
+        session.activateBlock(paragraph.id)
+        session.setSelection(3, 3)
+
+        session.setSelection(2, 3)
+        session.replaceSelection("")
+        session.setSelection(1, 2)
+        session.replaceSelection("")
+        assertEquals("a", (session.state.document.blocks.single() as ParagraphBlock).content.text)
+
+        assertEquals("ab", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("abc", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("ab", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("a", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
+    }
 }
