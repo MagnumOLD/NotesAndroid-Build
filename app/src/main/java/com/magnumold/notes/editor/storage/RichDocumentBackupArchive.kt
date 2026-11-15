@@ -87,9 +87,29 @@ internal object RichDocumentBackupArchive {
                 zip.write(bytes)
                 zip.closeEntry()
             }
+            var actualTotalBytes = legacyBytes.size.toLong() +
+                serializedDocuments.sumOf { it.second.size.toLong() }
             selectedAssets.forEach { id ->
+                val file = assetFiles.getValue(id)
+                val expectedLength = file.length()
                 zip.putNextEntry(ZipEntry(ASSET_PREFIX + "$id.asset"))
-                assetFiles.getValue(id).inputStream().buffered().use { it.copyTo(zip) }
+                file.inputStream().buffered().use { input ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var copied = 0L
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        copied += count
+                        actualTotalBytes += count
+                        require(copied <= MAX_ENTRY_BYTES && actualTotalBytes <= MAX_TOTAL_BYTES) {
+                            "Backup asset changed and exceeded size limits while exporting"
+                        }
+                        zip.write(buffer, 0, count)
+                    }
+                    require(copied == expectedLength) {
+                        "Backup asset changed while exporting"
+                    }
+                }
                 zip.closeEntry()
             }
             zip.finish()
