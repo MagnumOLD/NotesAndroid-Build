@@ -513,7 +513,7 @@ private fun RichTextEditorField(
                 // text which the user has just undone.
                 val currentLength = modelText?.length ?: 0
                 fieldValue = TextFieldValue(
-                    annotated,
+                    AnnotatedString(modelText ?: richText.text),
                     TextRange(
                         next.selection.start.coerceIn(0, currentLength),
                         next.selection.end.coerceIn(0, currentLength)
