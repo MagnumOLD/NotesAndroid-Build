@@ -32,6 +32,17 @@ class AppTypographyTest {
     @Test
     fun compactCardDateMetadataKeepsItsIntentionalRailSize() {
         assertEquals(9.sp, AppLayoutContract.cardMetadataTextSize)
+        assertEquals(12.sp, AppLayoutContract.cardMetadataLineHeight)
+    }
+
+    @Test
+    fun compactTextRolesUseCompactLineHeights() {
+        assertEquals(13.sp, AppLayoutContract.helperTextSize)
+        assertEquals(18.sp, AppLayoutContract.helperLineHeight)
+        assertEquals(12.sp, AppLayoutContract.metadataTextSize)
+        assertEquals(18.sp, AppLayoutContract.metadataLineHeight)
+        assertEquals(9.sp, AppLayoutContract.cardMetadataTextSize)
+        assertEquals(12.sp, AppLayoutContract.cardMetadataLineHeight)
     }
 
     @Test
