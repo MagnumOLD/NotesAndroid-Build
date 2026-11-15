@@ -6,6 +6,9 @@ internal object RecordOperations {
             snapshot.archived.size + snapshot.trash.size
 
     fun mergeBackup(current: PersistenceSnapshot, imported: BackupData): PersistenceSnapshot =
+        mergeBackupWithReport(current, imported).snapshot
+
+    fun mergeBackupWithReport(current: PersistenceSnapshot, imported: BackupData): BackupMergeResult =
         mergeBackupRecords(current, imported)
 
     fun restoreVaultEntry(
