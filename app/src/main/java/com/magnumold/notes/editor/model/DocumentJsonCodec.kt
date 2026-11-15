@@ -75,7 +75,7 @@ internal object DocumentJsonCodec {
         })
     }
 
-    private fun listItemsToJson(items: List<ListItem>) = JSONArray().apply {
+    private fun listItemsToJson(items: List<ListItem>): JSONArray = JSONArray().apply {
         items.forEach { item -> put(JSONObject().put("id", item.id)
             .put("content", richTextToJson(item.content)).put("children", listItemsToJson(item.children))) }
     }
@@ -87,7 +87,7 @@ internal object DocumentJsonCodec {
             listItemsFromJson(item.optJSONArray("children") ?: JSONArray()))
     }
 
-    private fun checklistItemsToJson(items: List<ChecklistItem>) = JSONArray().apply {
+    private fun checklistItemsToJson(items: List<ChecklistItem>): JSONArray = JSONArray().apply {
         items.forEach { item -> put(JSONObject().put("id", item.id).put("content", richTextToJson(item.content))
             .put("checked", item.checked).put("children", checklistItemsToJson(item.children))) }
     }
