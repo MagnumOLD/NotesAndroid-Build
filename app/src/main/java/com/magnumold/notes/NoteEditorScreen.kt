@@ -264,8 +264,7 @@ internal fun NoteEditor(
     var parentAutoFocusConsumed by remember(note.id) { mutableStateOf(false) }
     var selectedChildIds by remember(note.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var undoGroupingState by remember(note.id) { mutableStateOf(UndoGroupingState()) }
-    var locallyPublishedBlocks by remember(note.id) { mutableStateOf(emptyList<List<NoteBlock>>()) }
-    val latestLocallyPublishedBlocks = rememberUpdatedState(locallyPublishedBlocks)
+    val locallyPublishedBlocks = remember(note.id) { mutableListOf<List<NoteBlock>>() }
     val latestEditorBlocks = rememberUpdatedState(editorBlocks)
     val latestFieldValue = rememberUpdatedState(fieldValue)
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -297,10 +296,10 @@ internal fun NoteEditor(
         val incomingBlocks = note.blocks
         val incomingText = incomingBlocks.toPlainText()
         val currentFieldValue = latestFieldValue.value
-        val isLocalEcho = latestLocallyPublishedBlocks.value.any { it == incomingBlocks }
+        val isLocalEcho = locallyPublishedBlocks.any { it == incomingBlocks }
         val isStaleLocalEcho = isStaleLocalEditorEcho(
             incomingBlocks = incomingBlocks,
-            locallyPublishedBlocks = latestLocallyPublishedBlocks.value,
+            locallyPublishedBlocks = locallyPublishedBlocks,
             currentEditorText = currentFieldValue.text
         )
 
@@ -426,7 +425,8 @@ internal fun NoteEditor(
 
     fun publish(blocks: List<NoteBlock>, selection: TextRange? = null) {
         editorBlocks = blocks
-        locallyPublishedBlocks = (locallyPublishedBlocks + listOf(blocks)).takeLast(80)
+        locallyPublishedBlocks.add(blocks)
+        if (locallyPublishedBlocks.size > 80) locallyPublishedBlocks.removeAt(0)
         val latestText = blocks.toPlainText()
         if (fieldValue.text != latestText || selection != null) {
             val requestedSelection = selection ?: TextRange(latestText.length)
