@@ -44,6 +44,8 @@ class AdvancedDocumentEditorScreenTest {
         composeRule.onNodeWithText("Черновик документа").assertIsDisplayed()
         composeRule.onNodeWithText("Изображение").assertExists()
         composeRule.onNodeWithText("Файл").assertExists()
+        composeRule.onNodeWithText("Таблица").assertExists()
+        composeRule.onNodeWithText("Ссылка").assertExists()
         composeRule.onNodeWithText("Заголовок").performClick()
 
         composeRule.runOnIdle {

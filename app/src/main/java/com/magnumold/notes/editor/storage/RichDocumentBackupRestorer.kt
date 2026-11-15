@@ -3,7 +3,6 @@ package com.magnumold.notes.editor.storage
 import com.magnumold.notes.editor.model.AttachmentBlock
 import com.magnumold.notes.editor.model.EditorDocument
 import com.magnumold.notes.editor.model.ImageBlock
-import com.magnumold.notes.editor.model.plainText
 import java.util.UUID
 
 internal data class RichDocumentRestoreReport(
@@ -34,8 +33,17 @@ internal class RichDocumentBackupRestorer(
             val existingResult = documents.load(source.id)
             val existing = existingResult.getOrNull()
             val isConflict = existingResult.isFailure || existing != null
-            if (existing != null && existing.plainText() == source.plainText()) {
-                // Same note already exists. Keep its local formatting and assets.
+            val sourceAssetIds = source.blocks.mapNotNull { block ->
+                when (block) {
+                    is ImageBlock -> block.assetId
+                    is AttachmentBlock -> block.assetId
+                    else -> null
+                }
+            }
+            if (existing != null && existing == source &&
+                sourceAssetIds.all { assets.find(it) != null }
+            ) {
+                // Exact document and all its local assets already exist.
                 return@forEach
             }
 

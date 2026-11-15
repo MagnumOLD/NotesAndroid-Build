@@ -35,7 +35,10 @@ import androidx.compose.material.icons.outlined.FormatItalic
 import androidx.compose.material.icons.outlined.FormatUnderlined
 import androidx.compose.material.icons.outlined.Redo
 import androidx.compose.material.icons.outlined.Undo
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,6 +98,8 @@ import com.magnumold.notes.editor.model.ParagraphBlock
 import com.magnumold.notes.editor.model.QuoteBlock
 import com.magnumold.notes.editor.model.RichText
 import com.magnumold.notes.editor.model.TableBlock
+import com.magnumold.notes.editor.model.TableCell
+import com.magnumold.notes.editor.model.TableRow
 import com.magnumold.notes.editor.storage.DocumentAssetStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -118,6 +123,9 @@ internal fun AdvancedDocumentEditorScreen(
     val scope = rememberCoroutineScope()
     val controller = remember(document.id) { EditorSessionController(document) }
     var editorState by remember(document.id) { mutableStateOf(controller.state) }
+    var showLinkDialog by remember(document.id) { mutableStateOf(false) }
+    var newLinkLabel by remember(document.id) { mutableStateOf("") }
+    var newLinkUrl by remember(document.id) { mutableStateOf("https://") }
 
     fun publish(next: com.magnumold.notes.editor.engine.EditorSessionState) {
         val previousDocument = editorState.document
@@ -213,6 +221,22 @@ internal fun AdvancedDocumentEditorScreen(
                     TextButton(onClick = { insert(ChecklistBlock(items = listOf(ChecklistItem(content = RichText(""))))) }) { Text("Чек-лист") }
                     TextButton(onClick = { insert(QuoteBlock(content = RichText(""))) }) { Text("Цитата") }
                     TextButton(onClick = { insert(CodeBlock(code = "")) }) { Text("Код") }
+                    TextButton(onClick = {
+                        insert(
+                            TableBlock(
+                                rows = listOf(
+                                    TableRow(cells = listOf(TableCell(), TableCell())),
+                                    TableRow(cells = listOf(TableCell(), TableCell()))
+                                )
+                            )
+                        )
+                    }) { Text("Таблица") }
+                    TextButton(onClick = {
+                        newLinkLabel = ""
+                        newLinkUrl = "https://"
+                        showLinkDialog = true
+                    }) { Text("Ссылка") }
+                    TextButton(onClick = { insert(CalloutBlock(kind = CalloutKind.NOTE, content = RichText(""))) }) { Text("Заметка-блок") }
                     TextButton(onClick = { imagePicker.launch(arrayOf("image/*")) }) { Text("Изображение") }
                     TextButton(onClick = { filePicker.launch(arrayOf("*/*")) }) { Text("Файл") }
                 }
@@ -239,6 +263,44 @@ internal fun AdvancedDocumentEditorScreen(
                 Text("Добавить абзац")
             }
         }
+    }
+
+    if (showLinkDialog) {
+        AlertDialog(
+            onDismissRequest = { showLinkDialog = false },
+            title = { Text("Добавить ссылку") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newLinkLabel,
+                        onValueChange = { newLinkLabel = it },
+                        label = { Text("Текст") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = newLinkUrl,
+                        onValueChange = { newLinkUrl = it },
+                        label = { Text("Адрес") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val url = newLinkUrl.trim()
+                        if (url.startsWith("https://") || url.startsWith("http://")) {
+                            insert(LinkBlock(label = newLinkLabel.trim().ifBlank { url }, url = url))
+                            showLinkDialog = false
+                        }
+                    },
+                    enabled = newLinkUrl.trim().startsWith("https://") || newLinkUrl.trim().startsWith("http://")
+                ) { Text("Добавить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLinkDialog = false }) { Text("Отмена") }
+            }
+        )
     }
 }
 
@@ -310,8 +372,40 @@ private fun DocumentBlockEditor(
         }
         is ImageBlock -> ImageAssetBlock(block, assetStore)
         is AttachmentBlock -> AttachmentAssetBlock(block, assetStore)
-        is LinkBlock -> PlaceholderBlock("Ссылка", block.label.ifBlank { block.url } + "\n" + block.url)
+        is LinkBlock -> LinkBlockEditor(block, controller, onStateChange)
         is DividerBlock -> Divider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+
+@Composable
+private fun LinkBlockEditor(
+    block: LinkBlock,
+    controller: EditorSessionController,
+    onStateChange: (com.magnumold.notes.editor.engine.EditorSessionState) -> Unit
+) {
+    var urlDraft by remember(block.id) { mutableStateOf(block.url) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        OutlinedTextField(
+            value = block.label,
+            onValueChange = { value ->
+                onStateChange(controller.execute(DocumentCommand.Replace(block.copy(label = value))))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Текст ссылки") },
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = urlDraft,
+            onValueChange = { value ->
+                urlDraft = value
+                if (value.startsWith("https://") || value.startsWith("http://")) {
+                    onStateChange(controller.execute(DocumentCommand.Replace(block.copy(url = value))))
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Адрес") },
+            singleLine = true
+        )
     }
 }
 

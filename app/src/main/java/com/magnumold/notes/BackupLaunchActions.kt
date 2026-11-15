@@ -78,11 +78,38 @@ internal fun rememberBackupActions(
                     val payload = backupFileStore.readRichBackup(uri, staging)
                     // Validate the legacy snapshot before installing any rich data.
                     val legacy = parseBackupJson(payload.legacySnapshotJson)
+                    fun collectIds(roots: List<Note>): Set<Long> {
+                        val ids = mutableSetOf<Long>()
+                        fun visit(note: Note) {
+                            ids += note.id
+                            note.children.forEach(::visit)
+                        }
+                        roots.forEach(::visit)
+                        return ids
+                    }
+                    val currentIds = collectIds(
+                        snapshot.notes +
+                            snapshot.collections.flatMap { it.notes } +
+                            snapshot.archived.map { it.note } +
+                            snapshot.trash.map { it.note }
+                    )
+                    val incomingIds = collectIds(
+                        legacy.notes +
+                            legacy.collections.flatMap { it.notes } +
+                            legacy.archived.map { it.note } +
+                            legacy.trash.map { it.note }
+                    )
                     val report = RichDocumentBackupRestorer(
                         documentRepository,
                         documentAssetStore
-                    ).restore(payload)
-                    val importedRecords = recordsViewModel.importBackupData(legacy)
+                    ).restore(
+                        payload,
+                        reservedNoteIds = currentIds,
+                        incomingNoteIds = incomingIds
+                    )
+                    val importedRecords = recordsViewModel.importBackupData(
+                        legacy.remapNoteIds(report.remappedDocumentIds)
+                    )
                     Toast.makeText(
                         activity,
                         "Импортировано записей: $importedRecords, документов: ${report.importedDocuments}",
