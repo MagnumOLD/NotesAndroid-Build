@@ -155,19 +155,21 @@ class EditorSessionControllerTest {
         assertEquals("val answer = 42", (session.redo().document.blocks.single() as CodeBlock).code)
     }
 
-    @Test fun consecutiveTypingIsOneUndoStepAndCursorMovementSplitsGroups() {
+    @Test fun consecutiveTypingCanBeUndoneOneInputEventAtATime() {
         val paragraph = ParagraphBlock(content = RichText(""))
         val session = EditorSessionController(document(paragraph))
         session.activateBlock(paragraph.id)
         session.replaceSelection("a")
         session.replaceSelection("b")
         assertEquals("ab", (session.state.document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("a", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
         assertEquals("", (session.undo().document.blocks.single() as ParagraphBlock).content.text)
+        assertEquals("a", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
         assertEquals("ab", (session.redo().document.blocks.single() as ParagraphBlock).content.text)
 
         session.setSelection(2, 2)
         session.replaceSelection("c")
-        session.setSelection(1, 1) // A real cursor move ends the current typing group.
+        session.setSelection(1, 1)
         session.setSelection(3, 3)
         session.replaceSelection("d")
         assertEquals("abcd", (session.state.document.blocks.single() as ParagraphBlock).content.text)
