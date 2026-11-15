@@ -2,6 +2,8 @@ package com.magnumold.notes.editor.ui
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -57,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -306,7 +309,7 @@ private fun DocumentBlockEditor(
             }
         }
         is ImageBlock -> ImageAssetBlock(block, assetStore)
-        is AttachmentBlock -> AttachmentAssetBlock(block)
+        is AttachmentBlock -> AttachmentAssetBlock(block, assetStore)
         is LinkBlock -> PlaceholderBlock("Ссылка", block.label.ifBlank { block.url } + "\n" + block.url)
         is DividerBlock -> Divider(color = MaterialTheme.colorScheme.outlineVariant)
     }
@@ -456,12 +459,38 @@ private fun decodeDocumentImagePreview(file: java.io.File): Bitmap? {
 }
 
 @Composable
-private fun AttachmentAssetBlock(block: AttachmentBlock) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp)) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+private fun AttachmentAssetBlock(block: AttachmentBlock, assetStore: DocumentAssetStore) {
+    val context = LocalContext.current
+    val file = remember(block.assetId) { assetStore.find(block.assetId) }
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable {
+            if (file == null) {
+                Toast.makeText(context, "Файл не найден", Toast.LENGTH_SHORT).show()
+            } else {
+                try {
+                    val uri = FileProvider.getUriForFile(
+                        context, "${context.packageName}.document-assets", file
+                    )
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, block.mimeType ?: "*/*")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(intent)
+                } catch (_: ActivityNotFoundException) {
+                    Toast.makeText(context, "Нет приложения для открытия этого файла", Toast.LENGTH_LONG).show()
+                } catch (error: Exception) {
+                    Toast.makeText(context, error.message ?: "Не удалось открыть файл", Toast.LENGTH_LONG).show()
+                }
+            }
+        },
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(block.fileName, style = MaterialTheme.typography.labelLarge)
             val details = listOfNotNull(block.mimeType, block.sizeBytes?.let(::formatAssetSize)).joinToString(" · ")
             if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Нажмите, чтобы открыть", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
