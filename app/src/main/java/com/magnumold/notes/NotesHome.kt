@@ -233,13 +233,13 @@ internal fun NotesHome(
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.lg)) {
                     Text("Все",
                         color = if (activeCollectionId == null) themeColors.collectionText else MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = AppTypography.sectionLabelStyle(), fontWeight = if (activeCollectionId == null) FontWeight.SemiBold else FontWeight.Normal,
+                        style = AppTypography.collectionLabelStyle(selected = activeCollectionId == null),
                         modifier = Modifier.pointerInput(activeCollectionId) { detectTapGestures(onTap = { onSelectCollection(null); selectedNoteIds = emptySet() }) })
                     collections.forEach { collection ->
                         Box {
                             Text(collection.name,
                                 color = if (activeCollectionId == collection.id) themeColors.collectionText else MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = AppTypography.sectionLabelStyle(), fontWeight = if (activeCollectionId == collection.id) FontWeight.SemiBold else FontWeight.Normal,
+                                style = AppTypography.collectionLabelStyle(selected = activeCollectionId == collection.id),
                                 maxLines = 1,
                                 modifier = Modifier.pointerInput(collection.id, activeCollectionId) {
                                     detectTapGestures(onTap = { onSelectCollection(collection.id); selectedNoteIds = emptySet() },
