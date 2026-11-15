@@ -149,4 +149,53 @@ class RecordOperationsTest {
         assertEquals(allIds(twice).size, allIds(twice).toSet().size)
     }
 
+    @Test
+    fun remappedTaskIdsAlsoRemapImportedTimeTrackingReferences() {
+        val current = PersistenceSnapshot(
+            notes = listOf(note(40L, "Existing note 40"), note(41L, "Existing note 41")),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+        val importedTask = note(
+            40L,
+            "Parent task",
+            listOf(note(41L, "Child task").copy(type = RecordType.TASK))
+        ).copy(type = RecordType.TASK)
+        val backup = BackupData(
+            notes = listOf(importedTask),
+            collections = emptyList(),
+            archived = emptyList(),
+            trash = emptyList()
+        )
+        val tracking = TimeTrackingState(
+            sessions = listOf(
+                WorkSession("s1", 41L, 40L, "Child task", null, 1_000L, 2_000L, 1_000L, WorkSessionEndReason.STOP)
+            ),
+            activeSessions = mapOf(
+                41L to ActiveWorkSession("a1", 41L, 40L, "Child task", null, 3_000L)
+            ),
+            protectionTimer = ProtectionTimer(
+                taskId = 41L,
+                parentTaskId = 40L,
+                taskTitle = "Child task",
+                subtaskTitle = null,
+                startedAtMillis = 4_000L,
+                endsAtMillis = 5_000L,
+                endMode = ProtectionEndMode.SIGNAL_ONLY
+            )
+        )
+
+        val merge = RecordOperations.mergeBackupWithReport(current, backup)
+        val remappedTracking = tracking.remapTaskIds(merge.taskIdRemaps)
+
+        assertTrue(merge.taskIdRemaps.containsKey(40L))
+        assertTrue(merge.taskIdRemaps.containsKey(41L))
+        assertEquals(merge.taskIdRemaps.getValue(41L), remappedTracking.sessions.single().taskId)
+        assertEquals(merge.taskIdRemaps.getValue(40L), remappedTracking.sessions.single().parentTaskId)
+        assertEquals(merge.taskIdRemaps.getValue(41L), remappedTracking.activeSessions.keys.single())
+        assertEquals(merge.taskIdRemaps.getValue(41L), remappedTracking.protectionTimer?.taskId)
+        assertEquals(merge.taskIdRemaps.getValue(40L), remappedTracking.protectionTimer?.parentTaskId)
+    }
+
 }
