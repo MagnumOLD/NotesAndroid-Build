@@ -7,6 +7,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.magnumold.notes.editor.storage.DocumentAssetStore
+import com.magnumold.notes.editor.storage.DocumentRepository
 
 @Composable
 internal fun NotesApp(
@@ -23,6 +25,8 @@ internal fun NotesApp(
             val backupFileStore = remember(activity, timeTrackingRepository) {
                 BackupFileStore(activity.contentResolver) { timeTrackingRepository.load() }
             }
+            val richDocumentRepository = remember(activity) { DocumentRepository(activity.applicationContext) }
+            val documentAssetStore = remember(activity) { DocumentAssetStore(activity.applicationContext) }
             val timeTrackingState by timeTrackingRepository.state.collectAsStateWithLifecycle()
             val protectionTimerScheduler = remember(activity) { ProtectionTimerScheduler(activity) }
             LaunchedEffect(timeTrackingState.protectionTimer) {
@@ -76,7 +80,9 @@ internal fun NotesApp(
                 activity = activity,
                 snapshot = snapshot,
                 recordsViewModel = recordsViewModel,
-                backupFileStore = backupFileStore
+                backupFileStore = backupFileStore,
+                documentRepository = richDocumentRepository,
+                documentAssetStore = documentAssetStore
             )
 
             BackHandler(enabled = settingsVisible && vaultScreen != null) { navigation.closeVault() }

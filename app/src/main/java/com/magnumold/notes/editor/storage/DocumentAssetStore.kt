@@ -74,6 +74,36 @@ internal class DocumentAssetStore(
         }
     }
 
+    /** Installs a staged backup asset under a fresh id, never overwriting live data. */
+    internal fun importBackupAsset(source: File, fileName: String): StoredDocumentAsset {
+        require(source.isFile) { "Staged backup asset is missing" }
+        require(source.length() <= maxAssetBytes) { "Backup asset exceeds the allowed size" }
+        val id = UUID.randomUUID().toString()
+        val destination = assetFile(id)
+        val temporary = File(directory, ".$id.tmp")
+        try {
+            source.inputStream().buffered().use { input ->
+                temporary.outputStream().buffered().use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var copied = 0L
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        copied += count
+                        require(copied <= maxAssetBytes) { "Backup asset exceeds the allowed size" }
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+            check(temporary.renameTo(destination)) { "Unable to install backup asset" }
+            return StoredDocumentAsset(id, destination, fileName, null, destination.length())
+        } catch (error: Throwable) {
+            temporary.delete()
+            destination.delete()
+            throw error
+        }
+    }
+
     fun find(assetId: String): File? =
         assetFileOrNull(assetId)?.takeIf { it.isFile }
 

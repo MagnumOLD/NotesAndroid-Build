@@ -58,6 +58,18 @@ internal class BackupFileStore(
         return RichDocumentBackupArchive.read(input, stagingDirectory)
     }
 
+    fun isRichBackup(uri: Uri): Boolean {
+        val input = contentResolver.openInputStream(uri)
+            ?: error("Не удалось прочитать файл")
+        return input.use {
+            val header = ByteArray(4)
+            val count = it.read(header)
+            count >= 4 && header[0] == 'P'.code.toByte() &&
+                header[1] == 'K'.code.toByte() &&
+                header[2] == 3.toByte() && header[3] == 4.toByte()
+        }
+    }
+
     fun readBackup(uri: Uri): String {
         val input = contentResolver.openInputStream(uri)
             ?: error("Не удалось прочитать файл")
