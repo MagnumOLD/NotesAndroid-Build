@@ -204,6 +204,16 @@ private fun mergeNoteLists(
     return result
 }
 
+internal fun mergeImportedNotes(existing: List<Note>, imported: List<Note>): List<Note> {
+    val knownRecords = mutableMapOf<Long, Note>()
+    fun remember(note: Note) {
+        knownRecords.putIfAbsent(note.id, note)
+        note.children.forEach(::remember)
+    }
+    existing.forEach(::remember)
+    return mergeNoteLists(existing, imported, knownRecords, mutableMapOf())
+}
+
 private fun mergeVaultEntries(
     existing: List<VaultNote>,
     imported: List<VaultNote>,
