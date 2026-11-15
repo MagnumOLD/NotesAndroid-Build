@@ -11,7 +11,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
+import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
 /**
@@ -28,6 +28,7 @@ internal object RichDocumentBackupArchive {
     private const val ASSET_PREFIX = "assets/"
     private const val MAX_ENTRY_BYTES = 100L * 1024L * 1024L
     private const val MAX_TOTAL_BYTES = 1024L * 1024L * 1024L
+    private const val MAX_ARCHIVE_BYTES = MAX_TOTAL_BYTES + 64L * 1024L * 1024L
 
     internal data class StagedAsset(val assetId: String, val file: File)
 
@@ -88,10 +89,30 @@ internal object RichDocumentBackupArchive {
         }
         val entries = linkedMapOf<String, File>()
         var totalBytes = 0L
+        val archiveFile = File(stagingDirectory, "incoming-backup.zip")
         try {
-            ZipInputStream(input.buffered()).use { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: break
+            var archiveBytes = 0L
+            archiveFile.outputStream().buffered().use { output ->
+                input.use { source ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val count = source.read(buffer)
+                        if (count < 0) break
+                        archiveBytes += count
+                        require(archiveBytes <= MAX_ARCHIVE_BYTES) {
+                            "Backup archive exceeds compressed size limit"
+                        }
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+
+            // ZipFile requires a valid central directory; this rejects archives
+            // truncated after their local entries but before the ZIP directory.
+            ZipFile(archiveFile).use { zip ->
+                val iterator = zip.entries()
+                while (iterator.hasMoreElements()) {
+                    val entry = iterator.nextElement()
                     require(!entry.isDirectory) { "Directory entries are not allowed in backup" }
                     val name = entry.name
                     require(name == MANIFEST || name == LEGACY_SNAPSHOT ||
@@ -104,21 +125,22 @@ internal object RichDocumentBackupArchive {
                     require(name !in entries) { "Duplicate backup entry" }
                     val destination = File(stagingDirectory, "entry-${entries.size}.tmp")
                     var entryBytes = 0L
-                    destination.outputStream().buffered().use { out ->
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                        while (true) {
-                            val count = zip.read(buffer)
-                            if (count < 0) break
-                            entryBytes += count
-                            totalBytes += count
-                            require(entryBytes <= MAX_ENTRY_BYTES && totalBytes <= MAX_TOTAL_BYTES) {
-                                "Backup archive exceeds size limits"
+                    zip.getInputStream(entry).buffered().use { source ->
+                        destination.outputStream().buffered().use { output ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            while (true) {
+                                val count = source.read(buffer)
+                                if (count < 0) break
+                                entryBytes += count
+                                totalBytes += count
+                                require(entryBytes <= MAX_ENTRY_BYTES && totalBytes <= MAX_TOTAL_BYTES) {
+                                    "Backup archive exceeds size limits"
+                                }
+                                output.write(buffer, 0, count)
                             }
-                            out.write(buffer, 0, count)
                         }
                     }
                     entries[name] = destination
-                    zip.closeEntry()
                 }
             }
 

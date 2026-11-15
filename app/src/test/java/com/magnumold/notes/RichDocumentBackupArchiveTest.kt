@@ -50,6 +50,28 @@ class RichDocumentBackupArchiveTest {
     }
 
     @Test
+    fun rejectsArchiveTruncatedBeforeCentralDirectory() {
+        val document = EditorDocument(
+            id = "truncated-check",
+            createdAt = 1L,
+            updatedAt = 2L,
+            blocks = listOf(ParagraphBlock(content = RichText("text")))
+        )
+        val output = ByteArrayOutputStream()
+        RichDocumentBackupArchive.write(output, "{}", listOf(document), emptyMap())
+        val complete = output.toByteArray()
+        val truncated = complete.copyOf(complete.size - 8)
+        val root = createTempDir(prefix = "rich-backup-truncated")
+        try {
+            assertThrows(Exception::class.java) {
+                RichDocumentBackupArchive.read(ByteArrayInputStream(truncated), File(root, "staging"))
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun rejectsMissingReferencedAssetBeforeWritingArchive() {
         val document = EditorDocument(
             id = "note-43",
