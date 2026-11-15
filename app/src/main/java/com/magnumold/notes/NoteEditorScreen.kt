@@ -910,8 +910,7 @@ internal fun NoteEditor(
                     modifier = Modifier.fillMaxWidth()
                         .appPageHorizontalInsets()
                         .then(
-                            if (note.type == RecordType.NOTE) Modifier
-                            else Modifier.padding(top = AppSpacing.xxs)
+                            Modifier.padding(top = AppSpacing.xxs)
                         )
                         .focusRequester(bodyFocusRequester)
                         .testTag("note-editor-body")
