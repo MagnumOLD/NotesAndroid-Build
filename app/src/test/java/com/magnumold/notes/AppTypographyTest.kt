@@ -46,6 +46,22 @@ class AppTypographyTest {
     }
 
     @Test
+    fun semanticTypographyTokensResolveToTheCanonicalContract() {
+        assertEquals(AppLayoutContract.pageTitleSize, AppTypography.screenTitle)
+        assertEquals(AppLayoutContract.editorTitleSize, AppTypography.editorTitle)
+        assertEquals(AppLayoutContract.sectionHeadingSize, AppTypography.sectionHeading)
+        assertEquals(AppLayoutContract.bodyTextSize, AppTypography.body)
+        assertEquals(AppLayoutContract.mainCardTextSize, AppTypography.cardPreview)
+        assertEquals(AppLayoutContract.helperTextSize, AppTypography.helper)
+        assertEquals(AppLayoutContract.helperLineHeight, AppTypography.helperLineHeight)
+        assertEquals(AppLayoutContract.sectionLabelSize, AppTypography.sectionLabel)
+        assertEquals(AppLayoutContract.metadataTextSize, AppTypography.metadata)
+        assertEquals(AppLayoutContract.metadataLineHeight, AppTypography.metadataLineHeight)
+        assertEquals(AppLayoutContract.cardMetadataTextSize, AppTypography.cardMetadata)
+        assertEquals(AppLayoutContract.cardMetadataLineHeight, AppTypography.cardMetadataLineHeight)
+    }
+
+    @Test
     fun coreTextRolesHaveExplicitSizesAndLineHeights() {
         assertEquals(16.sp, AppMaterialTypography.bodyLarge.fontSize)
         assertEquals(24.sp, AppMaterialTypography.bodyLarge.lineHeight)
