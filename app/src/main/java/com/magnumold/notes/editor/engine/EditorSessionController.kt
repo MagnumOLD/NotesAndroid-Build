@@ -163,7 +163,7 @@ internal class EditorSessionController(
         if (updated == content) return state
 
         val updatedBlock = block.withRichTextForTarget(state.activeItemId, updated, state.activeTableCell)
-        replaceActiveBlock(updatedBlock, "text:${block.id}:${state.activeItemId.orEmpty()}")
+        replaceActiveBlock(updatedBlock)
         val cursor = range.start + replacement.length
         state = state.copy(selection = TextSelection(cursor, cursor), composingRange = null)
         return state
