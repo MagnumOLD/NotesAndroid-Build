@@ -4,27 +4,15 @@ import com.magnumold.notes.editor.model.InlineSpan
 import com.magnumold.notes.editor.model.InlineStyle
 import com.magnumold.notes.editor.model.RichText
 
-internal data class TextSelection(
-    val anchor: Int,
-    val focus: Int
-) {
-    init {
-        require(anchor >= 0 && focus >= 0) { "Selection offsets must be non-negative" }
-    }
-
+internal data class TextSelection(val anchor: Int, val focus: Int) {
+    init { require(anchor >= 0 && focus >= 0) { "Selection offsets must be non-negative" } }
     val start: Int get() = minOf(anchor, focus)
     val end: Int get() = maxOf(anchor, focus)
     val isCollapsed: Boolean get() = anchor == focus
 }
 
-internal data class TextRange(
-    val start: Int,
-    val end: Int
-) {
-    init {
-        require(start >= 0 && end >= start) { "Invalid text range" }
-    }
-
+internal data class TextRange(val start: Int, val end: Int) {
+    init { require(start >= 0 && end >= start) { "Invalid text range" } }
     val length: Int get() = end - start
 }
 
@@ -36,57 +24,40 @@ internal object RichTextOperations {
         if (range.length == 0 && replacement.isEmpty()) return value
 
         val delta = replacement.length - range.length
-        val spans = value.spans.mapNotNull { span ->
-            when {
-                // Insertion inside a formatted run inherits that run's formatting.
-                range.length == 0 && span.start < range.start && span.end > range.start ->
-                    span.copy(end = span.end + replacement.length)
-                span.end <= range.start -> span
-                span.start >= range.end -> span.copy(
-                    start = span.start + delta,
-                    end = span.end + delta
-                )
-                else -> {
-                    val prefix = if (span.start < range.start) {
-                        span.copy(end = range.start)
-                    } else null
-                    val suffix = if (span.end > range.end) {
-                        span.copy(
-                            start = range.start + replacement.length,
-                            end = span.end + delta
-                        )
-                    } else null
-                    listOfNotNull(prefix, suffix).takeIf { it.isNotEmpty() }
-                        ?.let { pieces -> pieces }
-                        ?.let { pieces -> return@mapNotNull pieces.first() }
-                    null
-                }
-            }
-        }.toMutableList()
+        val updatedSpans = mutableListOf<InlineSpan>()
 
-        // A replaced span can split into a prefix and suffix. Add the suffixes
-        // separately so formatting outside the edited range is retained.
         value.spans.forEach { span ->
-            if (range.length > 0 && span.start < range.start && span.end > range.end) {
-                spans += span.copy(
-                    start = range.start + replacement.length,
-                    end = span.end + delta
-                )
+            if (range.length == 0) {
+                when {
+                    span.end <= range.start -> updatedSpans += span
+                    span.start >= range.start -> updatedSpans += span.copy(
+                        start = span.start + replacement.length,
+                        end = span.end + replacement.length
+                    )
+                    else -> updatedSpans += span.copy(end = span.end + replacement.length)
+                }
+            } else {
+                if (span.start < range.start) {
+                    val prefixEnd = minOf(span.end, range.start)
+                    if (prefixEnd > span.start) updatedSpans += span.copy(end = prefixEnd)
+                }
+                if (span.end > range.end) {
+                    val suffixStart = maxOf(span.start, range.end)
+                    updatedSpans += span.copy(
+                        start = suffixStart + delta,
+                        end = span.end + delta
+                    )
+                }
             }
         }
 
         return RichText(
             text = value.text.replaceRange(range.start, range.end, replacement),
-            spans = normalize(spans)
+            spans = normalize(updatedSpans)
         )
     }
 
-    fun setStyle(
-        value: RichText,
-        range: TextRange,
-        style: InlineStyle,
-        enabled: Boolean
-    ): RichText {
+    fun setStyle(value: RichText, range: TextRange, style: InlineStyle, enabled: Boolean): RichText {
         require(range.end <= value.text.length) { "Formatting range exceeds text length" }
         if (range.length == 0) return value
 
@@ -112,12 +83,10 @@ internal object RichTextOperations {
             if (start >= range.start && end <= range.end) {
                 if (enabled) styles += style else styles -= style
             }
-
             if (styles.isNotEmpty() || foreground != null || background != null || link != null) {
                 result += InlineSpan(start, end, styles, foreground, background, link)
             }
         }
-
         return value.copy(spans = normalize(result))
     }
 
