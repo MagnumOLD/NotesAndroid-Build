@@ -909,7 +909,7 @@ internal fun NoteEditor(
                         .appPageHorizontalInsets()
                         .padding(top = AppSpacing.xxs)
                         .focusRequester(bodyFocusRequester)
-                        .heightIn(min = AppEditorDimensions.bodyMinHeight)
+                        .heightIn(min = AppEditorDimensions.bodyMinHeight),
                     textStyle = editorTextStyle,
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
