@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Undo
 import androidx.compose.material.icons.outlined.Redo
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -539,6 +540,19 @@ internal fun NoteEditor(
                                             timeAnalyticsVisible = true
                                         }
                                     )
+                                    DropdownMenuItem(
+                                        text = { Text("Добавить сессию") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.Add,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            manualSessionDialogVisible = true
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -735,7 +749,6 @@ internal fun NoteEditor(
                                     deadlineResumeOverride = resumingMissed
                                 ))
                             },
-                            onAddManualSession = { manualSessionDialogVisible = true }
                         )
                     }
                 }
