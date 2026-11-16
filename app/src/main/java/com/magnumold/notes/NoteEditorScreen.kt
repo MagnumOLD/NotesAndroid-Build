@@ -533,6 +533,13 @@ internal fun NoteEditor(
                                         }
                                     )
                                     DropdownMenuItem(
+                                        text = { Text("Добавить сессию") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            manualSessionDialogVisible = true
+                                        }
+                                    )
+                                    DropdownMenuItem(
                                         text = { Text("История и статистика") },
                                         onClick = {
                                             subtaskMenuExpanded = false
