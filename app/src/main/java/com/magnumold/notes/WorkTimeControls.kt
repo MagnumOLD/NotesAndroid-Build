@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /** Actual work time for one subtask. Every subtask is tracked automatically. */
@@ -57,29 +60,70 @@ internal fun WorkTimeControls(
         ) {
             when (status) {
                 RecordStatus.IN_PROGRESS -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.PAUSED) }) { Text("Пауза") }
-                    TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
+                    TimeTrackingActionButton("Пауза") { onStatusChange(RecordStatus.PAUSED) }
+                    TimeTrackingActionButton("Завершить", subdued = true) {
+                        onStatusChange(RecordStatus.COMPLETED)
+                    }
                 }
                 RecordStatus.PAUSED -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Продолжить") }
-                    TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
+                    TimeTrackingActionButton("Продолжить работу") {
+                        onStatusChange(RecordStatus.IN_PROGRESS)
+                    }
+                    TimeTrackingActionButton("Завершить", subdued = true) {
+                        onStatusChange(RecordStatus.COMPLETED)
+                    }
                 }
                 RecordStatus.COMPLETED -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Возобновить работу") }
+                    TimeTrackingActionButton("Продолжить работу") {
+                        onStatusChange(RecordStatus.IN_PROGRESS)
+                    }
                 }
                 RecordStatus.CANCELLED -> {
-                    Text("Отменена", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Отменена",
+                        style = AppTypography.compactBodyStyle(),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 RecordStatus.MISSED -> {
-                    Text("Просрочена", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "Просрочена",
+                        style = AppTypography.compactBodyStyle(),
+                        color = MaterialTheme.colorScheme.error
+                    )
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать") }
+                    TimeTrackingActionButton("Начать работу") {
+                        onStatusChange(RecordStatus.IN_PROGRESS)
+                    }
                 }
                 else -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать работу") }
+                    TimeTrackingActionButton("Начать работу") {
+                        onStatusChange(RecordStatus.IN_PROGRESS)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TimeTrackingActionButton(
+    label: String,
+    subdued: Boolean = false,
+    onClick: () -> Unit
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = 40.dp),
+        colors = if (subdued) {
+            TextButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            TextButtonDefaults.textButtonColors()
+        }
+    ) {
+        Text(label)
     }
 }
 
