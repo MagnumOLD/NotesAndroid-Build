@@ -76,7 +76,7 @@ internal fun WorkTimeControls(
                 }
                 RecordStatus.PAUSED -> {
                     TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Продолжить", style = AppTypography.actionStyle()) }
-                    TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить", style = AppTypography.actionStyle()) }
                 }
                 RecordStatus.COMPLETED -> {
                     TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Возобновить работу", style = AppTypography.actionStyle()) }
