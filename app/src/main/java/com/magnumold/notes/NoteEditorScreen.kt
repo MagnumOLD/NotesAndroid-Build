@@ -841,7 +841,8 @@ internal fun NoteEditor(
                                                 dateText == null -> "Добавить"
                                                 note.dateMode == RecordDateMode.DEADLINE -> "Срок: $dateText"
                                                 else -> dateText
-                                            }
+                                            },
+                                            style = AppTypography.actionStyle()
                                         )
                                     }
                                     DropdownMenu(
@@ -1036,10 +1037,10 @@ internal fun NoteEditor(
                         ))
                     }
                     datePickerVisible = false
-                }) { Text("Готово") }
+                }) { Text("Готово", style = AppTypography.actionStyle()) }
             },
             dismissButton = {
-                TextButton(onClick = { datePickerVisible = false }) { Text("Отмена") }
+                TextButton(onClick = { datePickerVisible = false }) { Text("Отмена", style = AppTypography.actionStyle()) }
             }
         ) {
             DatePicker(state = datePickerState)
