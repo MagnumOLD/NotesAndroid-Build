@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,8 +23,7 @@ internal fun WorkTimeControls(
     taskId: Long,
     state: TimeTrackingState,
     status: RecordStatus,
-    onStatusChange: (RecordStatus) -> Unit,
-    onAddManualSession: () -> Unit
+    onStatusChange: (RecordStatus) -> Unit
 ) {
     var nowMillis by remember(taskId) { mutableLongStateOf(System.currentTimeMillis()) }
     val active = state.activeSessions[taskId]
@@ -54,15 +49,6 @@ internal fun WorkTimeControls(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
-        headerAction = {
-            IconButton(onClick = onAddManualSession) {
-                Icon(
-                    Icons.Outlined.Add,
-                    contentDescription = "Добавить время",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
