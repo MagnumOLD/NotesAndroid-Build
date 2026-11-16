@@ -921,19 +921,30 @@ internal fun NoteEditor(
                     decorationBox = { inner ->
                         Box(
                             modifier = Modifier.fillMaxWidth()
-                                .heightIn(min = AppEditorDimensions.bodyMinHeight)
-                                .then(if (note.type == RecordType.NOTE) Modifier.padding(top = 8.dp) else Modifier),
+                                .heightIn(min = AppEditorDimensions.bodyMinHeight),
                             contentAlignment = Alignment.TopStart
                         ) {
-                            if (fieldValue.text.isEmpty()) {
-                                Text(
-                                    "Начните писать…",
-                                    style = editorTextStyle.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                                    .then(
+                                        if (note.type == RecordType.NOTE) {
+                                            Modifier.padding(top = 8.dp)
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                if (fieldValue.text.isEmpty()) {
+                                    Text(
+                                        "Начните писать…",
+                                        style = editorTextStyle.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                                        )
                                     )
-                                )
+                                }
+                                inner()
                             }
-                            inner()
                         }
                     }
                 )
