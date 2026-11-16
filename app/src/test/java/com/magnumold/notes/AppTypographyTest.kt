@@ -30,9 +30,9 @@ class AppTypographyTest {
     }
 
     @Test
-    fun noteAndCardTextUseSixteenSpWithTwentyFourSpLineHeight() {
+    fun noteAndCardTextUseSixteenSpWithTwentySixSpLineHeight() {
         assertEquals(16.sp, AppLayoutContract.mainCardTextSize)
-        assertEquals(24.sp, AppLayoutContract.cardPreviewLineHeight)
+        assertEquals(26.sp, AppLayoutContract.cardPreviewLineHeight)
         assertEquals(AppLayoutContract.cardPreviewLineHeight, AppTypography.cardPreviewLineHeight)
     }
 
