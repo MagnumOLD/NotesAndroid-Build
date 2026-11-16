@@ -12,7 +12,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: notesandroid-${{ github.workflow }}-${{ github.ref }}
+  # Keep runs for different commits isolated; a rerun of an older SHA must not
+  # cancel the validation run for the current pull-request head.
+  group: notesandroid-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 permissions:
