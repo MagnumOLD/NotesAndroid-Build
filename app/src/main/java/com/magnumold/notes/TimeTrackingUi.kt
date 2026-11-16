@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 @Composable
 internal fun TimeTrackingSection(
     title: String,
-    headerAction: (@Composable () -> Unit)? = null,
     trailingContent: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit = {}
 ) {
@@ -40,7 +39,6 @@ internal fun TimeTrackingSection(
                 )
                 Spacer(Modifier.weight(1f))
                 trailingContent()
-                headerAction?.invoke()
             }
             content()
         }
