@@ -69,7 +69,7 @@ internal fun ProtectionTimerControls(
                 ) {
                     Text("Осталось", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(formatProtectionDuration(ProtectionTimerEngine.remainingMillis(timer, nowMillis)), style = AppTypography.emphasisBodyStyle())
-                    TextButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) { Text("Остановить") }
+                    TextButton(onClick = { onStateChange(state.copy(protectionTimer = null)) }) { Text("Остановить", style = AppTypography.actionStyle()) }
                 }
                 Text(
                     if (timer.endMode == ProtectionEndMode.SIGNAL_ONLY) "По окончании — только сигнал"
@@ -118,7 +118,7 @@ internal fun ProtectionTimerControls(
                                 }
                             }
                         }
-                    ) { Text("Запустить") }
+                    ) { Text("Запустить", style = AppTypography.actionStyle()) }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -147,7 +147,7 @@ internal fun ProtectionTimerControls(
                 }
             )
             Text("Звуковой сигнал", style = AppTypography.compactBodyStyle())
-            TextButton(onClick = onChooseSound) { Text("Выбрать") }
+            TextButton(onClick = onChooseSound) { Text("Выбрать", style = AppTypography.actionStyle()) }
 
         }
     }
