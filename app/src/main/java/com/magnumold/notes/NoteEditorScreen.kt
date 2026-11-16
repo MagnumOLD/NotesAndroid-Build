@@ -607,8 +607,8 @@ internal fun NoteEditor(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                         .padding(
-                            top = AppPageLayout.editorListContentPadding.calculateTopPadding(),
-                            bottom = AppPageLayout.editorListItemSpacing
+                            top = AppSpacing.xxs,
+                            bottom = 0.dp
                         )
                 ) {
                     WorkTimeControls(
