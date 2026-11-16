@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
@@ -397,12 +396,6 @@ internal fun NoteRow(
         dark = dark,
         selectionColor = customSelectionColor
     )
-    var showCreationDate by remember(note.id) { mutableStateOf(false) }
-    val compactCreationDate = remember(note.id, note.created) {
-        java.text.SimpleDateFormat("dd.MM", java.util.Locale("ru"))
-            .format(java.util.Date(note.created))
-    }
-
     RecordCardSurface(
         background = selectedBackground,
         modifier = Modifier.fillMaxWidth()
@@ -519,29 +512,6 @@ internal fun NoteRow(
                             NoteIcon.Pin,
                             contentDescription = "Закреплено",
                             tint = rowTextColor.copy(alpha = 0.8f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .size(width = CardDimensions.sideRailWidth, height = CardDimensions.sideRailControlSize)
-                        .clickable { showCreationDate = !showCreationDate },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (showCreationDate) {
-                        Text(
-                            text = compactCreationDate,
-                            style = AppTypography.cardMetadataStyle(),
-                            color = rowTextColor.copy(alpha = 0.82f),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = "Показать дату создания",
-                            tint = rowTextColor.copy(alpha = 0.72f),
                             modifier = Modifier.size(16.dp)
                         )
                     }
