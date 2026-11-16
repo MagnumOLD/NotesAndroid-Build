@@ -603,6 +603,30 @@ internal fun NoteEditor(
                     state = timeTrackingState
                 )
             }
+            if (note.type == RecordType.TASK && isTaskListItem) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(
+                            top = AppPageLayout.editorListContentPadding.calculateTopPadding(),
+                            bottom = AppPageLayout.editorListItemSpacing
+                        )
+                ) {
+                    WorkTimeControls(
+                        taskId = note.id,
+                        state = timeTrackingState,
+                        status = note.recordStatus(),
+                        onStatusChange = { nextStatus ->
+                            val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                                nextStatus != RecordStatus.MISSED
+                            onChange(note.copy(
+                                status = nextStatus,
+                                deadlineResumeOverride = resumingMissed
+                            ))
+                        },
+                        onAddManualSession = { manualSessionDialogVisible = true }
+                    )
+                }
+            }
             LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth()
@@ -703,12 +727,13 @@ internal fun NoteEditor(
                     }
                 },
             verticalArrangement = Arrangement.spacedBy(AppPageLayout.editorListItemSpacing),
-            contentPadding = if (note.type == RecordType.NOTE ||
-                (note.type == RecordType.TASK && !isTaskListItem)
-            ) {
-                PaddingValues(0.dp)
-            } else {
-                AppPageLayout.editorListContentPadding
+            contentPadding = when {
+                note.type == RecordType.NOTE ||
+                    (note.type == RecordType.TASK && !isTaskListItem) -> PaddingValues(0.dp)
+                isTaskListItem -> PaddingValues(
+                    bottom = AppPageLayout.editorListContentPadding.calculateBottomPadding()
+                )
+                else -> AppPageLayout.editorListContentPadding
             }
         ) {
             if (note.type == RecordType.TASK && !isTaskListItem) {
@@ -719,26 +744,6 @@ internal fun NoteEditor(
                 }
             }
             if (note.type == RecordType.TASK) {
-                if (isTaskListItem) {
-                    item(key = "work_time_controls") {
-                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
-                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                        WorkTimeControls(
-                            taskId = note.id,
-                            state = timeTrackingState,
-                            status = note.recordStatus(),
-                            onStatusChange = { nextStatus ->
-                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
-                                    nextStatus != RecordStatus.MISSED
-                                onChange(note.copy(
-                                    status = nextStatus,
-                                    deadlineResumeOverride = resumingMissed
-                                ))
-                            },
-                            onAddManualSession = { manualSessionDialogVisible = true }
-                        )
-                    }
-                }
                 if (isTaskListItem) {
                     item(key = "protection_timer") {
                         val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
