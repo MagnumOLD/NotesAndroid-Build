@@ -50,7 +50,6 @@ internal fun WorkTimeControls(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
-        contentSpacing = 0.dp
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
