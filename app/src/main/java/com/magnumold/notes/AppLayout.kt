@@ -195,6 +195,11 @@ internal object AppTypography {
     @Composable
     fun emphasisBodyStyle(): TextStyle = bodyStyle().copy(fontWeight = FontWeight.Medium)
 
+    // TextButton labels use one explicit semantic role across editor controls.
+    // This is the existing Material labelLarge scale (14/20, Medium), not a visual redesign.
+    @Composable
+    fun actionStyle(): TextStyle = MaterialTheme.typography.labelLarge
+
     @Composable
     fun compactBodyStyle(): TextStyle = MaterialTheme.typography.bodyMedium
 
