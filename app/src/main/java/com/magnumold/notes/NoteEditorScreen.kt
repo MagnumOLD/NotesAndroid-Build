@@ -614,7 +614,7 @@ internal fun NoteEditor(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                         .padding(
-                            top = AppSpacing.xxs,
+                            top = 0.dp,
                             bottom = 0.dp
                         )
                 ) {
