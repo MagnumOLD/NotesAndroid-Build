@@ -881,6 +881,7 @@ internal fun NoteEditor(
                             Spacer(Modifier.weight(1f))
                             Text(
                                 recordStatusText(note.recordStatus()),
+                                style = AppTypography.compactBodyStyle(),
                                 color = when (note.recordStatus()) {
                                     RecordStatus.IN_PROGRESS -> Color(0xFF4CAF50)
                                     RecordStatus.PAUSED -> Color(0xFFFF9800)
