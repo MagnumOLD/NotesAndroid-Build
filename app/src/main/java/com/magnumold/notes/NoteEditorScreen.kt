@@ -743,7 +743,10 @@ internal fun NoteEditor(
                     item(key = "protection_timer") {
                         val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
                             ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                        Column(modifier = Modifier.padding(top = AppSpacing.xxs)) {
+                        Column(
+                            // 4.dp list spacing + 8.dp inset = 12.dp between visible sections.
+                            modifier = Modifier.padding(top = AppSpacing.xs)
+                        ) {
                             ProtectionTimerControls(
                                 taskId = note.id,
                                 taskTitle = parentTaskTitle ?: "Задача",
