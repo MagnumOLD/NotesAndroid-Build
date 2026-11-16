@@ -7,8 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -270,7 +268,6 @@ internal fun NoteEditor(
     val latestFieldValue = rememberUpdatedState(fieldValue)
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
-    val bodyScrollState = rememberScrollState()
     val latestTaskNote = rememberUpdatedState(note)
     val latestTaskChildren = rememberUpdatedState(note.children)
     val latestTaskOnChange = rememberUpdatedState(onChange)
@@ -922,14 +919,13 @@ internal fun NoteEditor(
                     textStyle = editorTextStyle,
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
                     decorationBox = { inner ->
-                        Column(
+                        Box(
                             modifier = Modifier.fillMaxWidth()
-                                .heightIn(min = AppEditorDimensions.bodyMinHeight)
-                                .verticalScroll(bodyScrollState)
+                                .heightIn(min = AppEditorDimensions.bodyMinHeight),
+                            contentAlignment = Alignment.TopStart
                         ) {
-                            Spacer(Modifier.height(16.dp))
                             Box(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                                 contentAlignment = Alignment.TopStart
                             ) {
                                 if (fieldValue.text.isEmpty()) {
