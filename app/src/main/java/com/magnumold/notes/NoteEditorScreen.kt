@@ -925,7 +925,7 @@ internal fun NoteEditor(
                             contentAlignment = Alignment.TopStart
                         ) {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.TopStart
                             ) {
                                 if (fieldValue.text.isEmpty()) {
