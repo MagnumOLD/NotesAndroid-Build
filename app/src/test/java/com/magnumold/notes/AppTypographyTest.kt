@@ -30,6 +30,13 @@ class AppTypographyTest {
     }
 
     @Test
+    fun noteAndCardTextUseSixteenSpWithTwentyFourSpLineHeight() {
+        assertEquals(16.sp, AppLayoutContract.mainCardTextSize)
+        assertEquals(24.sp, AppLayoutContract.cardPreviewLineHeight)
+        assertEquals(AppLayoutContract.cardPreviewLineHeight, AppTypography.cardPreviewLineHeight)
+    }
+
+    @Test
     fun compactCardDateMetadataKeepsItsIntentionalRailSize() {
         assertEquals(9.sp, AppLayoutContract.cardMetadataTextSize)
         assertEquals(12.sp, AppLayoutContract.cardMetadataLineHeight)
