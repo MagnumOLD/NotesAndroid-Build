@@ -2,6 +2,9 @@ package com.magnumold.notes
 
 import androidx.compose.ui.graphics.Color
 
+internal val lightPrimaryTextColor = Color(0xFF111111)
+internal val darkPrimaryTextColor = Color(0xFFF5F5F5)
+
 internal val defaultNoteColors = listOf(
     Color(0xFF40C8E0), Color(0xFFFF9F0A), Color(0xFFFFD60A),
     Color(0xFF30D158), Color(0xFFFF375F), Color(0xFFBF5AF2)
