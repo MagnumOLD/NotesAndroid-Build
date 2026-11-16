@@ -629,8 +629,7 @@ internal fun NoteEditor(
                                 status = nextStatus,
                                 deadlineResumeOverride = resumingMissed
                             ))
-                        },
-                        onAddManualSession = { manualSessionDialogVisible = true }
+                        }
                     )
                 }
             }
