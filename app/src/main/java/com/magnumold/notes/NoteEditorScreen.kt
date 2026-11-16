@@ -611,27 +611,19 @@ internal fun NoteEditor(
                 )
             }
             if (note.type == RecordType.TASK && isTaskListItem) {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(
-                            top = 0.dp,
-                            bottom = 0.dp
-                        )
-                ) {
-                    WorkTimeControls(
-                        taskId = note.id,
-                        state = timeTrackingState,
-                        status = note.recordStatus(),
-                        onStatusChange = { nextStatus ->
-                            val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
-                                nextStatus != RecordStatus.MISSED
-                            onChange(note.copy(
-                                status = nextStatus,
-                                deadlineResumeOverride = resumingMissed
-                            ))
-                        }
-                    )
-                }
+                WorkTimeControls(
+                    taskId = note.id,
+                    state = timeTrackingState,
+                    status = note.recordStatus(),
+                    onStatusChange = { nextStatus ->
+                        val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                            nextStatus != RecordStatus.MISSED
+                        onChange(note.copy(
+                            status = nextStatus,
+                            deadlineResumeOverride = resumingMissed
+                        ))
+                    }
+                )
             }
             LazyColumn(
             state = listState,
