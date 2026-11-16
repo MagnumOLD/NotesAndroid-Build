@@ -262,7 +262,7 @@ class NoteEditorCursorTest {
         assertEquals("alpha", note.blocks.first().id)
         assertEquals("check", note.blocks.last().id)
         assertEquals("New paragraph", note.blocks[1].text)
-        assertTrue(note.blocks.last().isChecklist)
+        assertEquals(true, note.blocks.last().isChecklist)
 
         val preferences = context.getSharedPreferences("note_editor_save_test", Context.MODE_PRIVATE)
         preferences.edit().clear().commit()
