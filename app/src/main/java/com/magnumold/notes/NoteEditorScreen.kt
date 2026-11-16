@@ -546,9 +546,13 @@ internal fun NoteEditor(
                                             timeAnalyticsVisible = true
                                         }
                                     )
-                                    HorizontalDivider()
                                     DropdownMenuItem(
-                                        text = { Text("Удалить подзадачу") },
+                                        text = {
+                                            Text(
+                                                "Удалить подзадачу",
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        },
                                         onClick = {
                                             subtaskMenuExpanded = false
                                             onDelete(false)
