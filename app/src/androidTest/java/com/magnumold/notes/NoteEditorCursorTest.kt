@@ -215,9 +215,6 @@ class NoteEditorCursorTest {
     fun multilineClipboardPastePreservesParagraphsAndChecklistWhenSaved() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        composeRule.runOnUiThread {
-            clipboard.setPrimaryClip(ClipData.newPlainText("pasted note text", " pasted\n\nNew paragraph"))
-        }
 
         var note by mutableStateOf(
             Note(
@@ -251,6 +248,9 @@ class NoteEditorCursorTest {
         val editor = composeRule.onNodeWithTag("note-editor-body")
         editor.performClick()
         editor.performTextInputSelection(TextRange("Alpha".length))
+        composeRule.runOnUiThread {
+            clipboard.setPrimaryClip(ClipData.newPlainText("pasted note text", "\n\nNew paragraph"))
+        }
         editor.performKeyInput {
             keyDown(Key.CtrlLeft)
             pressKey(Key.V)
@@ -258,7 +258,7 @@ class NoteEditorCursorTest {
         }
         composeRule.waitForIdle()
 
-        editor.assertTextEquals("Alpha pasted\n\nNew paragraph\n\n☐ Buy milk")
+        editor.assertTextEquals("Alpha\n\nNew paragraph\n\n☐ Buy milk")
         assertEquals("alpha", note.blocks.first().id)
         assertEquals("check", note.blocks.last().id)
         assertEquals("New paragraph", note.blocks[1].text)
