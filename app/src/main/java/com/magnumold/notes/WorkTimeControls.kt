@@ -53,7 +53,7 @@ internal fun WorkTimeControls(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs, Alignment.End)
         ) {
             when (status) {
                 RecordStatus.IN_PROGRESS -> {
