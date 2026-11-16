@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -16,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /** Actual work time for one subtask. Every subtask is tracked automatically. */
@@ -50,10 +50,10 @@ internal fun WorkTimeControls(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
+        contentSpacing = 0.dp
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-                .heightIn(min = AppLayoutContract.controlTouchTarget),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs, Alignment.End)
         ) {
