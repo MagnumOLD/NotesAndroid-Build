@@ -926,13 +926,7 @@ internal fun NoteEditor(
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxWidth()
-                                    .then(
-                                        if (note.type == RecordType.NOTE) {
-                                            Modifier.padding(top = 8.dp)
-                                        } else {
-                                            Modifier
-                                        }
-                                    ),
+    
                                 contentAlignment = Alignment.TopStart
                             ) {
                                 if (fieldValue.text.isEmpty()) {
