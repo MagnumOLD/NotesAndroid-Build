@@ -50,9 +50,11 @@ internal fun WorkTimeControls(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
+        contentSpacing = AppSpacing.sm
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .padding(vertical = AppSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs, Alignment.End)
         ) {
