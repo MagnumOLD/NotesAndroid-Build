@@ -71,15 +71,15 @@ internal fun WorkTimeControls(
         ) {
             when (status) {
                 RecordStatus.IN_PROGRESS -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.PAUSED) }) { Text("Пауза") }
-                    TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.PAUSED) }) { Text("Пауза", style = AppTypography.actionStyle()) }
+                    TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить", style = AppTypography.actionStyle()) }
                 }
                 RecordStatus.PAUSED -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Продолжить") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Продолжить", style = AppTypography.actionStyle()) }
                     TextButton(onClick = { onStatusChange(RecordStatus.COMPLETED) }) { Text("Завершить") }
                 }
                 RecordStatus.COMPLETED -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Возобновить работу") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Возобновить работу", style = AppTypography.actionStyle()) }
                 }
                 RecordStatus.CANCELLED -> {
                     Text("Отменена", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -87,10 +87,10 @@ internal fun WorkTimeControls(
                 RecordStatus.MISSED -> {
                     Text("Просрочена", style = AppTypography.compactBodyStyle(), color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать", style = AppTypography.actionStyle()) }
                 }
                 else -> {
-                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать работу") }
+                    TextButton(onClick = { onStatusChange(RecordStatus.IN_PROGRESS) }) { Text("Начать работу", style = AppTypography.actionStyle()) }
                 }
             }
         }
