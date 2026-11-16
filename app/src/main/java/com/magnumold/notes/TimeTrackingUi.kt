@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 
 /** Compact, flat time summary without a bottom separator. */
 @Composable
@@ -20,13 +21,14 @@ internal fun TimeTrackingSection(
     title: String,
     headerAction: (@Composable () -> Unit)? = null,
     trailingContent: @Composable RowScope.() -> Unit = {},
+    contentSpacing: Dp = AppSpacing.xs,
     content: @Composable ColumnScope.() -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth()
                 .appPageHorizontalInsets(),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+            verticalArrangement = Arrangement.spacedBy(contentSpacing)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth()
