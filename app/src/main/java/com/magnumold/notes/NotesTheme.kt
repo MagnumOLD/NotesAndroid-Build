@@ -39,7 +39,7 @@ internal val AppMaterialTypography = Typography(
 
 @Composable
 internal fun NotesTheme(dark: Boolean, themeColors: CustomThemeColors, customBackground: Boolean, content: @Composable () -> Unit) {
-    val foreground = if (customBackground) noteTextColor(themeColors.background) else if (dark) Color.White else Color.Black
+    val foreground = if (customBackground) noteTextColor(themeColors.background) else if (dark) darkPrimaryTextColor else lightPrimaryTextColor
     val appBackground = if (customBackground) themeColors.background else if (dark) Color.Black else Color.White
     val outline = if (dark) Color(0xFF38383A) else Color(0xFFD1D1D6)
     val scheme = if (dark) darkColorScheme(
