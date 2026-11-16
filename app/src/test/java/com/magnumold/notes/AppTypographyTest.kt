@@ -80,6 +80,6 @@ class AppTypographyTest {
         assertEquals(24.sp, AppMaterialTypography.titleLarge.lineHeight)
         assertEquals(14.sp, AppMaterialTypography.labelLarge.fontSize)
         assertEquals(20.sp, AppMaterialTypography.labelLarge.lineHeight)
-        assertEquals(AppMaterialTypography.labelLarge, AppMaterialTypography.labelLarge)
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Medium, AppMaterialTypography.labelLarge.fontWeight)
     }
 }
