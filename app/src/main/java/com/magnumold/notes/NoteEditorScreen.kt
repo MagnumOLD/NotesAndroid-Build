@@ -546,6 +546,14 @@ internal fun NoteEditor(
                                             timeAnalyticsVisible = true
                                         }
                                     )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text("Удалить подзадачу") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            onDelete(false)
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -578,7 +586,9 @@ internal fun NoteEditor(
                             },
                             enabled = historyIndex < history.lastIndex
                         ) { AppIcon(NoteIcon.Redo, "Повторить") }
-                        IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
+                        if (!isTaskListItem) {
+                            IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
+                        }
                         if (!isTaskListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
                     backgroundColor = topBarColor
