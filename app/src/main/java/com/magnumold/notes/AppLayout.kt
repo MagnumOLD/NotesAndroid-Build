@@ -68,7 +68,7 @@ internal object AppLayoutContract {
     val editorTitleSize = 18.sp
     val sectionHeadingSize = 17.sp
     val bodyTextSize = 16.sp
-    val cardPreviewLineHeight = 26.sp
+    val cardPreviewLineHeight = 24.sp
     val helperTextSize = 13.sp
     val helperLineHeight = 18.sp
     val bodyLineHeight = 24.sp
