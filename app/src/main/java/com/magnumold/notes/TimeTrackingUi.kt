@@ -26,7 +26,7 @@ internal fun TimeTrackingSection(
         Column(
             modifier = Modifier.fillMaxWidth()
                 .appPageHorizontalInsets(),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth()
