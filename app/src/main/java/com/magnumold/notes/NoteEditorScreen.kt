@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -617,6 +618,50 @@ internal fun NoteEditor(
                     state = timeTrackingState
                 )
             }
+            if (note.type == RecordType.TASK && isTaskListItem) {
+                val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
+                    ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.height(AppPageLayout.editorListContentPadding.calculateTopPadding()))
+                    WorkTimeControls(
+                        taskId = note.id,
+                        state = timeTrackingState,
+                        status = note.recordStatus(),
+                        onStatusChange = { nextStatus ->
+                            val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
+                                nextStatus != RecordStatus.MISSED
+                            onChange(note.copy(
+                                status = nextStatus,
+                                deadlineResumeOverride = resumingMissed
+                            ))
+                        }
+                    )
+                    Spacer(Modifier.height(AppSpacing.xs))
+                    ProtectionTimerControls(
+                        taskId = note.id,
+                        taskTitle = parentTaskTitle ?: "Задача",
+                        subtaskTitle = currentTitle,
+                        parentTaskId = parentTaskId,
+                        state = timeTrackingState,
+                        onStateChange = onTimeTrackingStateChange,
+                        onChooseSound = {
+                            val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                                putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                                putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Выберите сигнал")
+                                putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                                putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                                putExtra(
+                                    RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                    timeTrackingState.soundUri?.let(Uri::parse)
+                                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                                )
+                            }
+                            ringtonePicker.launch(intent)
+                        }
+                    )
+                    Spacer(Modifier.height(AppPageLayout.editorListItemSpacing))
+                }
+            }
             LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth()
@@ -721,6 +766,13 @@ internal fun NoteEditor(
                 (note.type == RecordType.TASK && !isTaskListItem)
             ) {
                 PaddingValues(0.dp)
+            } else if (note.type == RecordType.TASK && isTaskListItem) {
+                PaddingValues(
+                    start = AppPageLayout.editorListContentPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    top = 0.dp,
+                    end = AppPageLayout.editorListContentPadding.calculateEndPadding(LocalLayoutDirection.current),
+                    bottom = AppPageLayout.editorListContentPadding.calculateBottomPadding()
+                )
             } else {
                 AppPageLayout.editorListContentPadding
             }
@@ -730,60 +782,6 @@ internal fun NoteEditor(
                 // while adjacent tasks exchange positions.
                 item(key = "task_reorder_viewport_anchor") {
                     Spacer(Modifier.height(1.dp))
-                }
-            }
-            if (note.type == RecordType.TASK) {
-                if (isTaskListItem) {
-                    item(key = "work_time_controls") {
-                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
-                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                        WorkTimeControls(
-                            taskId = note.id,
-                            state = timeTrackingState,
-                            status = note.recordStatus(),
-                            onStatusChange = { nextStatus ->
-                                val resumingMissed = note.recordStatus() == RecordStatus.MISSED &&
-                                    nextStatus != RecordStatus.MISSED
-                                onChange(note.copy(
-                                    status = nextStatus,
-                                    deadlineResumeOverride = resumingMissed
-                                ))
-                            },
-                        )
-                    }
-                }
-                if (isTaskListItem) {
-                    item(key = "protection_timer") {
-                        val currentTitle = note.titleText.takeIf { note.titleEnabled && it.isNotBlank() }
-                            ?: note.blocks.toPlainText().lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "Задача" }
-                        Column(
-                            // 4.dp list spacing + 8.dp inset = 12.dp between visible sections.
-                            modifier = Modifier.padding(top = AppSpacing.xs)
-                        ) {
-                            ProtectionTimerControls(
-                                taskId = note.id,
-                                taskTitle = parentTaskTitle ?: "Задача",
-                                subtaskTitle = currentTitle,
-                                parentTaskId = parentTaskId,
-                                state = timeTrackingState,
-                                onStateChange = onTimeTrackingStateChange,
-                                onChooseSound = {
-                                    val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-                                        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
-                                        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Выберите сигнал")
-                                        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
-                                        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
-                                        putExtra(
-                                            RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
-                                            timeTrackingState.soundUri?.let(Uri::parse)
-                                                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                                        )
-                                    }
-                                    ringtonePicker.launch(intent)
-                                }
-                            )
-                        }
-                    }
                 }
             }
             if (note.type != RecordType.NOTE &&
