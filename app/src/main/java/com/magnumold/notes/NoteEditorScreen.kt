@@ -539,6 +539,13 @@ internal fun NoteEditor(
                                             timeAnalyticsVisible = true
                                         }
                                     )
+                                    DropdownMenuItem(
+                                        text = { Text("Удалить") },
+                                        onClick = {
+                                            subtaskMenuExpanded = false
+                                            onDelete(false)
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -551,27 +558,29 @@ internal fun NoteEditor(
                                 )
                             }
                         }
-                        IconButton(
-                            onClick = {
-                                if (historyIndex > 0) {
-                                    undoGroupingState = UndoGroupingState()
-                                    historyIndex--
-                                    publish(history[historyIndex])
-                                }
-                            },
-                            enabled = historyIndex > 0
-                        ) { AppIcon(NoteIcon.Undo, "Отменить") }
-                        IconButton(
-                            onClick = {
-                                if (historyIndex < history.lastIndex) {
-                                    undoGroupingState = UndoGroupingState()
-                                    historyIndex++
-                                    publish(history[historyIndex])
-                                }
-                            },
-                            enabled = historyIndex < history.lastIndex
-                        ) { AppIcon(NoteIcon.Redo, "Повторить") }
-                        IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
+                        if (!isTaskListItem) {
+                            IconButton(
+                                onClick = {
+                                    if (historyIndex > 0) {
+                                        undoGroupingState = UndoGroupingState()
+                                        historyIndex--
+                                        publish(history[historyIndex])
+                                    }
+                                },
+                                enabled = historyIndex > 0
+                            ) { AppIcon(NoteIcon.Undo, "Отменить") }
+                            IconButton(
+                                onClick = {
+                                    if (historyIndex < history.lastIndex) {
+                                        undoGroupingState = UndoGroupingState()
+                                        historyIndex++
+                                        publish(history[historyIndex])
+                                    }
+                                },
+                                enabled = historyIndex < history.lastIndex
+                            ) { AppIcon(NoteIcon.Redo, "Повторить") }
+                            IconButton(onClick = { onDelete(false) }) { AppIcon(NoteIcon.Trash, "Удалить") }
+                        }
                         if (!isTaskListItem) IconButton(onClick = onShare) { AppIcon(NoteIcon.Share, "Поделиться") }
                     },
                     backgroundColor = topBarColor
